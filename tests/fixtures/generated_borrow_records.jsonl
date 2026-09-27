@@ -9999,3 +9999,4 @@
 {"id": 9999, "bookId": 500, "readerId": 200, "status": "Borrowed", "days": 9}
 {"id": 10000, "bookId": 1, "readerId": 1, "status": "Returned", "days": 10}
 {"id": "extra-2026-09-27-1", "bookId": 1, "readerId": 101, "status": "Borrowed", "source": "synthetic-test"}
+{"id": "extra-2026-09-27-2", "bookId": 2, "readerId": 102, "status": "Borrowed", "source": "synthetic-test"}
