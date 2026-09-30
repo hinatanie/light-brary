@@ -1,22 +1,13 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17
     container_name: lightbrary-postgres
-    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Asdf1234!}
       POSTGRES_DB: ${POSTGRES_DB:-lightbrary_db}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-lightbrary_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
 volumes:
   postgres_data:
