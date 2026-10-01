@@ -34,9 +34,12 @@ public class ExceptionHandlingMiddleware
 
         var (statusCode, message) = exception switch
         {
-            NotFoundException notFound => (HttpStatusCode.NotFound, notFound.Message),
-            ArgumentException argEx => (HttpStatusCode.BadRequest, argEx.Message),
-            _ => (HttpStatusCode.InternalServerError, "Đã xảy ra lỗi hệ thống không mong muốn.")
+            NotFoundException notFound       => (HttpStatusCode.NotFound, notFound.Message),
+            ConflictException conflict       => (HttpStatusCode.Conflict, conflict.Message),
+            BusinessException biz            => (HttpStatusCode.BadRequest, biz.Message),
+            UnauthorizedException unauth     => (HttpStatusCode.Unauthorized, unauth.Message),
+            ArgumentException argEx          => (HttpStatusCode.BadRequest, argEx.Message),
+            _                                => (HttpStatusCode.InternalServerError, "Đã xảy ra lỗi hệ thống không mong muốn.")
         };
 
         context.Response.StatusCode = (int)statusCode;

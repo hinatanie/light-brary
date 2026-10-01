@@ -255,6 +255,12 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("Email");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)
