@@ -16,10 +16,10 @@ Tài liệu được sắp xếp theo **lộ trình chiều sâu kiến thức t
   └── 4. Tích hợp Giao diện Test API (Swagger UI)
        ↓
 [Giai đoạn 3: Nghiệp vụ Lõi (Domain)]
-  └── 5. Thiết kế Entity Chuẩn Clean Architecture (POCO, Quan hệ)
+  └── 5. Thiết Kế Entity Theo Phong Cách Spring Boot (Data Annotations, Quan Hệ)
        ↓
 [Giai đoạn 4: Hạ tầng Dữ liệu (Infrastructure & EF Core)]
-  ├── 6. Cấu hình Database nâng cao (Fluent API Configuration)
+  ├── 6. Bảng Tra Cứu Annotation (Spring Boot vs .NET) & Cơ Chế Mapping
   └── 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
        ↓
 [Tra cứu]
@@ -203,106 +203,126 @@ app.Run();
 
 ---
 
-## 5. Thiết Kế Entity Chuẩn Clean Architecture
+## 5. Thiết Kế Entity Theo Phong Cách Spring Boot (Data Annotations)
 
-> 🎯 **Mục tiêu:** Xây dựng mô hình dữ liệu (Domain Entities) chuẩn OOP, đóng gói tốt và không bị phụ thuộc vào database bên ngoài.
+> 🎯 **Mục tiêu:** Khai báo toàn bộ ràng buộc (Khóa chính, Not Null, Độ dài, Tên bảng, Quan hệ 1-N...) trực tiếp ngay bên trong class Entity, mang lại trải nghiệm tiện lợi và quen thuộc như JPA/Hibernate trong Spring Boot.
 
-### 5.1. Nguyên tắc cốt lõi của Entity tầng Domain
+### 5.1. Nguyên tắc thiết kế Entity theo Data Annotations
 1. **Nằm tại:** `src/Library.Domain/Entities/`.
-2. **POCO thuần C#:** Không kế thừa class của EF Core, không gắn các annotation database nặng nề (`[Table]`, `[ForeignKey]`) trực tiếp lên Entity nhằm giữ Domain trong sạch.
-3. **Mỗi file một class:** Tên file trùng tên class (ví dụ: `Book.cs`).
-4. **Hỗ trợ Audit:** Có các trường theo dõi thời gian (`CreatedAt`, `UpdatedAt`).
+2. **Tất cả ràng buộc nằm trọn trong Entity:** Sử dụng các Data Annotations có sẵn trong `System.ComponentModel.DataAnnotations` và `System.ComponentModel.DataAnnotations.Schema` (thư viện chuẩn của .NET, không cần cài thêm package DB nào vào `Domain`).
+3. **Không cần tạo file cấu hình riêng:** Toàn bộ metadata đã nằm trên từng thuộc tính, không cần phải tạo thêm các file `IEntityTypeConfiguration` rườm rà.
+4. **Hỗ trợ Audit:** Có các trường theo dõi thời gian tạo và cập nhật (`CreatedAt`, `UpdatedAt`).
 
 ### 5.2. Code mẫu hoàn chỉnh: `Category.cs` & `Book.cs`
 
 Tạo file [src/Library.Domain/Entities/Category.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Domain/Entities/Category.cs):
 ```csharp
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Library.Domain.Entities;
 
+[Table("categories")] // Tương đương @Table(name = "categories")
 public class Category
 {
+    [Key] // Tương đương @Id
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Tương đương @GeneratedValue(strategy = GenerationType.IDENTITY)
     public int Id { get; set; }
+
+    [Required] // Tương đương @Column(nullable = false)
+    [MaxLength(100)] // Tương đương @Column(length = 100)
+    [Column("name")]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    [Column("description")]
     public string? Description { get; set; }
 
-    // Navigation property: Một thể loại có thể chứa nhiều quyển sách (Quan hệ 1-N)
+    // Navigation property: Một thể loại có nhiều quyển sách (Tương đương @OneToMany(mappedBy = "category"))
     public ICollection<Book> Books { get; set; } = new List<Book>();
 }
 ```
 
 Tạo file [src/Library.Domain/Entities/Book.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Domain/Entities/Book.cs):
 ```csharp
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Library.Domain.Entities;
 
+[Table("books")] // Tương đương @Table(name = "books")
 public class Book
 {
+    [Key] // Tương đương @Id
     public Guid Id { get; set; } = Guid.NewGuid();
+
+    [Required] // Tương đương @Column(nullable = false)
+    [MaxLength(250)] // Tương đương @Column(length = 250)
+    [Column("title")]
     public string Title { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(150)]
+    [Column("author")]
     public string Author { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(20)]
+    [Column("isbn")]
     public string Isbn { get; set; } = string.Empty;
+
+    [Column("published_year")]
     public int PublishedYear { get; set; }
+
+    [Column("available_copies")]
     public int AvailableCopies { get; set; }
+
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
 
     // Khóa ngoại (Foreign Key) trỏ tới Category
+    [Column("category_id")]
     public int CategoryId { get; set; }
-    
-    // Navigation property: Trỏ ngược về đối tượng Category
+
+    // Navigation property: Trỏ ngược về Category (Tương đương @ManyToOne + @JoinColumn(name = "category_id"))
+    [ForeignKey(nameof(CategoryId))]
     public Category? Category { get; set; }
 }
 ```
 
 ---
 
-## 6. Cấu Hình Database Nâng Cao (Fluent API)
+## 6. Bảng Tra Cứu Annotation (Spring Boot JPA vs .NET EF Core)
 
-> 🎯 **Mục tiêu:** Thiết lập các ràng buộc dữ liệu (độ dài chuỗi, unique index, quan hệ bảng) ở tầng Infrastructure thay vì nhồi nhét vào Domain.
+> 🎯 **Mục tiêu:** Giúp lập trình viên từ Spring Boot tra cứu nhanh các annotation tương ứng trong C# .NET để thiết kế Entity mà không cần bỡ ngỡ.
 
-Theo mục 12 trong [CONTRIBUTING.md](file:///home/dww/Personal/Code/Csharp/light-brary/CONTRIBUTING.md), ta tạo configuration riêng cho từng Entity tại `Library.Infrastructure/Persistence/Configurations/`.
+### 6.1. Bảng đối chiếu chi tiết
 
-Tạo file `src/Library.Infrastructure/Persistence/Configurations/BookConfiguration.cs`:
-```csharp
-using Library.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+| Tính năng | Spring Boot (JPA / Hibernate) | .NET (EF Core Data Annotations) | Namespace trong C# |
+| :--- | :--- | :--- | :--- |
+| **Khai báo Entity** | `@Entity` | *Không cần* (Class POCO thông thường) | — |
+| **Tên bảng** | `@Table(name = "books")` | `[Table("books")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Khóa chính** | `@Id` | `[Key]` | `System.ComponentModel.DataAnnotations` |
+| **Tự sinh giá trị** | `@GeneratedValue(strategy = IDENTITY)` | `[DatabaseGenerated(DatabaseGeneratedOption.Identity)]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Tên cột** | `@Column(name = "book_title")` | `[Column("book_title")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Bắt buộc / Not null** | `@Column(nullable = false)` | `[Required]` hoặc thuộc tính non-nullable `string` | `System.ComponentModel.DataAnnotations` |
+| **Giới hạn độ dài** | `@Column(length = 200)` | `[MaxLength(200)]` hoặc `[StringLength(200)]` | `System.ComponentModel.DataAnnotations` |
+| **Kiểu cột dữ liệu** | `@Column(columnDefinition = "TEXT")` | `[Column(TypeName = "text")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Độ chính xác số tiền**| `@Column(precision = 18, scale = 2)` | `[Column(TypeName = "decimal(18,2)")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Bỏ qua không lưu DB**| `@Transient` | `[NotMapped]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Quan hệ N - 1** | `@ManyToOne` + `@JoinColumn(name = "category_id")` | `[ForeignKey(nameof(CategoryId))]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Quan hệ 1 - N** | `@OneToMany(mappedBy = "category")` | `public ICollection<Book> Books { get; set; }` | Tự động nhận diện qua Navigation Property |
 
-namespace Library.Infrastructure.Persistence.Configurations;
+### 6.2. Ưu điểm khi dùng Data Annotations
+1. **Trực quan, quen thuộc:** Nhìn vào class Entity là thấy ngay tên bảng, tên cột, độ dài chuỗi và các ràng buộc y hệt như code Entity trong Spring Boot.
+2. **Không tốn công tạo nhiều file:** Bỏ qua hoàn toàn việc phải tạo hàng chục file `XxxConfiguration.cs`.
+3. **Tái sử dụng Validation:** Các annotation như `[Required]`, `[MaxLength]` có thể tái sử dụng ngay trong các lớp DTO để validate dữ liệu đầu vào của API.
 
-public class BookConfiguration : IEntityTypeConfiguration<Book>
-{
-    public void Configure(EntityTypeBuilder<Book> builder)
-    {
-        // Chỉ định tên bảng trong CSDL
-        builder.ToTable("Books");
-
-        // Thiết lập khóa chính
-        builder.HasKey(b => b.Id);
-
-        // Ràng buộc thuộc tính
-        builder.Property(b => b.Title)
-            .IsRequired()
-            .HasMaxLength(250);
-
-        builder.Property(b => b.Author)
-            .IsRequired()
-            .HasMaxLength(150);
-
-        builder.Property(b => b.Isbn)
-            .IsRequired()
-            .HasMaxLength(20);
-
-        // Đánh chỉ mục Index đảm bảo mã ISBN là duy nhất
-        builder.HasIndex(b => b.Isbn).IsUnique();
-
-        // Ràng buộc quan hệ 1 - N (Một Category có nhiều Book)
-        builder.HasOne(b => b.Category)
-            .WithMany(c => c.Books)
-            .HasForeignKey(b => b.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
-    }
-}
-```
+> [!NOTE]
+> **Xử lý Unique Index:** Với các ràng buộc đặc thù mà Data Annotation cơ bản chưa hỗ trợ trực tiếp (như đánh chỉ mục duy nhất cho `Isbn`), ta chỉ cần khai báo ngắn gọn trong hàm `OnModelCreating` của [LibraryDbContext.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/LibraryDbContext.cs) mà không cần tạo file Configuration riêng rẽ.
 
 ---
 
@@ -368,13 +388,12 @@ dotnet add src/Library.Api package Microsoft.EntityFrameworkCore.Design
 ```
 
 #### Bước 2: Chuẩn bị Domain Entities
-DbContext cần biết nó sẽ quản lý những thực thể nào (đã được định nghĩa ở mục 5 tại `src/Library.Domain/Entities/` như `Book.cs`, `Category.cs`).
+DbContext cần biết nó sẽ quản lý những thực thể nào (đã được định nghĩa và gắn Data Annotations theo phong cách Spring Boot ở mục 5 tại `src/Library.Domain/Entities/` như `Book.cs`, `Category.cs`).
 
 #### Bước 3: Khởi tạo file `LibraryDbContext.cs`
 Tạo file tại `src/Library.Infrastructure/Persistence/LibraryDbContext.cs`:
 
 ```csharp
-using System.Reflection;
 using Library.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -395,8 +414,11 @@ public class LibraryDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Tự động tìm và áp dụng toàn bộ file cấu hình Fluent API (trong thư mục Configurations/)
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        // EF Core tự động nhận diện toàn bộ Data Annotations ([Table], [Key], [Column], [ForeignKey]...) trên các Entity.
+        // Tại đây chỉ cần cấu hình thêm các ràng buộc đặc thù mà Data Annotation chưa hỗ trợ (ví dụ: Index duy nhất cho ISBN):
+        modelBuilder.Entity<Book>()
+            .HasIndex(b => b.Isbn)
+            .IsUnique();
     }
 }
 ```
