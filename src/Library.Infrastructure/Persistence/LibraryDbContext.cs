@@ -93,5 +93,12 @@ public class LibraryDbContext : DbContext
             .WithMany(bc => bc.BorrowDetails)
             .HasForeignKey(bd => bd.BookCopyId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // 4. Data Seeding cho Category để có sẵn dữ liệu mẫu liên kết
+        modelBuilder.Entity<Category>().HasData(
+            new Category { Id = 1, Name = "Công nghệ thông tin", Description = "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu" },
+            new Category { Id = 2, Name = "Kinh tế & Quản trị", Description = "Sách tài chính, khởi nghiệp và quản lý kinh doanh" },
+            new Category { Id = 3, Name = "Văn học & Nghệ thuật", Description = "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển" }
+        );
     }
 }

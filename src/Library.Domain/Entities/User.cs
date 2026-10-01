@@ -11,15 +11,17 @@ public class User
     [Column("Id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
+    [Required]
+    [MaxLength(256)]
+    [Column("Email")]
+    public string Email { get; set; } = string.Empty;
+
     [Column("PasswordHash")]
     public string? PasswordHash { get; set; }
 
     [MaxLength(50)]
     [Column("PhoneNumber")]
     public string? PhoneNumber { get; set; }
-
-    [Column("AccessFailedCount")]
-    public int AccessFailedCount { get; set; } = 0;
 
     [Required]
     [MaxLength(150)]

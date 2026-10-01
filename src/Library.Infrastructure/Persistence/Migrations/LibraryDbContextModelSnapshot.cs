@@ -200,6 +200,26 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu",
+                            Name = "Công nghệ thông tin"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Sách tài chính, khởi nghiệp và quản lý kinh doanh",
+                            Name = "Kinh tế & Quản trị"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển",
+                            Name = "Văn học & Nghệ thuật"
+                        });
                 });
 
             modelBuilder.Entity("Library.Domain.Entities.Role", b =>
@@ -226,10 +246,6 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(450)")
                         .HasColumnName("Id");
 
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("AccessFailedCount");
-
                     b.Property<string>("Address")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -238,6 +254,12 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("Email");
 
                     b.Property<string>("FullName")
                         .IsRequired()

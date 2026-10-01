@@ -22,8 +22,11 @@ Tài liệu được sắp xếp theo **lộ trình chiều sâu kiến thức t
   ├── 6. Bảng Tra Cứu Annotation (Spring Boot vs .NET) & Cơ Chế Mapping
   └── 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
        ↓
+[Giai đoạn 5: Hiện Thực Tính Năng Đầu Cuối (Full-Flow Feature)]
+  └── 8. Toàn Tập Luồng Hoạt Động CRUD Đầu Sách (Book API - Clean Architecture)
+       ↓
 [Tra cứu]
-  └── 8. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
+  └── 9. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
 ```
 
 ---
@@ -444,13 +447,13 @@ public class LibraryDbContext : DbContext
 #### Bước 5: Tạo và Áp Dụng Migration
 Đảm bảo container PostgreSQL đang chạy (`docker compose up -d`), sau đó dùng lệnh CLI để tạo bảng thật:
 ```bash
-# 1. Tạo file migration ghi nhận thay đổi
-dotnet ef migrations add InitialCreate \
+# 1. Tạo file migration ghi nhận thay đổi từ code C#
+dotnet ef migrations add InitialLibrarySchema \
   --project src/Library.Infrastructure \
   --startup-project src/Library.Api \
   --output-dir Persistence/Migrations
 
-# 2. Đẩy cấu trúc bảng vào PostgreSQL
+# 2. Đẩy cấu trúc bảng vào PostgreSQL thật (xem chi tiết mục 7.3)
 dotnet ef database update \
   --project src/Library.Infrastructure \
   --startup-project src/Library.Api
@@ -519,7 +522,211 @@ public class BookRepository
 
 ---
 
-## 8. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
+### 7.3. Chuyên Sâu Về Lệnh `dotnet ef database update`
+
+> 🎯 **Mục tiêu:** Hiểu rõ bản chất ngầm bên dưới của lệnh, lý do tách biệt `--project` và `--startup-project`, cách đọc hiểu log và các thao tác quản trị nâng cao (Rollback, Script).
+
+#### 1. Bóc tách cú pháp câu lệnh
+
+```bash
+dotnet ef database update \
+  --project src/Library.Infrastructure/ \
+  --startup-project src/Library.Api/
+```
+
+$$\underbrace{\text{dotnet ef database update}}_{\text{Hành động chính}} \quad \underbrace{\text{--project src/Library.Infrastructure/}}_{\text{Nơi chứa code Database}} \quad \underbrace{\text{--startup-project src/Library.Api/}}_{\text{Nơi chứa cấu hình chạy}}$$
+
+| Thành phần | Vai trò | Tại sao cần thiết trong Clean Architecture? |
+| :--- | :--- | :--- |
+| **`dotnet ef database update`** | Lệnh chính | Yêu cầu EF Core đồng bộ các file migration C# vào database thật. |
+| **`--project src/Library.Infrastructure/`** | Target Project (Nơi chứa code DB) | Chỉ định project chứa file `LibraryDbContext.cs` và thư mục `Migrations/`. EF Core cần tìm vào đây để đọc code migration. |
+| **`--startup-project src/Library.Api/`** | Startup Project (Nơi chứa cấu hình) | `Infrastructure` chỉ là thư viện DLL không tự chạy được và không có chuỗi kết nối. EF Core cần mượn `Program.cs` và `appsettings.Development.json` từ `Api` để biết Host, Port, User, Password kết nối vào PostgreSQL. |
+
+#### 2. Thao tác chính diễn ra bên dưới (Under the Hood)
+
+Khi bạn gõ lệnh, EF Core âm thầm thực hiện tuần tự **5 bước**:
+
+```text
+[ File C# Migration ]               [ Bảng __EFMigrationsHistory ]
+(Trong Library.Infrastructure)         (Trong Database PostgreSQL)
+         │                                       │
+         └─────────────► 1. SO SÁNH ◄────────────┘
+                         (Tìm file migration nào CHƯA ĐƯỢC CHẠY)
+                                │
+                                ▼
+                         2. DỊCH SANG SQL
+                         (Dịch hàm Up() trong C# thành CREATE TABLE, INDEX...)
+                                │
+                                ▼
+                         3. THỰC THI TRANSACTION
+                         (Chạy SQL vào PostgreSQL để tạo bảng thật)
+                                │
+                                ▼
+                         4. GHI NHẬN LỊCH SỬ
+                         (Chèn tên migration vừa chạy vào __EFMigrationsHistory)
+```
+
+1. **Kiểm tra lịch sử:** EF Core kết nối vào PostgreSQL và truy vấn bảng `__EFMigrationsHistory`.
+2. **So sánh (Diff):** So khớp các file migration trong code với các bản ghi trong DB để tìm những migration **chưa được áp dụng**.
+3. **Dịch C# sang SQL DDL:** Mở hàm `Up()` của các file migration chưa chạy, tự động dịch thành câu lệnh SQL chuẩn PostgreSQL (`CREATE TABLE`, `CREATE INDEX`, `ALTER TABLE`...).
+4. **Thực thi Transaction:** Mở một Database Transaction và chạy các câu lệnh SQL. Nếu xảy ra lỗi ở bất kỳ bảng nào, toàn bộ sẽ được rollback ngay lập tức để không làm hỏng database.
+5. **Đánh dấu hoàn tất:** Chèn một bản ghi mới (gồm `MigrationId` và `ProductVersion`) vào bảng `__EFMigrationsHistory`.
+
+#### 3. Giải thích log `fail: ... FROM "__EFMigrationsHistory"` khi chạy lần đầu
+Khi chạy trên database mới tinh, bạn sẽ thấy thông báo:
+```text
+fail: Microsoft.EntityFrameworkCore.Database.Command[20102]
+      Failed executing DbCommand (20ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "MigrationId", "ProductVersion"
+      FROM "__EFMigrationsHistory"
+      ORDER BY "MigrationId";
+```
+> [!NOTE]
+> Đây là **hành vi hoàn toàn bình thường**. Vì database mới chưa có bảng lịch sử `__EFMigrationsHistory`, lệnh `SELECT` thăm dò sẽ trả về lỗi "bảng chưa tồn tại". EF Core nhận diện điều này và sẽ tự động tạo bảng này trước khi chạy migration. Khi thấy dòng **`Done.`** ở cuối nghĩa là toàn bộ bảng đã tạo thành công!
+
+#### 4. Các lệnh mở rộng hữu ích trong thực tế
+
+```bash
+# 1. Rollback về một migration cũ cụ thể (hạ phiên bản DB):
+dotnet ef database update <TenMigrationCu> \
+  --project src/Library.Infrastructure \
+  --startup-project src/Library.Api
+
+# 2. Xóa sạch tất cả các bảng (Rollback về trạng thái ban đầu, tương đương Drop schema):
+dotnet ef database update 0 \
+  --project src/Library.Infrastructure \
+  --startup-project src/Library.Api
+
+# 3. Xuất toàn bộ câu lệnh SQL ra file để kiểm tra trước khi chạy:
+dotnet ef migrations script \
+  --project src/Library.Infrastructure \
+  --startup-project src/Library.Api \
+  --output script.sql
+```
+
+#### 5. So sánh với hệ sinh thái Spring Boot
+
+| Khái niệm | Spring Boot (Flyway / Liquibase) | .NET (Entity Framework Core) |
+| :--- | :--- | :--- |
+| **Bảng lưu lịch sử migration** | `flyway_schema_history` | `__EFMigrationsHistory` |
+| **File migration** | `V1__Initial_Setup.sql` | `20261001154949_InitialLibrarySchema.cs` |
+| **Nơi cung cấp chuỗi kết nối** | `application.yml` / `application.properties` | `--startup-project src/Library.Api` (`appsettings.Development.json`) |
+| **Thực thi migration** | Tự động chạy khi Spring Boot khởi động | Chạy qua lệnh `dotnet ef database update` |
+
+## 8. Toàn Tập Luồng Hoạt Động CRUD Đầu Sách (Book API - Clean Architecture)
+
+> 🎯 **Mục tiêu:** Nắm vững trọn vẹn luồng xử lý của một API hoàn chỉnh từ khi Client gửi request qua Middleware → Controller → Service → Repository → Database và ngược lại, cách tổ chức DTOs, Interface và xử lý lỗi tập trung.
+
+### 8.1. Sơ Đồ Luồng Hoạt Động Tổng Thể (Runtime Flow)
+
+Khi Client gửi một request (ví dụ: tạo mới sách), luồng dữ liệu sẽ đi qua các tầng như sau:
+
+$$\text{Client} \xrightarrow{\text{1}} \text{Middleware} \xrightarrow{\text{2}} \text{BooksController} \xrightarrow{\text{3}} \text{BookService} \xrightarrow{\text{4}} \text{BookRepository} \xrightarrow{\text{5}} \text{PostgreSQL}$$
+
+```mermaid
+flowchart TD
+    Client(["Client (Postman / Swagger / Frontend)"])
+
+    subgraph ApiLayer ["Tầng Presentation (Library.Api)"]
+        MW["ExceptionHandlingMiddleware\n(Bắt lỗi tập trung 400, 404, 500)"]
+        Ctrl["BooksController\n(Đón nhận HTTP Request & trả HTTP Status)"]
+    end
+
+    subgraph AppLayer ["Tầng Application (Library.Application)"]
+        IBookSvc["IBookService"]
+        BookSvc["BookService\n(Xử lý nghiệp vụ, kiểm tra CategoryId, Map DTO)"]
+        DTOs["DTOs (CreateBookRequest, BookResponse...)"]
+    end
+
+    subgraph InfraLayer ["Tầng Infrastructure (Library.Infrastructure)"]
+        IBookRepo["IBookRepository"]
+        BookRepo["BookRepository\n(Thực thi LINQ, Include Category, SaveChanges)"]
+        DbContext["LibraryDbContext"]
+    end
+
+    subgraph DBLayer ["Cơ Sở Dữ Liệu"]
+        Postgres[("PostgreSQL Database\n(Bảng Books & Categories)")]
+    end
+
+    Client -->|1. HTTP Request| MW
+    MW -->|2. Forward Request| Ctrl
+    Ctrl -->|3. Gọi Service| IBookSvc
+    IBookSvc -.-> BookSvc
+    BookSvc -.-> DTOs
+    BookSvc -->|4. Kiểm tra & Gọi Repo| IBookRepo
+    IBookRepo -.-> BookRepo
+    BookRepo -->|5. EF Core LINQ| DbContext
+    DbContext -->|6. SQL DDL / DML| Postgres
+
+    Postgres -->|7. Dữ liệu thô| DbContext
+    DbContext -->|8. Entity Book| BookRepo
+    BookRepo -->|9. Entity Book| BookSvc
+    BookSvc -->|10. BookResponse DTO| Ctrl
+    Ctrl -->|11. HTTP Response (200, 201, 204)| Client
+
+    BookSvc -.->|Ném lỗi NotFoundException| MW
+    MW -.->|JSON chuẩn { status: 404, message }| Client
+```
+
+### 8.2. Danh Sách Các File & Trách Nhiệm Từng Tầng Trong Luồng
+
+#### A. Tầng `Library.Application` (Cốt lõi logic nghiệp vụ)
+1. **[NotFoundException.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/Exceptions/NotFoundException.cs):** Exception nghiệp vụ ném ra khi không tìm thấy sách hoặc thể loại (`Category`).
+2. **[CreateBookRequest.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/DTOs/Books/CreateBookRequest.cs):** DTO nhận dữ liệu tạo sách, có validation Data Annotations (`[Required]`, `[MaxLength]`, `[Range]`).
+3. **[UpdateBookRequest.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/DTOs/Books/UpdateBookRequest.cs):** DTO nhận dữ liệu sửa sách.
+4. **[BookResponse.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/DTOs/Books/BookResponse.cs):** DTO trả về cho client kèm tên thể loại (`CategoryName`).
+5. **[IBookRepository.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/Interfaces/IBookRepository.cs):** Hợp đồng truy cập dữ liệu (Abstraction).
+6. **[IBookService.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/Interfaces/IBookService.cs):** Hợp đồng use case của ứng dụng.
+7. **[BookService.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Application/Services/BookService.cs):** Triển khai toàn bộ logic nghiệp vụ (kiểm tra `CategoryId` tồn tại, map DTO $\leftrightarrow$ Entity).
+
+#### B. Tầng `Library.Infrastructure` (Kết nối cơ sở dữ liệu)
+1. **[BookRepository.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Repositories/BookRepository.cs):** Triển khai `IBookRepository` bằng EF Core LINQ (`_context.Books.Include(b => b.Category).AsNoTracking()`).
+2. **[LibraryDbContext.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/LibraryDbContext.cs):** Thêm **Data Seeding** cho 3 thể loại mặc định (`Id: 1 - Công nghệ thông tin`, `Id: 2 - Kinh tế & Quản trị`, `Id: 3 - Văn học & Nghệ thuật`).
+3. **Migration [SeedCategories](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/Migrations/20261001182939_SeedCategories.cs):** Nạp dữ liệu mẫu vào PostgreSQL.
+
+#### C. Tầng `Library.Api` (Giao tiếp HTTP & Entry Point)
+1. **[BooksController.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Controllers/BooksController.cs):** Endpoint `/api/v1/books` tiếp nhận HTTP request, trả về status code chuẩn RESTful.
+2. **[ExceptionHandlingMiddleware.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Middleware/ExceptionHandlingMiddleware.cs):** Bắt lỗi tập trung, trả về JSON `{ status: 404/400/500, message: "..." }`.
+3. **[Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs):** Đăng ký Dependency Injection (`IBookRepository`, `IBookService`) và gắn Middleware vào pipeline.
+4. **[books.http](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/books.http):** File kịch bản kiểm thử 7 request nhanh ngay trên VS Code / IDE.
+
+---
+
+### 8.3. Bảng Tổng Hợp Các Endpoint Trong `BooksController`
+
+| Thao tác | HTTP Method | Route URL | Mã HTTP Thành Công | Mã HTTP Thất Bại | Ý nghĩa |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **Lấy danh sách** | `GET` | `/api/v1/books` | `200 OK` | `500` | Lấy tất cả sách kèm tên thể loại. |
+| **Lấy chi tiết** | `GET` | `/api/v1/books/{id}` | `200 OK` | `404 Not Found` | Lấy 1 cuốn theo ID, nếu không có trả về 404. |
+| **Tạo mới** | `POST` | `/api/v1/books` | `201 Created` | `400 Bad Request` / `404` | Tạo sách mới, trả về header `Location: /api/v1/books/{id}`. |
+| **Cập nhật** | `PUT` | `/api/v1/books/{id}` | `200 OK` | `400 Bad Request` / `404` | Cập nhật thông tin toàn bộ cuốn sách. |
+| **Xóa sách** | `DELETE` | `/api/v1/books/{id}` | `204 No Content` | `404 Not Found` | Xóa sách khỏi hệ thống, không cần trả về body. |
+
+---
+
+### 8.4. Quy Tắc "Vàng" Khi Triển Khai Module Tiếp Theo (Quy Trình Chuẩn)
+
+Khi bạn muốn code thêm bất kỳ tính năng nào khác (ví dụ: Quản lý Thể loại, Mượn trả, Người dùng), **hãy lặp lại đúng 7 bước này**:
+
+```text
+Bước 1 (Domain):         Tạo Entity & Enum
+  ↓
+Bước 2 (Application):    Tạo DTOs (Request / Response)
+  ↓
+Bước 3 (Application):    Tạo IRepository & IService
+  ↓
+Bước 4 (Application):    Viết logic trong Service
+  ↓
+Bước 5 (Infrastructure): Viết truy vấn DB trong Repository
+  ↓
+Bước 6 (Api):            Tạo Controller kế thừa ControllerBase
+  ↓
+Bước 7 (Api):            Đăng ký AddScoped trong Program.cs & Test
+```
+
+---
+
+## 9. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
 
 | Danh mục | Thao tác | Câu lệnh Terminal |
 | :--- | :--- | :--- |
@@ -534,5 +741,8 @@ public class BookRepository
 | | Xem trạng thái | `docker compose ps` |
 | **EF Core Migration**| Tạo migration mới | `dotnet ef migrations add <TenMigration> --project src/Library.Infrastructure --startup-project src/Library.Api --output-dir Persistence/Migrations` |
 | | Cập nhật database | `dotnet ef database update --project src/Library.Infrastructure --startup-project src/Library.Api` |
+| | Rollback về migration cũ | `dotnet ef database update <TenMigrationCu> --project src/Library.Infrastructure --startup-project src/Library.Api` |
+| | Xóa sạch bảng (Reset về 0) | `dotnet ef database update 0 --project src/Library.Infrastructure --startup-project src/Library.Api` |
+| | Xuất mã SQL ra file | `dotnet ef migrations script --project src/Library.Infrastructure --startup-project src/Library.Api --output script.sql` |
 | **Kiểm thử** | Xem Swagger UI | `http://localhost:5048/swagger` |
 | | Xem OpenAPI Schema JSON | `http://localhost:5048/openapi/v1.json` |
