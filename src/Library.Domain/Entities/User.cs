@@ -18,9 +18,6 @@ public class User
     [Column("PhoneNumber")]
     public string? PhoneNumber { get; set; }
 
-    [Column("AccessFailedCount")]
-    public int AccessFailedCount { get; set; } = 0;
-
     [Required]
     [MaxLength(150)]
     [Column("FullName")]

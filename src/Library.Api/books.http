@@ -1,0 +1,50 @@
+@baseUrl = http://localhost:5289
+
+### 1. Lấy danh sách tất cả sách
+GET {{baseUrl}}/api/v1/books
+Accept: application/json
+
+### 2. Tạo một cuốn sách mới
+POST {{baseUrl}}/api/v1/books
+Content-Type: application/json
+
+{
+  "title": "Clean Code",
+  "author": "Robert C. Martin",
+  "isbn": "978-0132350884",
+  "publishYear": 2008,
+  "categoryId": 1
+}
+
+### 3. Lấy chi tiết sách theo ID (thay ID tương ứng)
+GET {{baseUrl}}/api/v1/books/1
+Accept: application/json
+
+### 4. Cập nhật thông tin sách
+PUT {{baseUrl}}/api/v1/books/1
+Content-Type: application/json
+
+{
+  "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+  "author": "Robert C. Martin",
+  "isbn": "978-0132350884",
+  "publishYear": 2008,
+  "categoryId": 1
+}
+
+### 5. Xóa cuốn sách
+DELETE {{baseUrl}}/api/v1/books/1
+
+### 6. Test lỗi 404 khi lấy sách không tồn tại
+GET {{baseUrl}}/api/v1/books/9999
+Accept: application/json
+
+### 7. Test lỗi 400/404 khi tạo sách với thể loại không tồn tại
+POST {{baseUrl}}/api/v1/books
+Content-Type: application/json
+
+{
+  "title": "Design Patterns",
+  "author": "Gang of Four",
+  "categoryId": 9999
+}
