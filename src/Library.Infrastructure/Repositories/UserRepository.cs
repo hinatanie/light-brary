@@ -33,6 +33,12 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 
+    public async Task<User?> GetByEmailOrPhoneAsync(string identifier)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == identifier || u.PhoneNumber == identifier);
+    }
+
     public async Task<bool> EmailExistsAsync(string email)
     {
         return await _context.Users.AnyAsync(u => u.Email == email);
