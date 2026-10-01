@@ -20,7 +20,7 @@ Tài liệu được sắp xếp theo **lộ trình chiều sâu kiến thức t
        ↓
 [Giai đoạn 4: Hạ tầng Dữ liệu (Infrastructure & EF Core)]
   ├── 6. Cấu hình Database nâng cao (Fluent API Configuration)
-  └── 7. Kết nối PostgreSQL & Quản trị Migration (DbContext, EF CLI)
+  └── 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
        ↓
 [Tra cứu]
   └── 8. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
@@ -306,22 +306,73 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
 
 ---
 
-## 7. Kết Nối PostgreSQL & Quản Trị Migration (EF Core)
+## 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
 
-> 🎯 **Mục tiêu:** Kết nối mã nguồn C# với CSDL PostgreSQL và dùng công cụ Migration để tự động sinh bảng, cập nhật cấu trúc database.
+> 🎯 **Mục tiêu:** Hiểu rõ bản chất của `LibraryDbContext` (cầu nối giữa C# và Database, Change Tracking, Unit of Work) và nắm vững quy trình 6 bước từ cài đặt, cấu hình, migration cho đến thao tác CRUD thực tế.
 
-### Bước 1: Cài đặt Packages cho EF Core
+---
+
+### 7.1. `LibraryDbContext` Là Gì & Mục Đích Tồn Tại Của Nó?
+
+`LibraryDbContext` (kế thừa từ `DbContext` của Entity Framework Core) là **thành phần trung tâm của tầng Hạ tầng (`Library.Infrastructure`)**. Nó đóng vai trò là **cây cầu duy nhất** kết nối giữa mã nguồn hướng đối tượng C# và cơ sở dữ liệu quan hệ PostgreSQL.
+
+```text
+[ Ứng dụng C# ]                                                [ Database ]
+Entities (Book, Category) <---> [ LibraryDbContext ] <---> Bảng PostgreSQL (Books, Categories)
+                                       │
+                      ┌────────────────┴────────────────┐
+                      ▼                                 ▼
+         Dịch LINQ thành câu lệnh SQL          Quản lý Transaction an toàn
+         (SELECT, INSERT, UPDATE, DELETE)           (Mẫu Unit of Work)
+```
+
+#### 4 Nhiệm vụ cốt lõi:
+1. **Quản lý phiên kết nối (Database Session):** Chịu trách nhiệm mở kết nối tới PostgreSQL khi cần, gửi lệnh thực thi và tự động đóng/giải phóng kết nối an toàn.
+2. **Cung cấp các bảng dữ liệu ảo (`DbSet<T>`):** Mỗi thuộc tính `DbSet<Book>`, `DbSet<Category>` đại diện cho một bảng trong CSDL, cho phép bạn viết truy vấn bằng mã C# thuần (LINQ) thay vì phải tự viết các câu lệnh SQL dài dòng.
+3. **Theo dõi sự thay đổi (Change Tracking):** Khi bạn lấy một đối tượng lên từ DB và sửa giá trị (ví dụ: `book.AvailableCopies -= 1;`), DbContext sẽ tự động ghi nhớ trạng thái này để tự sinh ra câu lệnh `UPDATE` tương ứng khi lưu.
+4. **Mẫu thiết kế Unit of Work:** Khi bạn thực hiện thêm, sửa, xóa nhiều bảng cùng lúc, EF Core sẽ gom tất cả lại và chỉ thực thi trong **duy nhất một Transaction** khi bạn gọi hàm `await _context.SaveChangesAsync()`. Nếu có bất kỳ dòng nào bị lỗi, toàn bộ thay đổi sẽ được rollback (hủy bỏ), đảm bảo tính toàn vẹn dữ liệu.
+
+> [!IMPORTANT]
+> **Vòng đời của DbContext (Scoped Lifetime):**
+> Trong ASP.NET Core, `LibraryDbContext` luôn được đăng ký với vòng đời **Scoped**. Điều này có nghĩa là mỗi một HTTP request gửi tới server sẽ được cấp một phiên bản (instance) `LibraryDbContext` riêng biệt và sẽ tự động giải phóng khi request đó kết thúc. Không bao giờ dùng Singleton cho DbContext vì nó không an toàn với đa luồng (thread-unsafe).
+
+---
+
+### 7.2. Toàn Bộ Quy Trình 6 Bước Vận Hành `LibraryDbContext`
+
+Để đưa `LibraryDbContext` vào hoạt động hoàn chỉnh từ lúc khởi tạo đến khi thực sự truy vấn dữ liệu, ta thực hiện tuần tự 6 bước:
+
+```text
+Bước 1: Cài đặt Packages EF Core
+  ↓
+Bước 2: Chuẩn bị Domain Entities (Book, Category...)
+  ↓
+Bước 3: Viết class LibraryDbContext (DbSet, OnModelCreating)
+  ↓
+Bước 4: Cấu hình Connection String & Đăng ký DI trong Program.cs
+  ↓
+Bước 5: Chạy Migration (Sinh bảng thật trong PostgreSQL)
+  ↓
+Bước 6: Inject LibraryDbContext vào Repository/Service để CRUD
+```
+
+#### Bước 1: Cài đặt Packages cần thiết
+Cài driver PostgreSQL cho tầng Infrastructure và công cụ Design để hỗ trợ chạy CLI migration:
 ```bash
-# Cài Npgsql PostgreSQL Provider vào Infrastructure
+# 1. Driver PostgreSQL cho Infrastructure
 dotnet add src/Library.Infrastructure package Npgsql.EntityFrameworkCore.PostgreSQL
 
-# Cài công cụ Design (hỗ trợ tạo migration) vào Infrastructure và Api
+# 2. Công cụ Design (cho cả Infrastructure và Api)
 dotnet add src/Library.Infrastructure package Microsoft.EntityFrameworkCore.Design
 dotnet add src/Library.Api package Microsoft.EntityFrameworkCore.Design
 ```
 
-### Bước 2: Khởi tạo `LibraryDbContext`
-Tạo file `src/Library.Infrastructure/Persistence/LibraryDbContext.cs`:
+#### Bước 2: Chuẩn bị Domain Entities
+DbContext cần biết nó sẽ quản lý những thực thể nào (đã được định nghĩa ở mục 5 tại `src/Library.Domain/Entities/` như `Book.cs`, `Category.cs`).
+
+#### Bước 3: Khởi tạo file `LibraryDbContext.cs`
+Tạo file tại `src/Library.Infrastructure/Persistence/LibraryDbContext.cs`:
+
 ```csharp
 using System.Reflection;
 using Library.Domain.Entities;
@@ -331,47 +382,117 @@ namespace Library.Infrastructure.Persistence;
 
 public class LibraryDbContext : DbContext
 {
+    // Constructor nhận cấu hình DbContextOptions (chứa connection string) được truyền từ Program.cs
     public LibraryDbContext(DbContextOptions<LibraryDbContext> options) : base(options)
     {
     }
 
+    // Khai báo các DbSet đại diện cho các bảng dữ liệu
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Category> Categories => Set<Category>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        // Tự động tìm và nạp tất cả cấu hình IEntityTypeConfiguration
+
+        // Tự động tìm và áp dụng toàn bộ file cấu hình Fluent API (trong thư mục Configurations/)
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 }
 ```
 
-### Bước 3: Đăng ký `LibraryDbContext` trong `Program.cs`
-Mở [src/Library.Api/Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs) thêm đoạn sau:
-```csharp
-using Library.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+#### Bước 4: Khai báo Connection String & Đăng ký Dependency Injection
+1. Cấu hình thông số kết nối trong [src/Library.Api/appsettings.Development.json](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/appsettings.Development.json):
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Host=localhost;Port=5432;Database=lightbrary_db;Username=postgres;Password=Asdf1234!"
+   }
+   ```
+2. Đăng ký DbContext vào hệ thống trong [src/Library.Api/Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs):
+   ```csharp
+   using Library.Infrastructure.Persistence;
+   using Microsoft.EntityFrameworkCore;
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+   var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseNpgsql(connectionString));
-```
+   builder.Services.AddDbContext<LibraryDbContext>(options =>
+       options.UseNpgsql(connectionString));
+   ```
 
-### Bước 4: Tạo và Áp Dụng Migration
-
+#### Bước 5: Tạo và Áp Dụng Migration
+Đảm bảo container PostgreSQL đang chạy (`docker compose up -d`), sau đó dùng lệnh CLI để tạo bảng thật:
 ```bash
-# 1. Tạo file migration ghi nhận thay đổi (vd: Tạo bảng lần đầu)
+# 1. Tạo file migration ghi nhận thay đổi
 dotnet ef migrations add InitialCreate \
   --project src/Library.Infrastructure \
   --startup-project src/Library.Api \
   --output-dir Persistence/Migrations
 
-# 2. Đẩy cấu trúc bảng vào Database PostgreSQL thật
+# 2. Đẩy cấu trúc bảng vào PostgreSQL
 dotnet ef database update \
   --project src/Library.Infrastructure \
   --startup-project src/Library.Api
+```
+
+#### Bước 6: Sử dụng `LibraryDbContext` trong code thực tế (Repository / Service)
+Theo nguyên lý Dependency Injection, tầng Repository sẽ nhận `LibraryDbContext` thông qua hàm khởi tạo (Constructor Injection) để thực hiện các thao tác CRUD:
+
+```csharp
+using Library.Domain.Entities;
+using Library.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace Library.Infrastructure.Repositories;
+
+public class BookRepository
+{
+    private readonly LibraryDbContext _context;
+
+    public BookRepository(LibraryDbContext context)
+    {
+        _context = context;
+    }
+
+    // 1. READ: Lấy danh sách kèm theo thông tin Category (JOIN)
+    public async Task<List<Book>> GetAllBooksAsync()
+    {
+        return await _context.Books
+            .Include(b => b.Category) // Tương đương câu lệnh SQL JOIN
+            .AsNoTracking()          // Tối ưu tốc độ khi chỉ đọc dữ liệu
+            .ToListAsync();
+    }
+
+    // 2. READ BY ID: Tìm sách theo khóa chính
+    public async Task<Book?> GetBookByIdAsync(Guid id)
+    {
+        return await _context.Books.FindAsync(id);
+    }
+
+    // 3. CREATE: Thêm một cuốn sách mới
+    public async Task AddBookAsync(Book book)
+    {
+        await _context.Books.AddAsync(book);
+        await _context.SaveChangesAsync(); // Sinh câu lệnh INSERT INTO
+    }
+
+    // 4. UPDATE: Cập nhật thông tin sách
+    public async Task UpdateBookAsync(Book book)
+    {
+        _context.Books.Update(book);
+        await _context.SaveChangesAsync(); // Sinh câu lệnh UPDATE ... WHERE Id = ...
+    }
+
+    // 5. DELETE: Xóa sách
+    public async Task DeleteBookAsync(Guid id)
+    {
+        var book = await _context.Books.FindAsync(id);
+        if (book != null)
+        {
+            _context.Books.Remove(book);
+            await _context.SaveChangesAsync(); // Sinh câu lệnh DELETE FROM ... WHERE Id = ...
+        }
+    }
+}
 ```
 
 ---
