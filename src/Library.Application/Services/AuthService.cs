@@ -49,9 +49,12 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var user = await _userRepository.GetByEmailAsync(request.Email.ToLower().Trim());
+        var identifier = request.Email.Trim();
+        var user = await _userRepository.GetByEmailOrPhoneAsync(identifier)
+                   ?? await _userRepository.GetByEmailAsync(identifier.ToLower());
+
         if (user == null || string.IsNullOrEmpty(user.PasswordHash))
-            throw new UnauthorizedException("Email hoặc mật khẩu không đúng.");
+            throw new UnauthorizedException("Email/Số điện thoại hoặc mật khẩu không đúng.");
 
         var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
         if (!isPasswordValid)

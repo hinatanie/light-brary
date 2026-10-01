@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Library.Application.DTOs.Auth;
 
 public record LoginRequest(
-    [Required(ErrorMessage = "Email không được để trống")]
-    [EmailAddress(ErrorMessage = "Email không đúng định dạng")]
+    [Required(ErrorMessage = "Email hoặc Số điện thoại không được để trống")]
     string Email,
 
     [Required(ErrorMessage = "Mật khẩu không được để trống")]

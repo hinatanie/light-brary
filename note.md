@@ -22,11 +22,12 @@ Tài liệu được sắp xếp theo **lộ trình chiều sâu kiến thức t
   ├── 6. Bảng Tra Cứu Annotation (Spring Boot vs .NET) & Cơ Chế Mapping
   └── 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
        ↓
-[Giai đoạn 5: Hiện Thực Tính Năng Đầu Cuối (Full-Flow Feature)]
-  └── 8. Toàn Tập Luồng Hoạt Động CRUD Đầu Sách (Book API - Clean Architecture)
+[Giai đoạn 5: Hiện Thực Tính Năng & Bảo Mật (Features & Security)]
+  ├── 8. Toàn Tập Luồng Hoạt Động CRUD Đầu Sách (Book API - Clean Architecture)
+  └── 9. Chuyên Đề Xác Thực & Phân Quyền (Authentication, BCrypt, JWT & Seed Admin Lần Đầu)
        ↓
 [Tra cứu]
-  └── 9. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
+  └── 10. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
 ```
 
 ---
@@ -726,7 +727,521 @@ Bước 7 (Api):            Đăng ký AddScoped trong Program.cs & Test
 
 ---
 
-## 9. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
+## 9. Chuyên Đề Xác Thực & Phân Quyền: Toàn Tập Về Auth & JWT (JSON Web Token)
+
+> 🎯 **Mục tiêu:** Nắm vững bản chất cơ chế xác thực không trạng thái (Stateless Authentication) với JWT, thuật toán băm mật khẩu an toàn BCrypt, quy trình chi tiết từng bước khi sinh token (Token Generation) và khi thẩm định token (Token Validation / Verification) trong mô hình Clean Architecture của ASP.NET Core.
+
+---
+
+### 9.1. Tổng Quan Về Kiến Trúc Auth Trong Hệ Thống (Clean Architecture)
+
+Trong hệ thống thư viện LightBrary, nghiệp vụ xác thực (Authentication) tuân thủ nghiêm ngặt nguyên lý đảo ngược phụ thuộc (Dependency Inversion) của Clean Architecture:
+
+```text
+src/
+├── Library.Domain/
+│   └── Entities/
+│       ├── User.cs               # Thực thể người dùng (Id, Email, FullName, PasswordHash...)
+│       ├── Role.cs               # Vai trò hệ thống (Admin, Librarian, Member...)
+│       └── UserRole.cs           # Bảng liên kết nhiều-nhiều User <-> Role
+│
+├── Library.Application/
+│   ├── Interfaces/
+│   │   ├── IAuthService.cs       # Hợp đồng Use Case: RegisterAsync, LoginAsync
+│   │   ├── IUserRepository.cs    # Hợp đồng truy xuất User từ DB
+│   │   └── Authentication/
+│   │       ├── IPasswordHasher.cs    # Hợp đồng băm & kiểm tra mật khẩu
+│   │       └── IJwtTokenService.cs   # Hợp đồng sinh chuỗi JWT Token
+│   ├── DTOs/Auth/
+│   │   ├── RegisterRequest.cs    # DTO đăng ký độc giả
+│   │   ├── LoginRequest.cs       # DTO đăng nhập (Email + Password)
+│   │   └── AuthResponse.cs       # Trả về Token + User Info + Expiration
+│   └── Services/
+│       └── AuthService.cs        # Triển khai logic nghiệp vụ điều phối
+│
+├── Library.Infrastructure/
+│   ├── Authentication/
+│   │   ├── PasswordHasher.cs     # Triển khai bằng thư viện BCrypt.Net-Next
+│   │   └── JwtTokenService.cs    # Triển khai bằng System.IdentityModel.Tokens.Jwt
+│   └── Repositories/
+│       └── UserRepository.cs     # Thao tác DbSet<User> qua EF Core
+│
+└── Library.Api/
+    ├── Controllers/
+    │   └── AuthController.cs     # Endpoint POST /api/v1/auth/register & /login
+    └── appsettings.json          # Cấu hình SecretKey, Issuer, Audience, Expiration
+```
+
+#### Phân chia vai trò rõ ràng:
+- **Tầng Application:** Định nghĩa *hợp đồng* (`IPasswordHasher`, `IJwtTokenService`) mà **không phụ thuộc** vào bất kỳ thư viện bên ngoài nào.
+- **Tầng Infrastructure:** Nắm giữ chi tiết kỹ thuật (dùng thuật toán BCrypt gì, dùng thư viện JWT nào). Sau này nếu muốn đổi từ BCrypt sang Argon2, hoặc đổi từ JWT đối xứng sang RSA bất đối xứng, ta chỉ việc viết class mới trong Infrastructure mà không làm thay đổi một dòng code nghiệp vụ nào ở Application!
+
+---
+
+### 9.2. Cơ Chế Băm Mật Khẩu An Toàn Với BCrypt
+
+> [!CAUTION]
+> **Quy tắc bất di bất dịch:** Tuyệt đối **không bao giờ lưu mật khẩu dạng văn bản thô (Plain Text)** hoặc dùng các hàm băm cũ đã bị phá vỡ như MD5, SHA-1 vào cơ sở dữ liệu.
+
+#### 1. Bản chất của BCrypt
+BCrypt là hàm băm mật khẩu một chiều (One-Way Hashing) có các đặc tính vượt trội:
+- **Tự động sinh Muối (Salt):** Mỗi lần băm cùng một mật khẩu `"123456"`, BCrypt sẽ tự động sinh ra một chuỗi Salt ngẫu nhiên khác nhau. Nhờ đó, hai người dùng đặt cùng một mật khẩu sẽ có hai chuỗi hash hoàn toàn khác nhau trong DB $\rightarrow$ vô hiệu hóa kỹ thuật tấn công bằng bảng tra cứu trước (Rainbow Table).
+- **Hệ số làm chậm (Work Factor / Cost Factor):** Dự án sử dụng `workFactor: 12` ($2^{12} = 4096$ vòng tính toán lặp). Việc này cố tình làm phép toán mất khoảng 200–300ms, khiến hacker không thể dùng GPU/máy đào để dò vét cạn (Brute-force) hàng triệu mật khẩu mỗi giây.
+
+#### 2. So sánh quá trình Hash vs Verify
+
+| Thao tác | Hàm gọi | Mục đích | Kết quả |
+| :--- | :--- | :--- | :--- |
+| **Băm khi Đăng ký** | `BCrypt.HashPassword(password, 12)` | Tạo chuỗi băm kèm salt để lưu vào cột `PasswordHash` | Ví dụ: `$2a$12$e8k...Z8u` |
+| **Đối soát khi Đăng nhập**| `BCrypt.Verify(rawPassword, hashFromDb)` | Tách Salt từ hash cũ trong DB, băm mật khẩu người dùng vừa nhập rồi so sánh | `true` (khớp) hoặc `false` |
+
+---
+
+### 9.3. Cấu Trúc Bản Chất Của Một JWT (JSON Web Token)
+
+JWT là một chuẩn mở (RFC 7519) dùng để truyền tải thông tin an toàn giữa client và server dưới dạng một chuỗi JSON được ký điện tử (Digitally Signed).
+
+Một chuỗi JWT hoàn chỉnh gồm **3 phần** ngăn cách nhau bởi dấu chấm (`.`):
+
+$$\mathbf{JWT} = \underbrace{\text{eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9}}_{\text{1. Header}} \;.\; \underbrace{\text{eyJzdWIiOiIxMjM0NTYiLCJuYW1lIjoiQW5oIFZ1In0}}_{\text{2. Payload (Claims)}} \;.\; \underbrace{\text{SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c}}_{\text{3. Signature}}$$
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1. HEADER (Base64Url Encoded)                                          │
+│    { "alg": "HS256", "typ": "JWT" }                                    │
+│    -> Khai báo thuật toán mã hóa (HMAC-SHA256) và loại token           │
+├────────────────────────────────────────────────────────────────────────┤
+│ 2. PAYLOAD / CLAIMS (Base64Url Encoded)                                │
+│    {                                                                   │
+│      "sub": "u-1234",          // Subject: Khóa chính UserId          │
+│      "email": "user@gmail.com",// Email người dùng                     │
+│      "name": "Nguyễn Văn A",   // Họ tên người dùng                    │
+│      "jti": "guid-token-id",   // JWT ID: Mã duy nhất của token        │
+│      "exp": 1759363200,        // Hạn hết hạn (Unix timestamp)         │
+│      "iss": "LightBraryAPI",   // Bên phát hành token (Issuer)         │
+│      "aud": "LightBraryClient" // Đối tượng sử dụng token (Audience)   │
+│    }                                                                   │
+├────────────────────────────────────────────────────────────────────────┤
+│ 3. SIGNATURE (Chữ ký số chống giả mạo)                                 │
+│    HMACSHA256(                                                         │
+│      base64UrlEncode(Header) + "." + base64UrlEncode(Payload),         │
+│      SecretKey // Chỉ có Server nắm giữ bí mật này!                    │
+│    )                                                                   │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+> [!WARNING]
+> **Payload chỉ được Encode Base64 chứ KHÔNG MÃ HÓA:** Bất kỳ ai có token đều có thể decode tại [jwt.io](https://jwt.io) để đọc toàn bộ dữ liệu trong Payload. Do đó, **tuyệt đối không để mật khẩu, số căn cước hoặc dữ liệu nhạy cảm vào Claims của JWT!**
+> Chữ ký (`Signature`) đảm bảo rằng nếu hacker cố tình sửa nội dung Payload (ví dụ sửa `sub` sang UserId khác), chữ ký tính lại bằng `SecretKey` của server sẽ không khớp và token lập tức bị từ chối.
+
+---
+
+### 9.4. Quá Trình Tạo Token (Token Generation Flow)
+
+Quá trình này diễn ra khi người dùng gọi API **Đăng nhập (`/api/v1/auth/login`)** hoặc **Đăng ký (`/api/v1/auth/register`)**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Client (Frontend / Swagger)
+    participant Ctrl as AuthController
+    participant Svc as AuthService
+    participant Repo as UserRepository
+    participant Hasher as PasswordHasher (BCrypt)
+    participant Jwt as JwtTokenService
+    participant DB as PostgreSQL (AspNetUsers)
+
+    Client->>Ctrl: POST /api/v1/auth/login (Email, Password)
+    Ctrl->>Svc: LoginAsync(request)
+    Svc->>Repo: GetByEmailAsync(email)
+    Repo->>DB: SELECT * FROM AspNetUsers WHERE Email = ...
+    DB-->>Repo: User Entity (kèm PasswordHash)
+    Repo-->>Svc: User Entity
+
+    alt User không tồn tại hoặc sai Email
+        Svc-->>Ctrl: throw UnauthorizedException("Email hoặc mật khẩu không đúng")
+        Ctrl-->>Client: 401 Unauthorized
+    end
+
+    Svc->>Hasher: Verify(rawPassword, user.PasswordHash)
+    alt Mật khẩu không khớp
+        Hasher-->>Svc: false
+        Svc-->>Ctrl: throw UnauthorizedException("Email hoặc mật khẩu không đúng")
+        Ctrl-->>Client: 401 Unauthorized
+    else Mật khẩu chính xác
+        Hasher-->>Svc: true
+    end
+
+    Note over Svc,Jwt: Mật khẩu hợp lệ -> Bắt đầu sinh JWT Token
+    Svc->>Jwt: GenerateToken(user)
+    
+    rect rgb(240, 248, 255)
+        Note over Jwt: Các bước xử lý bên trong JwtTokenService:
+        Note over Jwt: 1. Đọc Jwt:SecretKey từ appsettings.json
+        Note over Jwt: 2. Tạo SymmetricSecurityKey(bytes) & SigningCredentials (HMAC-SHA256)
+        Note over Jwt: 3. Khởi tạo danh sách Claims (sub: Id, email, name: FullName, jti)
+        Note over Jwt: 4. Tạo JwtSecurityToken(issuer, audience, claims, expires, credentials)
+        Note over Jwt: 5. Dùng JwtSecurityTokenHandler().WriteToken() -> Chuỗi JWT thô
+    end
+
+    Jwt-->>Svc: Chuỗi JWT string
+    Svc->>Jwt: GetExpiration()
+    Jwt-->>Svc: Thời gian hết hạn (DateTime)
+    Svc-->>Ctrl: AuthResponse (Token, UserId, FullName, Email, ExpiresAt)
+    Ctrl-->>Client: 200 OK + JSON Token
+```
+
+#### Phân tích chi tiết code tạo token trong [JwtTokenService.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Authentication/JwtTokenService.cs):
+```csharp
+public string GenerateToken(User user)
+{
+    // 1. Lấy khóa bí mật từ cấu hình (tối thiểu 32 ký tự / 256 bits)
+    var secretKey = _configuration["Jwt:SecretKey"]!;
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+    
+    // 2. Chỉ định thuật toán ký đối xứng: HMAC-SHA256
+    var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    // 3. Đóng gói thông tin danh tính (Claims) vào Payload
+    var claims = new List<Claim>
+    {
+        new(JwtRegisteredClaimNames.Sub, user.Id),              // Khóa chính User
+        new(JwtRegisteredClaimNames.Email, user.Email),          // Email độc giả
+        new(JwtRegisteredClaimNames.Name, user.FullName),        // Họ tên đầy đủ
+        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // ID ngẫu nhiên của token
+    };
+
+    var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
+
+    // 4. Lắp ráp các thành phần lại thành token hoàn chỉnh
+    var token = new JwtSecurityToken(
+        issuer: _configuration["Jwt:Issuer"],       // Ai cấp token?
+        audience: _configuration["Jwt:Audience"],   // Dành cho ai dùng?
+        claims: claims,                             // Thông tin Payload
+        expires: DateTime.UtcNow.AddMinutes(expirationMinutes), // Thời hạn sống
+        signingCredentials: credentials             // Chữ ký bảo mật
+    );
+
+    // 5. Serialize thành chuỗi string dạng: Header.Payload.Signature
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+```
+
+---
+
+### 9.5. Quá Trình Xác Thực Token (Token Verification / Authentication Flow)
+
+Khi Client đã có token, họ sẽ gửi kèm token vào mỗi request gọi đến các API cần bảo vệ (như tạo phiếu mượn, xem lịch sử, trả sách) qua HTTP Header chuẩn:
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Dưới đây là sơ đồ chi tiết **cơ chế chặn và xác thực tự động** của ASP.NET Core Middleware trước khi request kịp chạm đến Controller:
+
+```mermaid
+flowchart TD
+    Client(["Client gửi Request\nHeader: Authorization: Bearer <Token>"])
+    
+    subgraph Pipeline ["ASP.NET Core HTTP Request Pipeline"]
+        ExMW["ExceptionHandlingMiddleware"]
+        AuthMW["AuthenticationMiddleware\n(UseAuthentication)"]
+        JwtHandler["JwtSecurityTokenHandler / JwtBearerOptions"]
+        AuthzMW["AuthorizationMiddleware\n(UseAuthorization)"]
+        Controller["BorrowRecordsController\nAction Method"]
+    end
+
+    Client --> ExMW
+    ExMW --> AuthMW
+    AuthMW -->|Trích xuất chuỗi Token| JwtHandler
+
+    %% Các bước kiểm tra tính hợp lệ của Token
+    subgraph Checks ["5 Bước Thẩm Định Chữ Ký & Dữ Liệu"]
+        C1{"1. Format đúng 3 phần\nvà tiền tố 'Bearer'?"}
+        C2{"2. Chữ ký hợp lệ?\n(Signature == HMAC(H+P, SecretKey))"}
+        C3{"3. Token còn hạn?\n(exp > DateTime.UtcNow)"}
+        C4{"4. Đúng Issuer\nvà Audience?"}
+        C5["5. Giải mã Payload Claims\n-> Tạo ClaimsIdentity\n-> Gán vào HttpContext.User"]
+    end
+
+    JwtHandler --> C1
+    C1 -- Không --> Fail401["Xác thực thất bại\n(AuthenticateResult.Fail)"]
+    C1 -- Đúng --> C2
+    C2 -- Bị sửa đổi/Sai Key --> Fail401
+    C2 -- Đúng Key --> C3
+    C3 -- Hết hạn --> Fail401
+    C3 -- Còn hạn --> C4
+    C4 -- Sai --> Fail401
+    C4 -- Đúng --> C5
+
+    C5 --> AuthzMW
+    Fail401 --> AuthzMW
+
+    AuthzMW --> IsAuth{"Endpoint có yêu cầu [Authorize]\nhoặc quyền hạn gì không?"}
+    IsAuth -- "Không hợp lệ / Chưa login" --> Resp401(["Trả về 401 Unauthorized\n(hoặc 403 Forbidden nếu thiếu Role)"])
+    IsAuth -- "Hợp lệ" --> Controller
+
+    Controller --> Resp200(["Xử lý logic thành công\nTrả về 200 OK / 201 Created"])
+```
+
+#### 5 bước kiểm tra ngầm định kỳ của JWT Bearer:
+1. **Trích xuất chuỗi:** Lấy token từ header `Authorization`, cắt bỏ tiền tố `Bearer `.
+2. **Kiểm tra chữ ký (Signature Verification):** Lấy Header và Payload nhận được, băm lại bằng `SecretKey` đã cấu hình trên server. So sánh kết quả tính ra với chữ ký đính kèm trong token. Nếu không khớp $\rightarrow$ Token đã bị kẻ xấu giả mạo nội dung $\rightarrow$ Bác bỏ ngay.
+3. **Kiểm tra thời hạn (`exp` - Lifetime):** So khớp `exp` với giờ hiện tại của hệ thống (`DateTime.UtcNow`). Nếu token đã quá hạn $\rightarrow$ Bác bỏ.
+4. **Kiểm tra bên cấp & bên nhận (`iss`, `aud`):** Đảm bảo token này do chính hệ sinh thái LightBrary phát hành chứ không phải token trôi nổi từ hệ thống khác.
+5. **Khởi tạo danh tính (`ClaimsPrincipal`):** Nếu vượt qua tất cả bài kiểm tra, ASP.NET Core tự động phân rã các Claims (`sub`, `email`, `name`) thành đối tượng `ClaimsPrincipal` và gán vào thuộc tính:
+   ```csharp
+   HttpContext.User
+   ```
+   Nhờ vậy, ở bất kỳ Controller nào, bạn đều có thể dễ dàng lấy ID người đang gọi API bằng cách:
+   ```csharp
+   var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+   ```
+
+---
+
+### 9.6. Hướng Dẫn Kích Hoạt JWT Authentication Chuẩn Vào `Program.cs`
+
+Để kích hoạt toàn bộ cơ chế bảo vệ tự động bằng JWT, ta cấu hình trong dự án:
+
+#### 1. Cài đặt Package xác thực
+```bash
+dotnet add src/Library.Api package Microsoft.AspNetCore.Authentication.JwtBearer
+```
+
+#### 2. Cấu hình khóa trong [appsettings.json](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/appsettings.json)
+```json
+"Jwt": {
+  "Issuer": "LightBraryAPI",
+  "Audience": "LightBraryClient",
+  "SecretKey": "DayLaChuoiBiMatSieuDaiToiThieu32KyTuChoThuatToanHMACSHA256!",
+  "ExpirationMinutes": "60"
+}
+```
+
+#### 3. Đăng ký Middleware trong [Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs)
+```csharp
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+
+// 1. Đăng ký dịch vụ Authentication & quy định tham số thẩm định Token
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["SecretKey"]!;
+
+builder.Services.AddAuthentication(options =>
+{
+    // Đặt JWT Bearer làm chuẩn xác thực mặc định
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero // Không cho phép độ trễ thời gian sau khi hết hạn
+    };
+});
+
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// ...
+// LƯU Ý THỨ TỰ: UseAuthentication PHẢI ĐỨNG TRƯỚC UseAuthorization!
+app.UseAuthentication(); // 1. Bạn là ai? (Giải mã JWT)
+app.UseAuthorization();  // 2. Bạn có quyền làm việc này không? (Kiểm tra Role/Policy)
+// ...
+```
+
+#### 4. Sử dụng Attribute `[Authorize]` trên Controller
+```csharp
+[ApiController]
+[Route("api/v1/borrow-records")]
+[Authorize] // Bắt buộc phải đăng nhập và gửi Token hợp lệ mới được gọi API này!
+public class BorrowRecordsController : ControllerBase
+{
+    // Chỉ Admin mới được thực hiện thao tác này
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id) { ... }
+}
+```
+
+---
+
+### 9.7. Quy Trình Tự Động Khởi Tạo Admin Mặc Định Khi Chạy Lần Đầu (First-Run Database Seeding)
+
+> 🎯 **Mục tiêu:** Hiểu rõ bài toán "con gà và quả trứng" khi khởi tạo hệ thống mới, cách kiểm tra trạng thái cơ sở dữ liệu khi ứng dụng vừa bật lên (Startup Check), quy trình băm mật khẩu và gán quyền tự động cho tài khoản Quản trị viên (Admin).
+
+#### 1. Bài toán đặt ra
+Khi triển khai dự án lần đầu tiên (hoặc vừa reset sạch cơ sở dữ liệu), hệ thống chưa có bất kỳ tài khoản nào trong bảng `AspNetUsers`. Nếu không có tài khoản thì không ai có quyền đăng nhập vào phân hệ quản trị hoặc mượn sách.
+
+Do đó, ta cần một cơ chế **Seed dữ liệu tự động (Idempotent Initialization)**:
+- Chỉ chạy và tạo tài khoản khi trong database **chưa có bất kỳ người dùng nào**.
+- Nếu đã có ít nhất 1 người dùng (từ lần chạy thứ hai trở đi), hệ thống sẽ **bỏ qua hoàn toàn**, không tạo trùng lặp hay ghi đè dữ liệu cũ.
+
+#### 2. Sơ đồ luồng hoạt động khi khởi động (Startup Flow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as Program.cs (ASP.NET Core Host)
+    participant Scope as IServiceScope
+    participant Seeder as DbInitializer (Infrastructure)
+    participant Hasher as PasswordHasher (BCrypt)
+    participant DB as PostgreSQL (LibraryDbContext)
+
+    App->>App: Build WebApplication & Services
+    App->>Scope: CreateScope() (Mở phạm vi dịch vụ tạm thời)
+    Scope->>Seeder: DbInitializer.SeedAsync(context, passwordHasher, logger)
+    
+    Seeder->>DB: await context.Users.AnyAsync()
+    DB-->>Seeder: Trả về kết quả (true/false)
+
+    alt hasUsers == true (Đã có người dùng trong DB)
+        Note over Seeder: Không làm gì cả, hệ thống đã hoạt động bình thường
+    else hasUsers == false (Hệ thống mới tinh, chạy lần đầu!)
+        Note over Seeder: 🚀 Bắt đầu quy trình cấp phát Admin mặc định
+        
+        Seeder->>DB: Kiểm tra Role 'Admin' trong AspNetRoles
+        alt Chưa có Role Admin
+            Seeder->>DB: context.Roles.Add(new Role { Name = "Admin" })
+        end
+        
+        Seeder->>Hasher: Hash("Asdf1234!") với BCrypt (workFactor: 12)
+        Hasher-->>Seeder: Chuỗi mật khẩu băm ($2a$12$...)
+        
+        Note over Seeder: Khởi tạo User với SĐT 0916114536
+        Seeder->>DB: context.Users.Add(User: FullName, SĐT, Email, PasswordHash)
+        Seeder->>DB: context.UserRoles.Add(UserRole: UserId <-> RoleId)
+        Seeder->>DB: await context.SaveChangesAsync()
+        
+        Note over Seeder: Ghi log thông báo khởi tạo thành công ✅
+    end
+
+    Scope-->>App: Giải phóng scope
+    App->>App: app.Run() (Lắng nghe HTTP Request trên port 5048)
+```
+
+#### 3. Chi tiết mã nguồn triển khai
+
+##### A. Tầng Infrastructure — [DbInitializer.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/DbInitializer.cs)
+```csharp
+public static class DbInitializer
+{
+    public static async Task SeedAsync(LibraryDbContext context, IPasswordHasher passwordHasher, ILogger logger)
+    {
+        try
+        {
+            // 1. Kiểm tra xem đã có bất kỳ User nào trong cơ sở dữ liệu chưa
+            var hasUsers = await context.Users.AnyAsync();
+            if (!hasUsers)
+            {
+                logger.LogInformation("🚀 Phát hiện hệ thống chạy lần đầu. Đang tạo tài khoản Admin mặc định...");
+
+                // 2. Tạo Role Admin nếu chưa có
+                var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+                if (adminRole == null)
+                {
+                    adminRole = new Role { Id = Guid.NewGuid().ToString(), Name = "Admin" };
+                    await context.Roles.AddAsync(adminRole);
+                }
+
+                // 3. Tạo tài khoản Admin với SĐT 0916114536 và mật khẩu băm của Asdf1234!
+                var adminUser = new User
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    FullName = "Quản trị viên (Admin)",
+                    Email = "admin@lightbrary.vn",
+                    PhoneNumber = "0916114536",
+                    PasswordHash = passwordHasher.Hash("Asdf1234!"), // Băm bằng BCrypt
+                    Address = "Hệ thống Thư viện LightBrary",
+                    CreatedAt = DateTime.UtcNow
+                };
+                await context.Users.AddAsync(adminUser);
+
+                // 4. Gán quyền Admin vào bảng liên kết AspNetUserRoles
+                await context.UserRoles.AddAsync(new UserRole
+                {
+                    UserId = adminUser.Id,
+                    RoleId = adminRole.Id
+                });
+
+                // 5. Lưu toàn bộ trong một Transaction duy nhất
+                await context.SaveChangesAsync();
+                logger.LogInformation("✅ Đã tạo thành công tài khoản Admin: SĐT '{PhoneNumber}', Email '{Email}', Mật khẩu 'Asdf1234!'.",
+                    adminUser.PhoneNumber, adminUser.Email);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Bắt lỗi an toàn nếu DB Docker chưa bật hoặc chưa chạy migration
+            logger.LogWarning(ex, "⚠️ Không thể kiểm tra/khởi tạo dữ liệu người dùng ban đầu. Có thể DB chưa sẵn sàng.");
+        }
+    }
+}
+```
+
+##### B. Tầng Api — Gọi Seeder trong [Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs)
+Trong ASP.NET Core, các dịch vụ `DbContext` và `IPasswordHasher` được đăng ký với vòng đời **Scoped** (chỉ sống trong một phạm vi request). Do hàm `Main` / `Program.cs` chạy ở cấp độ Root Container, ta phải tạo một phạm vi tạm thời bằng `app.Services.CreateScope()`:
+
+```csharp
+// ─── Khởi tạo dữ liệu ban đầu (First Run / Seed Admin) ─────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<LibraryDbContext>();
+    var passwordHasher = services.GetRequiredService<IPasswordHasher>();
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    await DbInitializer.SeedAsync(context, passwordHasher, logger);
+}
+
+app.Run(); // Bắt đầu nhận request
+```
+
+##### C. Hỗ trợ đăng nhập linh hoạt bằng cả Số Điện Thoại & Email
+Để thuận tiện khi sử dụng tài khoản vừa tạo, endpoint `POST /api/v1/auth/login` được nâng cấp để độc giả hoặc Admin có thể đăng nhập bằng **Số điện thoại (`0916114536`)** hoặc **Email (`admin@lightbrary.vn`)**:
+
+```csharp
+// Trong AuthService.cs:
+public async Task<AuthResponse> LoginAsync(LoginRequest request)
+{
+    var identifier = request.Email.Trim(); // Người dùng có thể nhập Email hoặc SĐT
+    var user = await _userRepository.GetByEmailOrPhoneAsync(identifier)
+               ?? await _userRepository.GetByEmailAsync(identifier.ToLower());
+
+    if (user == null || string.IsNullOrEmpty(user.PasswordHash))
+        throw new UnauthorizedException("Email/Số điện thoại hoặc mật khẩu không đúng.");
+
+    var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
+    // ...
+}
+```
+
+#### 4. Bảng thông tin tài khoản Admin mặc định
+
+| Thuộc tính | Giá trị thiết lập | Ghi chú |
+| :--- | :--- | :--- |
+| **Họ và tên** | `Quản trị viên (Admin)` | Tên hiển thị trên hệ thống và giao diện |
+| **Số điện thoại** | `0916114536` | Dùng để đăng nhập hoặc liên hệ |
+| **Email** | `admin@lightbrary.vn` | Dùng để đăng nhập hoặc nhận thông báo |
+| **Mật khẩu thô** | `Asdf1234!` | Chỉ nhập khi đăng nhập, không lưu vào DB |
+| **Mật khẩu trong DB** | Chuỗi băm BCrypt (`$2a$12$...`) | Bảo mật chống trộm cắp dữ liệu |
+| **Vai trò (Role)** | `Admin` | Có toàn quyền quản trị sách, thể loại, bản sao và độc giả |
+
+---
+
+## 10. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
 
 | Danh mục | Thao tác | Câu lệnh Terminal |
 | :--- | :--- | :--- |

@@ -33,6 +33,17 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBorrowRecordService, BorrowRecordService>();
 
+// ─── CORS ──────────────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -42,6 +53,8 @@ var app = builder.Build();
 // ─── Middleware Pipeline ───────────────────────────────────────────────────────
 // Xử lý lỗi toàn cục tập trung
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseCors();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -59,5 +72,15 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ─── Khởi tạo dữ liệu ban đầu (First Run / Seed Admin) ─────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<LibraryDbContext>();
+    var passwordHasher = services.GetRequiredService<IPasswordHasher>();
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    await DbInitializer.SeedAsync(context, passwordHasher, logger);
+}
 
 app.Run();
