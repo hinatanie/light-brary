@@ -16,11 +16,11 @@ Tài liệu được sắp xếp theo **lộ trình chiều sâu kiến thức t
   └── 4. Tích hợp Giao diện Test API (Swagger UI)
        ↓
 [Giai đoạn 3: Nghiệp vụ Lõi (Domain)]
-  └── 5. Thiết kế Entity Chuẩn Clean Architecture (POCO, Quan hệ)
+  └── 5. Thiết Kế Entity Theo Phong Cách Spring Boot (Data Annotations, Quan Hệ)
        ↓
 [Giai đoạn 4: Hạ tầng Dữ liệu (Infrastructure & EF Core)]
-  ├── 6. Cấu hình Database nâng cao (Fluent API Configuration)
-  └── 7. Kết nối PostgreSQL & Quản trị Migration (DbContext, EF CLI)
+  ├── 6. Bảng Tra Cứu Annotation (Spring Boot vs .NET) & Cơ Chế Mapping
+  └── 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
        ↓
 [Tra cứu]
   └── 8. Bảng Tổng Hợp Lệnh Thường Dùng (Cheatsheet)
@@ -203,127 +203,197 @@ app.Run();
 
 ---
 
-## 5. Thiết Kế Entity Chuẩn Clean Architecture
+## 5. Thiết Kế Entity Theo Phong Cách Spring Boot (Data Annotations)
 
-> 🎯 **Mục tiêu:** Xây dựng mô hình dữ liệu (Domain Entities) chuẩn OOP, đóng gói tốt và không bị phụ thuộc vào database bên ngoài.
+> 🎯 **Mục tiêu:** Khai báo toàn bộ ràng buộc (Khóa chính, Not Null, Độ dài, Tên bảng, Quan hệ 1-N...) trực tiếp ngay bên trong class Entity, mang lại trải nghiệm tiện lợi và quen thuộc như JPA/Hibernate trong Spring Boot.
 
-### 5.1. Nguyên tắc cốt lõi của Entity tầng Domain
+### 5.1. Nguyên tắc thiết kế Entity theo Data Annotations
 1. **Nằm tại:** `src/Library.Domain/Entities/`.
-2. **POCO thuần C#:** Không kế thừa class của EF Core, không gắn các annotation database nặng nề (`[Table]`, `[ForeignKey]`) trực tiếp lên Entity nhằm giữ Domain trong sạch.
-3. **Mỗi file một class:** Tên file trùng tên class (ví dụ: `Book.cs`).
-4. **Hỗ trợ Audit:** Có các trường theo dõi thời gian (`CreatedAt`, `UpdatedAt`).
+2. **Tất cả ràng buộc nằm trọn trong Entity:** Sử dụng các Data Annotations có sẵn trong `System.ComponentModel.DataAnnotations` và `System.ComponentModel.DataAnnotations.Schema` (thư viện chuẩn của .NET, không cần cài thêm package DB nào vào `Domain`).
+3. **Không cần tạo file cấu hình riêng:** Toàn bộ metadata đã nằm trên từng thuộc tính, không cần phải tạo thêm các file `IEntityTypeConfiguration` rườm rà.
+4. **Hỗ trợ Audit:** Có các trường theo dõi thời gian tạo và cập nhật (`CreatedAt`, `UpdatedAt`).
 
 ### 5.2. Code mẫu hoàn chỉnh: `Category.cs` & `Book.cs`
 
 Tạo file [src/Library.Domain/Entities/Category.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Domain/Entities/Category.cs):
 ```csharp
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Library.Domain.Entities;
 
+[Table("categories")] // Tương đương @Table(name = "categories")
 public class Category
 {
+    [Key] // Tương đương @Id
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Tương đương @GeneratedValue(strategy = GenerationType.IDENTITY)
     public int Id { get; set; }
+
+    [Required] // Tương đương @Column(nullable = false)
+    [MaxLength(100)] // Tương đương @Column(length = 100)
+    [Column("name")]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    [Column("description")]
     public string? Description { get; set; }
 
-    // Navigation property: Một thể loại có thể chứa nhiều quyển sách (Quan hệ 1-N)
+    // Navigation property: Một thể loại có nhiều quyển sách (Tương đương @OneToMany(mappedBy = "category"))
     public ICollection<Book> Books { get; set; } = new List<Book>();
 }
 ```
 
 Tạo file [src/Library.Domain/Entities/Book.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Domain/Entities/Book.cs):
 ```csharp
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Library.Domain.Entities;
 
+[Table("books")] // Tương đương @Table(name = "books")
 public class Book
 {
+    [Key] // Tương đương @Id
     public Guid Id { get; set; } = Guid.NewGuid();
+
+    [Required] // Tương đương @Column(nullable = false)
+    [MaxLength(250)] // Tương đương @Column(length = 250)
+    [Column("title")]
     public string Title { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(150)]
+    [Column("author")]
     public string Author { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(20)]
+    [Column("isbn")]
     public string Isbn { get; set; } = string.Empty;
+
+    [Column("published_year")]
     public int PublishedYear { get; set; }
+
+    [Column("available_copies")]
     public int AvailableCopies { get; set; }
+
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
 
     // Khóa ngoại (Foreign Key) trỏ tới Category
+    [Column("category_id")]
     public int CategoryId { get; set; }
-    
-    // Navigation property: Trỏ ngược về đối tượng Category
+
+    // Navigation property: Trỏ ngược về Category (Tương đương @ManyToOne + @JoinColumn(name = "category_id"))
+    [ForeignKey(nameof(CategoryId))]
     public Category? Category { get; set; }
 }
 ```
 
 ---
 
-## 6. Cấu Hình Database Nâng Cao (Fluent API)
+## 6. Bảng Tra Cứu Annotation (Spring Boot JPA vs .NET EF Core)
 
-> 🎯 **Mục tiêu:** Thiết lập các ràng buộc dữ liệu (độ dài chuỗi, unique index, quan hệ bảng) ở tầng Infrastructure thay vì nhồi nhét vào Domain.
+> 🎯 **Mục tiêu:** Giúp lập trình viên từ Spring Boot tra cứu nhanh các annotation tương ứng trong C# .NET để thiết kế Entity mà không cần bỡ ngỡ.
 
-Theo mục 12 trong [CONTRIBUTING.md](file:///home/dww/Personal/Code/Csharp/light-brary/CONTRIBUTING.md), ta tạo configuration riêng cho từng Entity tại `Library.Infrastructure/Persistence/Configurations/`.
+### 6.1. Bảng đối chiếu chi tiết
 
-Tạo file `src/Library.Infrastructure/Persistence/Configurations/BookConfiguration.cs`:
-```csharp
-using Library.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+| Tính năng | Spring Boot (JPA / Hibernate) | .NET (EF Core Data Annotations) | Namespace trong C# |
+| :--- | :--- | :--- | :--- |
+| **Khai báo Entity** | `@Entity` | *Không cần* (Class POCO thông thường) | — |
+| **Tên bảng** | `@Table(name = "books")` | `[Table("books")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Khóa chính** | `@Id` | `[Key]` | `System.ComponentModel.DataAnnotations` |
+| **Tự sinh giá trị** | `@GeneratedValue(strategy = IDENTITY)` | `[DatabaseGenerated(DatabaseGeneratedOption.Identity)]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Tên cột** | `@Column(name = "book_title")` | `[Column("book_title")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Bắt buộc / Not null** | `@Column(nullable = false)` | `[Required]` hoặc thuộc tính non-nullable `string` | `System.ComponentModel.DataAnnotations` |
+| **Giới hạn độ dài** | `@Column(length = 200)` | `[MaxLength(200)]` hoặc `[StringLength(200)]` | `System.ComponentModel.DataAnnotations` |
+| **Kiểu cột dữ liệu** | `@Column(columnDefinition = "TEXT")` | `[Column(TypeName = "text")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Độ chính xác số tiền**| `@Column(precision = 18, scale = 2)` | `[Column(TypeName = "decimal(18,2)")]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Bỏ qua không lưu DB**| `@Transient` | `[NotMapped]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Quan hệ N - 1** | `@ManyToOne` + `@JoinColumn(name = "category_id")` | `[ForeignKey(nameof(CategoryId))]` | `System.ComponentModel.DataAnnotations.Schema` |
+| **Quan hệ 1 - N** | `@OneToMany(mappedBy = "category")` | `public ICollection<Book> Books { get; set; }` | Tự động nhận diện qua Navigation Property |
 
-namespace Library.Infrastructure.Persistence.Configurations;
+### 6.2. Ưu điểm khi dùng Data Annotations
+1. **Trực quan, quen thuộc:** Nhìn vào class Entity là thấy ngay tên bảng, tên cột, độ dài chuỗi và các ràng buộc y hệt như code Entity trong Spring Boot.
+2. **Không tốn công tạo nhiều file:** Bỏ qua hoàn toàn việc phải tạo hàng chục file `XxxConfiguration.cs`.
+3. **Tái sử dụng Validation:** Các annotation như `[Required]`, `[MaxLength]` có thể tái sử dụng ngay trong các lớp DTO để validate dữ liệu đầu vào của API.
 
-public class BookConfiguration : IEntityTypeConfiguration<Book>
-{
-    public void Configure(EntityTypeBuilder<Book> builder)
-    {
-        // Chỉ định tên bảng trong CSDL
-        builder.ToTable("Books");
-
-        // Thiết lập khóa chính
-        builder.HasKey(b => b.Id);
-
-        // Ràng buộc thuộc tính
-        builder.Property(b => b.Title)
-            .IsRequired()
-            .HasMaxLength(250);
-
-        builder.Property(b => b.Author)
-            .IsRequired()
-            .HasMaxLength(150);
-
-        builder.Property(b => b.Isbn)
-            .IsRequired()
-            .HasMaxLength(20);
-
-        // Đánh chỉ mục Index đảm bảo mã ISBN là duy nhất
-        builder.HasIndex(b => b.Isbn).IsUnique();
-
-        // Ràng buộc quan hệ 1 - N (Một Category có nhiều Book)
-        builder.HasOne(b => b.Category)
-            .WithMany(c => c.Books)
-            .HasForeignKey(b => b.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
-    }
-}
-```
+> [!NOTE]
+> **Xử lý Unique Index:** Với các ràng buộc đặc thù mà Data Annotation cơ bản chưa hỗ trợ trực tiếp (như đánh chỉ mục duy nhất cho `Isbn`), ta chỉ cần khai báo ngắn gọn trong hàm `OnModelCreating` của [LibraryDbContext.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/LibraryDbContext.cs) mà không cần tạo file Configuration riêng rẽ.
 
 ---
 
-## 7. Kết Nối PostgreSQL & Quản Trị Migration (EF Core)
+## 7. Toàn Tập Về LibraryDbContext & Quản Trị Database (EF Core)
 
-> 🎯 **Mục tiêu:** Kết nối mã nguồn C# với CSDL PostgreSQL và dùng công cụ Migration để tự động sinh bảng, cập nhật cấu trúc database.
+> 🎯 **Mục tiêu:** Hiểu rõ bản chất của `LibraryDbContext` (cầu nối giữa C# và Database, Change Tracking, Unit of Work) và nắm vững quy trình 6 bước từ cài đặt, cấu hình, migration cho đến thao tác CRUD thực tế.
 
-### Bước 1: Cài đặt Packages cho EF Core
+---
+
+### 7.1. `LibraryDbContext` Là Gì & Mục Đích Tồn Tại Của Nó?
+
+`LibraryDbContext` (kế thừa từ `DbContext` của Entity Framework Core) là **thành phần trung tâm của tầng Hạ tầng (`Library.Infrastructure`)**. Nó đóng vai trò là **cây cầu duy nhất** kết nối giữa mã nguồn hướng đối tượng C# và cơ sở dữ liệu quan hệ PostgreSQL.
+
+```text
+[ Ứng dụng C# ]                                                [ Database ]
+Entities (Book, Category) <---> [ LibraryDbContext ] <---> Bảng PostgreSQL (Books, Categories)
+                                       │
+                      ┌────────────────┴────────────────┐
+                      ▼                                 ▼
+         Dịch LINQ thành câu lệnh SQL          Quản lý Transaction an toàn
+         (SELECT, INSERT, UPDATE, DELETE)           (Mẫu Unit of Work)
+```
+
+#### 4 Nhiệm vụ cốt lõi:
+1. **Quản lý phiên kết nối (Database Session):** Chịu trách nhiệm mở kết nối tới PostgreSQL khi cần, gửi lệnh thực thi và tự động đóng/giải phóng kết nối an toàn.
+2. **Cung cấp các bảng dữ liệu ảo (`DbSet<T>`):** Mỗi thuộc tính `DbSet<Book>`, `DbSet<Category>` đại diện cho một bảng trong CSDL, cho phép bạn viết truy vấn bằng mã C# thuần (LINQ) thay vì phải tự viết các câu lệnh SQL dài dòng.
+3. **Theo dõi sự thay đổi (Change Tracking):** Khi bạn lấy một đối tượng lên từ DB và sửa giá trị (ví dụ: `book.AvailableCopies -= 1;`), DbContext sẽ tự động ghi nhớ trạng thái này để tự sinh ra câu lệnh `UPDATE` tương ứng khi lưu.
+4. **Mẫu thiết kế Unit of Work:** Khi bạn thực hiện thêm, sửa, xóa nhiều bảng cùng lúc, EF Core sẽ gom tất cả lại và chỉ thực thi trong **duy nhất một Transaction** khi bạn gọi hàm `await _context.SaveChangesAsync()`. Nếu có bất kỳ dòng nào bị lỗi, toàn bộ thay đổi sẽ được rollback (hủy bỏ), đảm bảo tính toàn vẹn dữ liệu.
+
+> [!IMPORTANT]
+> **Vòng đời của DbContext (Scoped Lifetime):**
+> Trong ASP.NET Core, `LibraryDbContext` luôn được đăng ký với vòng đời **Scoped**. Điều này có nghĩa là mỗi một HTTP request gửi tới server sẽ được cấp một phiên bản (instance) `LibraryDbContext` riêng biệt và sẽ tự động giải phóng khi request đó kết thúc. Không bao giờ dùng Singleton cho DbContext vì nó không an toàn với đa luồng (thread-unsafe).
+
+---
+
+### 7.2. Toàn Bộ Quy Trình 6 Bước Vận Hành `LibraryDbContext`
+
+Để đưa `LibraryDbContext` vào hoạt động hoàn chỉnh từ lúc khởi tạo đến khi thực sự truy vấn dữ liệu, ta thực hiện tuần tự 6 bước:
+
+```text
+Bước 1: Cài đặt Packages EF Core
+  ↓
+Bước 2: Chuẩn bị Domain Entities (Book, Category...)
+  ↓
+Bước 3: Viết class LibraryDbContext (DbSet, OnModelCreating)
+  ↓
+Bước 4: Cấu hình Connection String & Đăng ký DI trong Program.cs
+  ↓
+Bước 5: Chạy Migration (Sinh bảng thật trong PostgreSQL)
+  ↓
+Bước 6: Inject LibraryDbContext vào Repository/Service để CRUD
+```
+
+#### Bước 1: Cài đặt Packages cần thiết
+Cài driver PostgreSQL cho tầng Infrastructure và công cụ Design để hỗ trợ chạy CLI migration:
 ```bash
-# Cài Npgsql PostgreSQL Provider vào Infrastructure
+# 1. Driver PostgreSQL cho Infrastructure
 dotnet add src/Library.Infrastructure package Npgsql.EntityFrameworkCore.PostgreSQL
 
-# Cài công cụ Design (hỗ trợ tạo migration) vào Infrastructure và Api
+# 2. Công cụ Design (cho cả Infrastructure và Api)
 dotnet add src/Library.Infrastructure package Microsoft.EntityFrameworkCore.Design
 dotnet add src/Library.Api package Microsoft.EntityFrameworkCore.Design
 ```
 
-### Bước 2: Khởi tạo `LibraryDbContext`
-Tạo file `src/Library.Infrastructure/Persistence/LibraryDbContext.cs`:
+#### Bước 2: Chuẩn bị Domain Entities
+DbContext cần biết nó sẽ quản lý những thực thể nào (đã được định nghĩa và gắn Data Annotations theo phong cách Spring Boot ở mục 5 tại `src/Library.Domain/Entities/` như `Book.cs`, `Category.cs`).
+
+#### Bước 3: Khởi tạo file `LibraryDbContext.cs`
+Tạo file tại `src/Library.Infrastructure/Persistence/LibraryDbContext.cs`:
+
 ```csharp
-using System.Reflection;
 using Library.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -331,47 +401,120 @@ namespace Library.Infrastructure.Persistence;
 
 public class LibraryDbContext : DbContext
 {
+    // Constructor nhận cấu hình DbContextOptions (chứa connection string) được truyền từ Program.cs
     public LibraryDbContext(DbContextOptions<LibraryDbContext> options) : base(options)
     {
     }
 
+    // Khai báo các DbSet đại diện cho các bảng dữ liệu
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Category> Categories => Set<Category>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        // Tự động tìm và nạp tất cả cấu hình IEntityTypeConfiguration
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // EF Core tự động nhận diện toàn bộ Data Annotations ([Table], [Key], [Column], [ForeignKey]...) trên các Entity.
+        // Tại đây chỉ cần cấu hình thêm các ràng buộc đặc thù mà Data Annotation chưa hỗ trợ (ví dụ: Index duy nhất cho ISBN):
+        modelBuilder.Entity<Book>()
+            .HasIndex(b => b.Isbn)
+            .IsUnique();
     }
 }
 ```
 
-### Bước 3: Đăng ký `LibraryDbContext` trong `Program.cs`
-Mở [src/Library.Api/Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs) thêm đoạn sau:
-```csharp
-using Library.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+#### Bước 4: Khai báo Connection String & Đăng ký Dependency Injection
+1. Cấu hình thông số kết nối trong [src/Library.Api/appsettings.Development.json](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/appsettings.Development.json):
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Host=localhost;Port=5432;Database=lightbrary_db;Username=postgres;Password=Asdf1234!"
+   }
+   ```
+2. Đăng ký DbContext vào hệ thống trong [src/Library.Api/Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs):
+   ```csharp
+   using Library.Infrastructure.Persistence;
+   using Microsoft.EntityFrameworkCore;
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+   var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseNpgsql(connectionString));
-```
+   builder.Services.AddDbContext<LibraryDbContext>(options =>
+       options.UseNpgsql(connectionString));
+   ```
 
-### Bước 4: Tạo và Áp Dụng Migration
-
+#### Bước 5: Tạo và Áp Dụng Migration
+Đảm bảo container PostgreSQL đang chạy (`docker compose up -d`), sau đó dùng lệnh CLI để tạo bảng thật:
 ```bash
-# 1. Tạo file migration ghi nhận thay đổi (vd: Tạo bảng lần đầu)
+# 1. Tạo file migration ghi nhận thay đổi
 dotnet ef migrations add InitialCreate \
   --project src/Library.Infrastructure \
   --startup-project src/Library.Api \
   --output-dir Persistence/Migrations
 
-# 2. Đẩy cấu trúc bảng vào Database PostgreSQL thật
+# 2. Đẩy cấu trúc bảng vào PostgreSQL
 dotnet ef database update \
   --project src/Library.Infrastructure \
   --startup-project src/Library.Api
+```
+
+#### Bước 6: Sử dụng `LibraryDbContext` trong code thực tế (Repository / Service)
+Theo nguyên lý Dependency Injection, tầng Repository sẽ nhận `LibraryDbContext` thông qua hàm khởi tạo (Constructor Injection) để thực hiện các thao tác CRUD:
+
+```csharp
+using Library.Domain.Entities;
+using Library.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace Library.Infrastructure.Repositories;
+
+public class BookRepository
+{
+    private readonly LibraryDbContext _context;
+
+    public BookRepository(LibraryDbContext context)
+    {
+        _context = context;
+    }
+
+    // 1. READ: Lấy danh sách kèm theo thông tin Category (JOIN)
+    public async Task<List<Book>> GetAllBooksAsync()
+    {
+        return await _context.Books
+            .Include(b => b.Category) // Tương đương câu lệnh SQL JOIN
+            .AsNoTracking()          // Tối ưu tốc độ khi chỉ đọc dữ liệu
+            .ToListAsync();
+    }
+
+    // 2. READ BY ID: Tìm sách theo khóa chính
+    public async Task<Book?> GetBookByIdAsync(Guid id)
+    {
+        return await _context.Books.FindAsync(id);
+    }
+
+    // 3. CREATE: Thêm một cuốn sách mới
+    public async Task AddBookAsync(Book book)
+    {
+        await _context.Books.AddAsync(book);
+        await _context.SaveChangesAsync(); // Sinh câu lệnh INSERT INTO
+    }
+
+    // 4. UPDATE: Cập nhật thông tin sách
+    public async Task UpdateBookAsync(Book book)
+    {
+        _context.Books.Update(book);
+        await _context.SaveChangesAsync(); // Sinh câu lệnh UPDATE ... WHERE Id = ...
+    }
+
+    // 5. DELETE: Xóa sách
+    public async Task DeleteBookAsync(Guid id)
+    {
+        var book = await _context.Books.FindAsync(id);
+        if (book != null)
+        {
+            _context.Books.Remove(book);
+            await _context.SaveChangesAsync(); // Sinh câu lệnh DELETE FROM ... WHERE Id = ...
+        }
+    }
+}
 ```
 
 ---
