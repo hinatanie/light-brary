@@ -754,7 +754,7 @@ src/
 │   │       └── IJwtTokenService.cs   # Hợp đồng sinh chuỗi JWT Token
 │   ├── DTOs/Auth/
 │   │   ├── RegisterRequest.cs    # DTO đăng ký độc giả
-│   │   ├── LoginRequest.cs       # DTO đăng nhập (Email + Password)
+│   │   ├── LoginRequest.cs       # DTO đăng nhập (Số điện thoại + Password)
 │   │   └── AuthResponse.cs       # Trả về Token + User Info + Expiration
 │   └── Services/
 │       └── AuthService.cs        # Triển khai logic nghiệp vụ điều phối

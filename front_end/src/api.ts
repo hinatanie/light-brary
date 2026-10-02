@@ -56,7 +56,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // ─── 1. Auth API ─────────────────────────────────────────────────────────────
 export const authApi = {
-  login: (data: { email: string; password: string }) =>
+  login: (data: { phoneNumber: string; password: string }) =>
     request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),

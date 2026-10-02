@@ -28,6 +28,13 @@ public class AuthService : IAuthService
         if (emailExists)
             throw new ConflictException($"Email '{request.Email}' đã được đăng ký trong hệ thống.");
 
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            var phoneExists = await _userRepository.PhoneNumberExistsAsync(request.PhoneNumber.Trim());
+            if (phoneExists)
+                throw new ConflictException($"Số điện thoại '{request.PhoneNumber}' đã được đăng ký trong hệ thống.");
+        }
+
         var user = new User
         {
             Id = Guid.NewGuid().ToString(),
@@ -49,16 +56,19 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var identifier = request.Email.Trim();
-        var user = await _userRepository.GetByEmailOrPhoneAsync(identifier)
+        var identifier = request.PhoneNumber.Trim();
+
+        // Ưu tiên tìm theo số điện thoại, nếu không tìm theo email
+        var user = await _userRepository.GetByPhoneNumberAsync(identifier)
+                   ?? await _userRepository.GetByEmailOrPhoneAsync(identifier)
                    ?? await _userRepository.GetByEmailAsync(identifier.ToLower());
 
         if (user == null || string.IsNullOrEmpty(user.PasswordHash))
-            throw new UnauthorizedException("Email/Số điện thoại hoặc mật khẩu không đúng.");
+            throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
 
         var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
         if (!isPasswordValid)
-            throw new UnauthorizedException("Email hoặc mật khẩu không đúng.");
+            throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
 
         var token = _jwtTokenService.GenerateToken(user);
         var expiresAt = _jwtTokenService.GetExpiration();

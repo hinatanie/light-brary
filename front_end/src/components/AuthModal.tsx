@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authApi } from '../api';
 import type { AuthResponse } from '../types';
-import { X, LogIn, UserPlus, Lock, Mail, User, Phone, MapPin } from 'lucide-react';
+import { X, LogIn, UserPlus, Lock, Mail, User, Phone, MapPin, Info } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -20,10 +20,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
 
   // Form states
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [loginPhone, setLoginPhone] = useState('0916114536');
+  const [password, setPassword] = useState('Asdf1234!');
   const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
   const [address, setAddress] = useState('');
 
   if (!isOpen) return null;
@@ -34,24 +35,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       if (mode === 'login') {
-        const res = await authApi.login({ email, password });
-        localStorage.setItem('lightbrary_token', res.token);
-        localStorage.setItem('lightbrary_user', JSON.stringify(res));
-        onSuccess(res);
-        onNotify(`Chào mừng ${res.fullName}! Đăng nhập thành công.`);
-        onClose();
-      } else {
-        const res = await authApi.register({
-          fullName,
-          email,
+        const res = await authApi.login({
+          phoneNumber: loginPhone.trim(),
           password,
-          phoneNumber: phoneNumber || undefined,
-          address: address || undefined,
         });
         localStorage.setItem('lightbrary_token', res.token);
         localStorage.setItem('lightbrary_user', JSON.stringify(res));
         onSuccess(res);
-        onNotify(`Tạo tài khoản thành công cho ${res.fullName}!`);
+        onNotify(`Chào mừng ${res.fullName}! Đăng nhập thành công bằng SĐT ${loginPhone}.`);
+        onClose();
+      } else {
+        const res = await authApi.register({
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password,
+          phoneNumber: registerPhone.trim(),
+          address: address.trim() || undefined,
+        });
+        localStorage.setItem('lightbrary_token', res.token);
+        localStorage.setItem('lightbrary_user', JSON.stringify(res));
+        onSuccess(res);
+        onNotify(`Tạo tài khoản thành công cho ${res.fullName}! Bạn có thể đăng nhập bằng SĐT này.`);
         onClose();
       }
     } catch (err: any) {
@@ -67,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {mode === 'login' ? <LogIn size={20} color="#f59e0b" /> : <UserPlus size={20} color="#f59e0b" />}
-            <h3>{mode === 'login' ? 'Đăng Nhập Độc Giả' : 'Đăng Ký Tài Khoản Thư Viện'}</h3>
+            <h3>{mode === 'login' ? 'Đăng Nhập Bằng Số Điện Thoại' : 'Đăng Ký Tài Khoản Thư Viện'}</h3>
           </div>
           <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
@@ -78,63 +82,93 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             className={`tab-btn ${mode === 'login' ? 'active' : ''}`}
             onClick={() => setMode('login')}
           >
-            Đăng nhập
+            Đăng nhập bằng SĐT
           </button>
           <button
             type="button"
             className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
             onClick={() => setMode('register')}
           >
-            Đăng ký mới
+            Đăng ký độc giả mới
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="form-content">
-          {mode === 'register' && (
-            <div className="form-group">
-              <label><User size={14} /> Họ và tên *</label>
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nguyễn Văn A"
-              />
-            </div>
-          )}
-
-          <div className="form-group">
-            <label><Mail size={14} /> Địa chỉ Email *</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="docgia@lightbrary.vn"
-            />
-          </div>
-
-          <div className="form-group">
-            <label><Lock size={14} /> Mật khẩu *</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tối thiểu 6 ký tự"
-            />
-          </div>
-
-          {mode === 'register' && (
+          {mode === 'login' ? (
             <>
+              <div className="login-tip-banner">
+                <Info size={16} style={{ flexShrink: 0 }} />
+                <span>
+                  Admin mặc định: SĐT <strong>0916114536</strong> | Mật khẩu: <strong>Asdf1234!</strong>
+                </span>
+              </div>
+
               <div className="form-group">
-                <label><Phone size={14} /> Số điện thoại</label>
+                <label><Phone size={14} /> Số điện thoại đăng nhập *</label>
                 <input
                   type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
+                  placeholder="0916114536"
+                />
+              </div>
+
+              <div className="form-group">
+                <label><Lock size={14} /> Mật khẩu *</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu..."
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <label><User size={14} /> Họ và tên *</label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                />
+              </div>
+
+              <div className="form-group">
+                <label><Phone size={14} /> Số điện thoại (Dùng để đăng nhập) *</label>
+                <input
+                  type="tel"
+                  required
+                  value={registerPhone}
+                  onChange={(e) => setRegisterPhone(e.target.value)}
                   placeholder="0912345678"
+                />
+              </div>
+
+              <div className="form-group">
+                <label><Mail size={14} /> Địa chỉ Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="docgia@lightbrary.vn"
+                />
+              </div>
+
+              <div className="form-group">
+                <label><Lock size={14} /> Mật khẩu *</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
                 />
               </div>
 
