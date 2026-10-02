@@ -1261,3 +1261,92 @@ public async Task<AuthResponse> LoginAsync(LoginRequest request)
 | | Xuất mã SQL ra file | `dotnet ef migrations script --project src/Library.Infrastructure --startup-project src/Library.Api --output script.sql` |
 | **Kiểm thử** | Xem Swagger UI | `http://localhost:5048/swagger` |
 | | Xem OpenAPI Schema JSON | `http://localhost:5048/openapi/v1.json` |
+
+
+---
+
+## 11. Kiến Trúc Frontend Phân Quyền: React Router & Role-Based Portals
+
+> 🎯 **Mục tiêu:** Tái cấu trúc giao diện thư viện từ Single-Page Tabs sang hệ thống định tuyến phân cấp (Hierarchical Routing) với **3 cổng thông tin riêng biệt** tương ứng với 3 vai trò người dùng trong hệ thống thư viện: Quản trị viên (`Admin`), Nhân viên thủ thư (`Staff`), và Bạn đọc (`Member`).
+
+```mermaid
+flowchart TD
+    App["App.tsx\n(BrowserRouter + AuthProvider)"] --> RootRedirect{"/ (Root Redirect)\nKiểm tra trạng thái & Vai trò"}
+    
+    RootRedirect -->|Chưa đăng nhập| Login["/login\nTrang đăng nhập SĐT"]
+    RootRedirect -->|Vai trò Admin| AdminPortal["/admin/*\nCổng Quản Trị Viên"]
+    RootRedirect -->|Vai trò Staff| StaffPortal["/staff/*\nCổng Thủ Thư"]
+    RootRedirect -->|Vai trò Member| MemberPortal["/member/*\nCổng Bạn Đọc"]
+
+    subgraph AdminPortal ["1. Cổng Quản Trị Viên (/admin/*)"]
+        A_Dash["/admin - Dashboard tổng quan toàn viện"]
+        A_Books["/admin/books - Quản lý đầu sách (CRUD)"]
+        A_Cats["/admin/categories - Quản lý thể loại (CRUD)"]
+        A_Copies["/admin/book-copies - Quản lý bản sao vật lý"]
+        A_Borrows["/admin/borrows - Quản lý tất cả phiếu mượn"]
+        A_Users["/admin/users - Quản lý người dùng & Phân quyền"]
+    end
+
+    subgraph StaffPortal ["2. Cổng Thủ Thư (/staff/*)"]
+        S_Dash["/staff - Bàn làm việc (Theo dõi mượn & quá hạn)"]
+        S_Borrows["/staff/borrows - Tạo phiếu mượn & Xác nhận trả sách"]
+        S_Books["/staff/books - Tra cứu đầu sách (Read-Only)"]
+        S_Copies["/staff/book-copies - Kiểm tra tình trạng bản sao"]
+    end
+
+    subgraph MemberPortal ["3. Cổng Bạn Đọc (/member/*)"]
+        M_Dash["/member - Sách đang mượn & Hạn trả"]
+        M_Borrows["/member/borrows - Lịch sử các phiếu mượn của tôi"]
+        M_Profile["/member/profile - Thông tin tài khoản & Cập nhật"]
+    end
+```
+
+### 11.1. Cấu Trúc Thư Mục Frontend Mới (`front_end/src/`)
+
+```text
+front_end/src/
+├── contexts/
+│   ├── AuthContext.tsx           # Quản lý phiên đăng nhập (JWT token, user session, hasRole)
+│   └── ToastContext.tsx          # Hệ thống thông báo toast toàn cục
+├── components/
+│   ├── Header.tsx                # Thanh điều hướng trên cùng, huy hiệu vai trò, profile & logout
+│   ├── Sidebar.tsx               # Menu bên trái tự động hiển thị link phù hợp theo vai trò
+│   ├── ProtectedRoute.tsx        # Route Guard bảo vệ trang theo danh sách quyền (allowedRoles)
+│   ├── Toast.tsx                 # Giao diện hộp thoại thông báo nổi
+│   ├── BooksTab.tsx              # Component hiển thị sách (hỗ trợ readOnly cho Staff)
+│   ├── BookCopiesTab.tsx         # Component bản sao (hỗ trợ readOnly cho Staff)
+│   ├── CategoriesTab.tsx         # Component danh mục thể loại
+│   ├── BorrowRecordsTab.tsx      # Quản lý mượn trả & tính tiền phạt
+│   └── UsersTab.tsx              # Danh sách người dùng & Modal phân quyền
+├── layouts/
+│   ├── AuthLayout.tsx            # Khung giao diện cho Đăng nhập / Đăng ký
+│   ├── AdminLayout.tsx           # Khung cổng Admin (Header + Sidebar Admin + Content)
+│   ├── StaffLayout.tsx           # Khung cổng Staff (Header + Sidebar Staff + Content)
+│   └── MemberLayout.tsx          # Khung cổng Member (Header + Sidebar Member + Content)
+├── pages/
+│   ├── LoginPage.tsx             # Đăng nhập bằng số điện thoại
+│   ├── RegisterPage.tsx          # Đăng ký độc giả mới
+│   ├── UnauthorizedPage.tsx      # Lỗi 403 khi truy cập trái quyền
+│   ├── NotFoundPage.tsx          # Lỗi 404 trang không tồn tại
+│   ├── admin/                    # Các trang thuộc cổng Admin
+│   ├── staff/                    # Các trang thuộc cổng Nhân viên
+│   └── member/                   # Các trang thuộc cổng Khách hàng
+├── api.ts                        # Client gọi REST API (thêm /auth/me, /roles, /my/borrow-records)
+├── types.ts                      # Định nghĩa kiểu dữ liệu TypeScript
+└── App.tsx                       # Cấu hình cây Router tổng thể
+```
+
+### 11.2. Phân Quyền Chi Tiết Giữa 3 Cổng
+
+| Tính năng | Cổng Admin (`/admin`) | Cổng Nhân Viên (`/staff`) | Cổng Bạn Đọc (`/member`) |
+| :--- | :---: | :---: | :---: |
+| **Xem Dashboard thống kê** | Toàn hệ thống | Nghiệp vụ mượn trả & quá hạn | Sách của bản thân |
+| **Thêm / Sửa / Xóa Thể loại** | ✅ Có | ❌ Không | ❌ Không |
+| **Thêm / Sửa / Xóa Đầu sách** | ✅ Có | ❌ Chỉ xem (Read-only) | ❌ Không |
+| **Thêm / Quản lý Bản sao kệ** | ✅ Có | ❌ Chỉ xem (Read-only) | ❌ Không |
+| **Tạo phiếu mượn sách** | ✅ Có | ✅ Có (Tại quầy) | ❌ Không (Thủ thư lập) |
+| **Xác nhận trả sách & Thu phạt** | ✅ Có | ✅ Có | ❌ Không |
+| **Xem lịch sử mượn sách** | Toàn bộ độc giả | Toàn bộ độc giả | Chỉ của chính mình |
+| **Xem danh sách người dùng** | ✅ Có | ❌ Không | ❌ Không |
+| **Gán & Phân quyền vai trò** | ✅ Có (Admin/Staff/Member) | ❌ Không | ❌ Không |
+| **Cập nhật hồ sơ cá nhân** | Toàn bộ | Bản thân | Bản thân |
