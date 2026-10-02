@@ -45,6 +45,7 @@ public class BookService : IBookService
             Author = request.Author.Trim(),
             Isbn = request.Isbn?.Trim(),
             PublishYear = request.PublishYear,
+            ImageUrl = request.ImageUrl?.Trim(),
             CategoryId = request.CategoryId,
             CreatedAt = DateTime.UtcNow
         };
@@ -75,6 +76,7 @@ public class BookService : IBookService
         existingBook.Author = request.Author.Trim();
         existingBook.Isbn = request.Isbn?.Trim();
         existingBook.PublishYear = request.PublishYear;
+        existingBook.ImageUrl = request.ImageUrl?.Trim();
         existingBook.CategoryId = request.CategoryId;
 
         await _bookRepository.UpdateAsync(existingBook);
@@ -102,6 +104,7 @@ public class BookService : IBookService
             book.Author,
             book.Isbn,
             book.PublishYear,
+            book.ImageUrl,
             book.CategoryId,
             book.Category?.Name,
             book.CreatedAt

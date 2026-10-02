@@ -6,6 +6,7 @@ public record BookResponse(
     string Author,
     string? Isbn,
     int? PublishYear,
+    string? ImageUrl,
     int CategoryId,
     string? CategoryName,
     DateTime CreatedAt

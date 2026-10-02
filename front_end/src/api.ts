@@ -113,6 +113,7 @@ export const booksApi = {
     author: string;
     isbn?: string;
     publishYear?: number;
+    imageUrl?: string;
     categoryId: number;
   }) =>
     request<Book>('/books', {
@@ -126,6 +127,7 @@ export const booksApi = {
       author: string;
       isbn?: string;
       publishYear?: number;
+      imageUrl?: string;
       categoryId: number;
     }
   ) =>

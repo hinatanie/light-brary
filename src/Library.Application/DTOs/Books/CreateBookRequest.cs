@@ -17,6 +17,9 @@ public record CreateBookRequest(
     [Range(1000, 2100, ErrorMessage = "Năm xuất bản không hợp lệ")]
     int? PublishYear,
 
+    [MaxLength(500, ErrorMessage = "Đường dẫn ảnh bìa không được vượt quá 500 ký tự")]
+    string? ImageUrl,
+
     [Required(ErrorMessage = "Thể loại sách không được để trống")]
     int CategoryId
 );
