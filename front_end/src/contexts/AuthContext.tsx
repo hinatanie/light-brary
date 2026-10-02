@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fullName: parsed.fullName,
         email: parsed.email,
         phoneNumber: parsed.phoneNumber || null,
-        roles: Array.isArray(parsed.roles) ? parsed.roles : [],
+        roles: Array.isArray(parsed.roles) && parsed.roles.length > 0 ? parsed.roles : ['Member'],
       };
     } catch {
       return null;
@@ -54,12 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const me: MeResponse = await authApi.getMe();
+      const roles = me.roles && me.roles.length > 0 ? me.roles : ['Member'];
       const updatedUser: UserSession = {
         userId: me.userId,
         fullName: me.fullName,
         email: me.email,
         phoneNumber: me.phoneNumber,
-        roles: me.roles || [],
+        roles,
       };
       setUser(updatedUser);
       localStorage.setItem('lightbrary_user', JSON.stringify(updatedUser));
@@ -80,11 +81,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (data: AuthResponse) => {
     localStorage.setItem('lightbrary_token', data.token);
+    const roles = data.roles && data.roles.length > 0 ? data.roles : ['Member'];
     const session: UserSession = {
       userId: data.userId,
       fullName: data.fullName,
       email: data.email,
-      roles: data.roles || [],
+      roles,
     };
     localStorage.setItem('lightbrary_user', JSON.stringify(session));
     setToken(data.token);

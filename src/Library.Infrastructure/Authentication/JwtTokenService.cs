@@ -28,18 +28,28 @@ public class JwtTokenService : IJwtTokenService
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(ClaimTypes.NameIdentifier, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Name, user.FullName),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
+        bool hasRole = false;
         if (user.UserRoles != null)
         {
             foreach (var userRole in user.UserRoles)
             {
                 if (userRole.Role != null && !string.IsNullOrEmpty(userRole.Role.Name))
+                {
                     claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+                    hasRole = true;
+                }
             }
+        }
+
+        if (!hasRole)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Member"));
         }
 
         var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");

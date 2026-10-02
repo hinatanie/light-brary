@@ -29,7 +29,7 @@ export const LoginPage: React.FC = () => {
 
       // Redirect based on role or state.from
       const from = (location.state as any)?.from?.pathname;
-      if (from && from !== '/login') {
+      if (from && from !== '/login' && from !== '/unauthorized') {
         navigate(from, { replace: true });
         return;
       }
