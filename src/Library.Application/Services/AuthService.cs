@@ -64,6 +64,10 @@ public class AuthService : IAuthService
         var expiresAt = _jwtTokenService.GetExpiration();
 
         var roles = created.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+        if (roles.Count == 0)
+        {
+            roles = new List<string> { "Member" };
+        }
 
         return new AuthResponse(token, created.Id, created.FullName, created.Email, expiresAt, roles);
     }
@@ -84,10 +88,25 @@ public class AuthService : IAuthService
         if (!isPasswordValid)
             throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
 
+        var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+        if (roles.Count == 0)
+        {
+            var memberRole = await _roleRepository.GetByNameAsync("Member");
+            if (memberRole != null)
+            {
+                user.UserRoles ??= new List<UserRole>();
+                user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = memberRole.Id, Role = memberRole });
+                await _userRepository.UpdateUserRolesAsync(user.Id, new List<string> { "Member" });
+                roles.Add("Member");
+            }
+            else
+            {
+                roles.Add("Member");
+            }
+        }
+
         var token = _jwtTokenService.GenerateToken(user);
         var expiresAt = _jwtTokenService.GetExpiration();
-
-        var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
 
         return new AuthResponse(token, user.Id, user.FullName, user.Email, expiresAt, roles);
     }
@@ -99,6 +118,10 @@ public class AuthService : IAuthService
             throw new NotFoundException("Không tìm thấy thông tin người dùng.");
 
         var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+        if (roles.Count == 0)
+        {
+            roles.Add("Member");
+        }
         return new MeResponse(user.Id, user.FullName, user.Email, user.PhoneNumber, roles);
     }
 }

@@ -44,6 +44,11 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
 
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ImageUrl");
+
                     b.Property<string>("Isbn")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")

@@ -26,6 +26,10 @@ public class Book
     [Column("PublishYear")]
     public int? PublishYear { get; set; }
 
+    [MaxLength(500)]
+    [Column("ImageUrl")]
+    public string? ImageUrl { get; set; }
+
     [Column("CategoryId")]
     public int CategoryId { get; set; }
 

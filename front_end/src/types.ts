@@ -11,6 +11,7 @@ export interface Book {
   author: string;
   isbn?: string | null;
   publishYear?: number | null;
+  imageUrl?: string | null;
   categoryId: number;
   categoryName?: string | null;
   createdAt: string;

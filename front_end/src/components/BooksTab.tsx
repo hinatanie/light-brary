@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Book, Category } from '../types';
 import { booksApi } from '../api';
-import { Plus, Search, Edit2, Trash2, BookOpen, Layers, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, Layers, X, Image as ImageIcon } from 'lucide-react';
 
 interface BooksTabProps {
   books: Book[];
@@ -30,6 +30,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
   const [author, setAuthor] = useState('');
   const [isbn, setIsbn] = useState('');
   const [publishYear, setPublishYear] = useState<number | ''>('');
+  const [imageUrl, setImageUrl] = useState('');
   const [categoryId, setCategoryId] = useState<number>(categories[0]?.id || 1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,6 +40,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
     setAuthor('');
     setIsbn('');
     setPublishYear(new Date().getFullYear());
+    setImageUrl('');
     setCategoryId(categories[0]?.id || 1);
     setIsModalOpen(true);
   };
@@ -49,6 +51,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
     setAuthor(book.author);
     setIsbn(book.isbn || '');
     setPublishYear(book.publishYear || '');
+    setImageUrl(book.imageUrl || '');
     setCategoryId(book.categoryId);
     setIsModalOpen(true);
   };
@@ -62,6 +65,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
         author: author.trim(),
         isbn: isbn.trim() || undefined,
         publishYear: publishYear ? Number(publishYear) : undefined,
+        imageUrl: imageUrl.trim() || undefined,
         categoryId: Number(categoryId),
       };
 
@@ -157,6 +161,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>Bìa sách</th>
                   <th>Tiêu đề sách</th>
                   <th>Tác giả</th>
                   <th>Thể loại</th>
@@ -169,6 +174,43 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                 {filteredBooks.map((b) => (
                   <tr key={b.id}>
                     <td>#{b.id}</td>
+                    <td>
+                      {b.imageUrl ? (
+                        <img
+                          src={b.imageUrl}
+                          alt={b.title}
+                          style={{
+                            width: '40px',
+                            height: '54px',
+                            objectFit: 'cover',
+                            borderRadius: '6px',
+                            border: '1px solid #334155',
+                            backgroundColor: '#0f172a',
+                            display: 'block',
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '40px',
+                            height: '54px',
+                            borderRadius: '6px',
+                            background: 'rgba(245, 158, 11, 0.1)',
+                            border: '1px dashed #475569',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#94a3b8',
+                          }}
+                          title="Chưa có ảnh bìa"
+                        >
+                          <BookOpen size={16} />
+                        </div>
+                      )}
+                    </td>
                     <td>
                       <strong>{b.title}</strong>
                     </td>
@@ -285,6 +327,31 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ImageIcon size={14} /> Đường dẫn ảnh bìa sách (Image URL)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://example.com/anh-bia-sach.jpg"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                />
+                {imageUrl && (
+                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>Xem trước:</span>
+                    <img
+                      src={imageUrl}
+                      alt="Ảnh bìa xem trước"
+                      style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #334155' }}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="modal-actions">

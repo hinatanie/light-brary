@@ -26,7 +26,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    const hasRequiredRole = user.roles.some((role) =>
+    const userRoles = user.roles && user.roles.length > 0 ? user.roles : ['Member'];
+    const hasRequiredRole = userRoles.some((role) =>
       allowedRoles.some((allowed) => allowed.toLowerCase() === role.toLowerCase())
     );
 

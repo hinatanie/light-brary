@@ -28,15 +28,23 @@ public class UserService : IUserService
         return MapToResponse(user);
     }
 
-    private static UserResponse MapToResponse(Library.Domain.Entities.User u) => new(
-        u.Id,
-        u.FullName,
-        u.Email,
-        u.PhoneNumber,
-        u.Address,
-        u.CreatedAt,
-        u.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>()
-    );
+    private static UserResponse MapToResponse(Library.Domain.Entities.User u)
+    {
+        var roles = u.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+        if (roles.Count == 0)
+        {
+            roles.Add("Member");
+        }
+        return new UserResponse(
+            u.Id,
+            u.FullName,
+            u.Email,
+            u.PhoneNumber,
+            u.Address,
+            u.CreatedAt,
+            roles
+        );
+    }
 
     public async Task UpdateUserRolesAsync(string id, UpdateUserRolesRequest request)
     {
