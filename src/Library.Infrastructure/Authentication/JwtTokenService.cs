@@ -33,6 +33,15 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
+        if (user.UserRoles != null)
+        {
+            foreach (var userRole in user.UserRoles)
+            {
+                if (userRole.Role != null && !string.IsNullOrEmpty(userRole.Role.Name))
+                    claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+            }
+        }
+
         var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
 
         var token = new JwtSecurityToken(

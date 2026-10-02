@@ -1,6 +1,7 @@
 using Library.Application.DTOs.BorrowRecords;
 using Library.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Library.Api.Controllers;
 
@@ -19,6 +20,7 @@ public class BorrowRecordsController : ControllerBase
     /// Lấy danh sách tất cả phiếu mượn
     /// </summary>
     [HttpGet("borrow-records")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(List<BorrowRecordResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<BorrowRecordResponse>>> GetAll()
     {
@@ -27,9 +29,10 @@ public class BorrowRecordsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy thông tin chi tiết một phiếu mượn (kèm danh sách sách đã mượn)
+    /// Lấy thông tin chi tiết một phiếu mượn
     /// </summary>
     [HttpGet("borrow-records/{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BorrowRecordResponse>> GetById(int id)
@@ -42,6 +45,7 @@ public class BorrowRecordsController : ControllerBase
     /// Lấy lịch sử mượn sách của một người dùng cụ thể
     /// </summary>
     [HttpGet("users/{userId}/borrow-records")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(List<BorrowRecordResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<BorrowRecordResponse>>> GetByUserId(string userId)
@@ -51,9 +55,25 @@ public class BorrowRecordsController : ControllerBase
     }
 
     /// <summary>
-    /// Tạo phiếu mượn sách mới (một hoặc nhiều cuốn cùng lúc)
+    /// Lấy lịch sử mượn sách của bản thân
+    /// </summary>
+    [HttpGet("my/borrow-records")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<ActionResult<List<BorrowRecordResponse>>> GetMyBorrowRecords()
+    {
+        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) 
+                     ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var records = await _borrowRecordService.GetByUserIdAsync(userId);
+        return Ok(records);
+    }
+
+    /// <summary>
+    /// Tạo phiếu mượn sách mới
     /// </summary>
     [HttpPost("borrow-records")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -64,9 +84,10 @@ public class BorrowRecordsController : ControllerBase
     }
 
     /// <summary>
-    /// Xử lý trả sách (một hoặc nhiều cuốn trong cùng phiếu mượn)
+    /// Xử lý trả sách
     /// </summary>
     [HttpPatch("borrow-records/{id:int}/return")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -34,6 +34,34 @@ public class UserService : IUserService
         u.Email,
         u.PhoneNumber,
         u.Address,
-        u.CreatedAt
+        u.CreatedAt,
+        u.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>()
     );
+
+    public async Task UpdateUserRolesAsync(string id, UpdateUserRolesRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
+        await _userRepository.UpdateUserRolesAsync(id, request.RoleNames);
+    }
+
+    public async Task<List<string>> GetUserRolesAsync(string id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
+        return await _userRepository.GetUserRolesAsync(id);
+    }
+
+    public async Task<UserResponse> UpdateUserAsync(string id, UpdateUserRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
+        
+        user.FullName = request.FullName.Trim();
+        user.PhoneNumber = request.PhoneNumber?.Trim();
+        user.Address = request.Address?.Trim();
+        
+        await _userRepository.UpdateUserAsync(user);
+        return MapToResponse(user);
+    }
 }

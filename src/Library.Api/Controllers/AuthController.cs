@@ -1,6 +1,7 @@
 using Library.Application.DTOs.Auth;
 using Library.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Library.Api.Controllers;
 
@@ -38,6 +39,22 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
     {
         var response = await _authService.LoginAsync(request);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Lấy thông tin cá nhân của người dùng hiện tại
+    /// </summary>
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(MeResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MeResponse>> GetMe()
+    {
+        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) 
+                     ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        
+        var response = await _authService.GetMeAsync(userId);
         return Ok(response);
     }
 }

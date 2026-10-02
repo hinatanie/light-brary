@@ -42,6 +42,7 @@ public class CategoriesController : ControllerBase
     /// Tạo mới một thể loại sách
     /// </summary>
     [HttpPost]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -55,6 +56,7 @@ public class CategoriesController : ControllerBase
     /// Cập nhật thông tin thể loại sách
     /// </summary>
     [HttpPut("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -69,6 +71,7 @@ public class CategoriesController : ControllerBase
     /// Xóa một thể loại sách (chặn nếu còn chứa sách)
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -11,15 +11,18 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IRoleRepository _roleRepository;
 
     public AuthService(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        IJwtTokenService jwtTokenService)
+        IJwtTokenService jwtTokenService,
+        IRoleRepository roleRepository)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
+        _roleRepository = roleRepository;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -46,12 +49,23 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow
         };
 
+        var memberRole = await _roleRepository.GetByNameAsync("Member");
+        if (memberRole != null)
+        {
+            user.UserRoles = new List<UserRole>
+            {
+                new UserRole { UserId = user.Id, RoleId = memberRole.Id, Role = memberRole }
+            };
+        }
+
         var created = await _userRepository.AddAsync(user);
 
         var token = _jwtTokenService.GenerateToken(created);
         var expiresAt = _jwtTokenService.GetExpiration();
 
-        return new AuthResponse(token, created.Id, created.FullName, created.Email, expiresAt);
+        var roles = created.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+
+        return new AuthResponse(token, created.Id, created.FullName, created.Email, expiresAt, roles);
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -73,6 +87,18 @@ public class AuthService : IAuthService
         var token = _jwtTokenService.GenerateToken(user);
         var expiresAt = _jwtTokenService.GetExpiration();
 
-        return new AuthResponse(token, user.Id, user.FullName, user.Email, expiresAt);
+        var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+
+        return new AuthResponse(token, user.Id, user.FullName, user.Email, expiresAt, roles);
+    }
+
+    public async Task<MeResponse> GetMeAsync(string userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new NotFoundException("Không tìm thấy thông tin người dùng.");
+
+        var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+        return new MeResponse(user.Id, user.FullName, user.Email, user.PhoneNumber, roles);
     }
 }

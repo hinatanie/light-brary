@@ -12,4 +12,7 @@ public interface IUserRepository
     Task<bool> EmailExistsAsync(string email);
     Task<bool> PhoneNumberExistsAsync(string phoneNumber);
     Task<User> AddAsync(User user);
+    Task UpdateUserRolesAsync(string userId, List<string> roleNames);
+    Task<List<string>> GetUserRolesAsync(string userId);
+    Task UpdateUserAsync(User user);
 }

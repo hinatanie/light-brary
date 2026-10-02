@@ -18,7 +18,15 @@ builder.Services.AddDbContext<LibraryDbContext>(options =>
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
+    options.AddPolicy("StaffOrAdmin", p => p.RequireRole("Admin", "Staff"));
+    options.AddPolicy("MemberOrAbove", p => p.RequireRole("Admin", "Staff", "Member"));
+});
+
 // ─── Dependency Injection: Repositories ───────────────────────────────────────
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IBookCopyRepository, BookCopyRepository>();

@@ -37,6 +37,20 @@ public static class DbInitializer
                     await context.Roles.AddAsync(adminRole);
                 }
 
+                var staffRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Staff");
+                if (staffRole == null)
+                {
+                    staffRole = new Role { Id = Guid.NewGuid().ToString(), Name = "Staff" };
+                    await context.Roles.AddAsync(staffRole);
+                }
+
+                var memberRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Member");
+                if (memberRole == null)
+                {
+                    memberRole = new Role { Id = Guid.NewGuid().ToString(), Name = "Member" };
+                    await context.Roles.AddAsync(memberRole);
+                }
+
                 // Tạo tài khoản Admin theo yêu cầu
                 var adminUser = new User
                 {
