@@ -6,5 +6,6 @@ public record UserResponse(
     string Email,
     string? PhoneNumber,
     string? Address,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    List<string> Roles
 );

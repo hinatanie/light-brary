@@ -9,6 +9,7 @@ interface BooksTabProps {
   onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
   onViewCopies: (bookId: number) => void;
+  readOnly?: boolean;
 }
 
 export const BooksTab: React.FC<BooksTabProps> = ({
@@ -17,6 +18,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
   onRefresh,
   onNotify,
   onViewCopies,
+  readOnly = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
@@ -104,12 +106,16 @@ export const BooksTab: React.FC<BooksTabProps> = ({
     <div className="tab-container">
       <div className="section-header">
         <div>
-          <h2>📚 Danh Mục Đầu Sách</h2>
-          <p className="section-desc">Quản lý danh sách các tựa sách, tác giả, mã ISBN và thể loại</p>
+          <h2>📚 {readOnly ? 'Tra Cứu Đầu Sách' : 'Danh Mục Đầu Sách'}</h2>
+          <p className="section-desc">
+            {readOnly ? 'Tra cứu thông tin tựa sách, tác giả, mã ISBN và tình trạng bản sao' : 'Quản lý danh sách các tựa sách, tác giả, mã ISBN và thể loại'}
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          <Plus size={18} /> Thêm Đầu Sách Mới
-        </button>
+        {!readOnly && (
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} /> Thêm Đầu Sách Mới
+          </button>
+        )}
       </div>
 
       <div className="filter-bar">
@@ -181,20 +187,24 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                         >
                           <Layers size={16} /> Bản sao
                         </button>
-                        <button
-                          className="btn-action"
-                          title="Sửa"
-                          onClick={() => openEditModal(b)}
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          className="btn-action btn-danger"
-                          title="Xóa"
-                          onClick={() => handleDelete(b)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {!readOnly && (
+                          <>
+                            <button
+                              className="btn-action"
+                              title="Sửa"
+                              onClick={() => openEditModal(b)}
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              className="btn-action btn-danger"
+                              title="Xóa"
+                              onClick={() => handleDelete(b)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

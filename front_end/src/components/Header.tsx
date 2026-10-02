@@ -1,55 +1,86 @@
 import React from 'react';
-import type { AuthResponse } from '../types';
-import { BookOpen, User, LogOut, LogIn, Wifi, WifiOff } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { BookOpen, User as UserIcon, LogOut, LogIn, Shield, Briefcase, UserCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
-  currentUser: AuthResponse | null;
-  onOpenAuth: () => void;
-  onLogout: () => void;
-  isConnected: boolean;
+  portalTitle?: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  currentUser,
-  onOpenAuth,
-  onLogout,
-  isConnected,
-}) => {
+export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const getRoleBadge = () => {
+    if (!user || !user.roles || user.roles.length === 0) return null;
+    if (user.roles.includes('Admin')) {
+      return (
+        <span className="badge badge-admin" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dc2626', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+          <Shield size={12} /> Admin
+        </span>
+      );
+    }
+    if (user.roles.includes('Staff')) {
+      return (
+        <span className="badge badge-staff" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#2563eb', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+          <Briefcase size={12} /> Nhân Viên
+        </span>
+      );
+    }
+    return (
+      <span className="badge badge-member" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#059669', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+        <UserCheck size={12} /> Bạn Đọc
+      </span>
+    );
+  };
+
+  const getHomeLink = () => {
+    if (!user || !user.roles) return '/login';
+    if (user.roles.includes('Admin')) return '/admin';
+    if (user.roles.includes('Staff')) return '/staff';
+    return '/member';
+  };
+
   return (
     <header className="app-header">
-      <div className="header-brand">
+      <Link to={getHomeLink()} style={{ textDecoration: 'none' }} className="header-brand">
         <div className="brand-logo">
           <BookOpen size={28} color="#f59e0b" />
         </div>
         <div>
           <h1 className="brand-title">LightBrary</h1>
-          <p className="brand-subtitle">Hệ Thống Quản Lý Thư Viện Hiện Đại</p>
+          <p className="brand-subtitle">
+            {portalTitle ? portalTitle : 'Hệ Thống Quản Lý Thư Viện Hiện Đại'}
+          </p>
         </div>
-      </div>
+      </Link>
 
       <div className="header-actions">
-        <div className={`status-indicator ${isConnected ? 'online' : 'offline'}`}>
-          {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span>{isConnected ? 'Backend: Kết nối tốt' : 'Mất kết nối Backend'}</span>
-        </div>
-
-        {currentUser ? (
+        {isAuthenticated && user ? (
           <div className="user-profile-badge">
             <div className="user-avatar">
-              <User size={16} />
+              <UserIcon size={16} />
             </div>
             <div className="user-details">
-              <span className="user-name">{currentUser.fullName}</span>
-              <span className="user-email">{currentUser.email}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="user-name">{user.fullName}</span>
+                {getRoleBadge()}
+              </div>
+              <span className="user-email">{user.email}</span>
             </div>
-            <button className="btn-logout" onClick={onLogout} title="Đăng xuất">
+            <button className="btn-logout" onClick={handleLogout} title="Đăng xuất">
               <LogOut size={16} />
             </button>
           </div>
         ) : (
-          <button className="btn btn-auth" onClick={onOpenAuth}>
-            <LogIn size={16} /> Đăng Nhập / Đăng Ký
-          </button>
+          <Link to="/login" className="btn btn-auth" style={{ textDecoration: 'none' }}>
+            <LogIn size={16} /> Đăng Nhập
+          </Link>
         )}
       </div>
     </header>

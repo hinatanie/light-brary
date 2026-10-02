@@ -6,6 +6,7 @@ namespace Library.Api.Controllers;
 
 [ApiController]
 [Route("api/v1")]
+[Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
 public class BookCopiesController : ControllerBase
 {
     private readonly IBookCopyService _bookCopyService;

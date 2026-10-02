@@ -35,6 +35,12 @@ export interface User {
   phoneNumber?: string | null;
   address?: string | null;
   createdAt: string;
+  roles?: string[];
+}
+
+export interface Role {
+  id: string;
+  name: string;
 }
 
 export type BorrowRecordStatus = 'Borrowing' | 'Returned' | 'Overdue';
@@ -68,4 +74,19 @@ export interface AuthResponse {
   fullName: string;
   email: string;
   expiresAt: string;
+  roles: string[];
+}
+
+export interface MeResponse {
+  userId: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string | null;
+  roles: string[];
+}
+
+export interface UpdateUserRequest {
+  fullName: string;
+  phoneNumber?: string | null;
+  address?: string | null;
 }

@@ -10,6 +10,7 @@ interface BookCopiesTabProps {
   onClearSelectedBook: () => void;
   onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
+  readOnly?: boolean;
 }
 
 export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
@@ -19,6 +20,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   onClearSelectedBook,
   onRefresh,
   onNotify,
+  readOnly = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -119,14 +121,18 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
     <div className="tab-container">
       <div className="section-header">
         <div>
-          <h2>📦 Quản Lý Bản Sao Sách Vật Lý (Book Copies)</h2>
+          <h2>📦 {readOnly ? 'Tra Cứu Bản Sao Sách Vật Lý' : 'Quản Lý Bản Sao Sách Vật Lý (Book Copies)'}</h2>
           <p className="section-desc">
-            Theo dõi từng cuốn sách thực tế trên kệ thông qua mã vạch (Barcode) và tình trạng bảo quản
+            {readOnly
+              ? 'Kiểm tra tình trạng từng cuốn sách trên kệ thông qua mã vạch (Barcode)'
+              : 'Theo dõi từng cuốn sách thực tế trên kệ thông qua mã vạch (Barcode) và tình trạng bảo quản'}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openAddModal}>
-          <Plus size={18} /> Thêm Bản Sao Vào Kệ
-        </button>
+        {!readOnly && (
+          <button className="btn btn-primary" onClick={openAddModal}>
+            <Plus size={18} /> Thêm Bản Sao Vào Kệ
+          </button>
+        )}
       </div>
 
       {selectedBookId !== null && selectedBook && (
@@ -209,22 +215,26 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                       <span className="condition-text">{c.conditionNote || 'Bình thường'}</span>
                     </td>
                     <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn-action"
-                          title="Cập nhật tình trạng sách"
-                          onClick={() => openConditionModal(c)}
-                        >
-                          <Edit3 size={16} /> Ghi chú
-                        </button>
-                        <button
-                          className="btn-action btn-danger"
-                          title="Xóa bản sao"
-                          onClick={() => handleDelete(c)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      {!readOnly ? (
+                        <div className="action-buttons">
+                          <button
+                            className="btn-action"
+                            title="Cập nhật tình trạng sách"
+                            onClick={() => openConditionModal(c)}
+                          >
+                            <Edit3 size={16} /> Ghi chú
+                          </button>
+                          <button
+                            className="btn-action btn-danger"
+                            title="Xóa bản sao"
+                            onClick={() => handleDelete(c)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ color: '#94a3b8', fontSize: '13px' }}>—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

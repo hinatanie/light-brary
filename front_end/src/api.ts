@@ -3,8 +3,11 @@ import type {
   Book,
   BookCopy,
   User,
+  Role,
   BorrowRecord,
-  AuthResponse
+  AuthResponse,
+  MeResponse,
+  UpdateUserRequest,
 } from './types';
 
 const API_BASE = '/api/v1';
@@ -47,7 +50,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (!response.ok) {
-    const errorMsg = data?.message || data?.title || (typeof data === 'string' && data) || `Yêu cầu thất bại (${response.status})`;
+    const errorMsg =
+      data?.message ||
+      data?.title ||
+      (typeof data === 'string' && data) ||
+      `Yêu cầu thất bại (${response.status})`;
     throw new ApiError(errorMsg, response.status);
   }
 
@@ -56,7 +63,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // ─── 1. Auth API ─────────────────────────────────────────────────────────────
 export const authApi = {
-  login: (data: { email: string; password: string }) =>
+  login: (data: { phoneNumber: string; password: string }) =>
     request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -73,6 +80,8 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  getMe: () => request<MeResponse>('/auth/me'),
 };
 
 // ─── 2. Categories API ───────────────────────────────────────────────────────
@@ -154,14 +163,31 @@ export const bookCopiesApi = {
 export const usersApi = {
   getAll: () => request<User[]>('/users'),
   getById: (id: string) => request<User>(`/users/${id}`),
+  update: (id: string, data: UpdateUserRequest) =>
+    request<User>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  getUserRoles: (id: string) => request<string[]>(`/users/${id}/roles`),
+  updateRoles: (id: string, roleNames: string[]) =>
+    request<void>(`/users/${id}/roles`, {
+      method: 'PUT',
+      body: JSON.stringify({ roleNames }),
+    }),
   getUserBorrowRecords: (userId: string) =>
     request<BorrowRecord[]>(`/users/${userId}/borrow-records`),
 };
 
-// ─── 6. Borrow Records API ───────────────────────────────────────────────────
+// ─── 6. Roles API ────────────────────────────────────────────────────────────
+export const rolesApi = {
+  getAll: () => request<Role[]>('/roles'),
+};
+
+// ─── 7. Borrow Records API ───────────────────────────────────────────────────
 export const borrowRecordsApi = {
   getAll: () => request<BorrowRecord[]>('/borrow-records'),
   getById: (id: number) => request<BorrowRecord>(`/borrow-records/${id}`),
+  getMyBorrowRecords: () => request<BorrowRecord[]>('/my/borrow-records'),
   create: (data: {
     userId: string;
     dueDate: string;

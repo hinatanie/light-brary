@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import type { User, BorrowRecord } from '../types';
 import { usersApi } from '../api';
-import { Search, History, Mail, Phone, MapPin, X, BookOpen } from 'lucide-react';
+import {
+  Search,
+  History,
+  Mail,
+  Phone,
+  MapPin,
+  X,
+  BookOpen,
+  Shield,
+  Briefcase,
+  UserCheck,
+  Check,
+  RefreshCw
+} from 'lucide-react';
 
 interface UsersTabProps {
   users: User[];
   onNotify: (text: string, type?: 'success' | 'error') => void;
+  onRefresh?: () => void;
 }
 
-export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
+export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userBorrows, setUserBorrows] = useState<BorrowRecord[]>([]);
   const [loadingBorrows, setLoadingBorrows] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  // Role Management State
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [roleUser, setRoleUser] = useState<User | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [submittingRoles, setSubmittingRoles] = useState(false);
 
   const viewUserHistory = async (user: User) => {
     setSelectedUser(user);
@@ -23,9 +43,42 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
       const records = await usersApi.getUserBorrowRecords(user.id);
       setUserBorrows(records);
     } catch (err: any) {
-      onNotify(err.message || 'Lỗi khi tải lịch sử mượn trả của độc giả', 'error');
+      onNotify(err.message || 'Lỗi khi tải lịch sử mượn trả của người dùng', 'error');
     } finally {
       setLoadingBorrows(false);
+    }
+  };
+
+  const openRoleModal = (user: User) => {
+    setRoleUser(user);
+    setUserRoles(user.roles && user.roles.length > 0 ? [...user.roles] : ['Member']);
+    setIsRoleModalOpen(true);
+  };
+
+  const toggleRole = (role: string) => {
+    setUserRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  };
+
+  const handleSaveRoles = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roleUser) return;
+    if (userRoles.length === 0) {
+      onNotify('Người dùng phải có ít nhất 1 vai trò!', 'error');
+      return;
+    }
+
+    setSubmittingRoles(true);
+    try {
+      await usersApi.updateRoles(roleUser.id, userRoles);
+      onNotify(`Đã cập nhật vai trò cho "${roleUser.fullName}" thành công!`);
+      setIsRoleModalOpen(false);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      onNotify(err.message || 'Lỗi khi cập nhật vai trò người dùng', 'error');
+    } finally {
+      setSubmittingRoles(false);
     }
   };
 
@@ -36,12 +89,95 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
       (u.phoneNumber && u.phoneNumber.includes(searchTerm))
   );
 
+  const renderRoleBadges = (roles?: string[]) => {
+    if (!roles || roles.length === 0) {
+      return (
+        <span
+          className="badge"
+          style={{ background: '#334155', color: '#94a3b8', fontSize: '11px', padding: '2px 8px' }}
+        >
+          Chưa gán
+        </span>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {roles.map((role) => {
+          if (role.toLowerCase() === 'admin') {
+            return (
+              <span
+                key={role}
+                className="badge"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  color: '#ef4444',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <Shield size={10} /> Admin
+              </span>
+            );
+          }
+          if (role.toLowerCase() === 'staff') {
+            return (
+              <span
+                key={role}
+                className="badge"
+                style={{
+                  background: 'rgba(59, 130, 246, 0.2)',
+                  color: '#3b82f6',
+                  border: '1px solid rgba(59, 130, 246, 0.4)',
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <Briefcase size={10} /> Staff
+              </span>
+            );
+          }
+          return (
+            <span
+              key={role}
+              className="badge"
+              style={{
+                background: 'rgba(16, 185, 129, 0.2)',
+                color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                fontSize: '11px',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <UserCheck size={10} /> Member
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="tab-container">
       <div className="section-header">
         <div>
-          <h2>👥 Danh Sách Độc Giả Thư Viện</h2>
-          <p className="section-desc">Quản lý tài khoản độc giả và tra cứu lịch sử mượn trả riêng biệt</p>
+          <h2>👥 Quản Lý Người Dùng & Phân Quyền</h2>
+          <p className="section-desc">
+            Danh sách tài khoản độc giả, nhân viên, quản trị viên và cấu hình phân quyền hệ thống
+          </p>
         </div>
       </div>
 
@@ -50,7 +186,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
           <Search size={18} className="search-icon" />
           <input
             type="text"
-            placeholder="Tìm theo tên độc giả, email, số điện thoại..."
+            placeholder="Tìm theo tên người dùng, email, số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -60,27 +196,32 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
       <div className="table-card">
         {filteredUsers.length === 0 ? (
           <div className="empty-state">
-            <p>Không tìm thấy độc giả nào phù hợp.</p>
+            <p>Không tìm thấy người dùng nào phù hợp.</p>
           </div>
         ) : (
           <div className="table-responsive">
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Mã độc giả</th>
+                  <th>Mã ID</th>
                   <th>Họ và tên</th>
                   <th>Email</th>
                   <th>Số điện thoại</th>
+                  <th>Vai trò</th>
                   <th>Địa chỉ</th>
                   <th>Ngày tham gia</th>
-                  <th>Lịch sử mượn</th>
+                  <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.map((u) => (
                   <tr key={u.id}>
-                    <td><code>{u.id.slice(0, 8)}...</code></td>
-                    <td><strong>{u.fullName}</strong></td>
+                    <td>
+                      <code>{u.id.slice(0, 8)}...</code>
+                    </td>
+                    <td>
+                      <strong>{u.fullName}</strong>
+                    </td>
                     <td>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Mail size={14} color="#64748b" /> {u.email}
@@ -91,23 +232,39 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Phone size={14} color="#64748b" /> {u.phoneNumber}
                         </span>
-                      ) : '—'}
+                      ) : (
+                        '—'
+                      )}
                     </td>
+                    <td>{renderRoleBadges(u.roles)}</td>
                     <td>
                       {u.address ? (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <MapPin size={14} color="#64748b" /> {u.address}
                         </span>
-                      ) : '—'}
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td>{new Date(u.createdAt).toLocaleDateString('vi-VN')}</td>
                     <td>
-                      <button
-                        className="btn-action btn-copy"
-                        onClick={() => viewUserHistory(u)}
-                      >
-                        <History size={16} /> Lịch sử mượn
-                      </button>
+                      <div className="action-buttons">
+                        <button
+                          className="btn-action"
+                          style={{ color: '#f59e0b' }}
+                          title="Phân quyền tài khoản"
+                          onClick={() => openRoleModal(u)}
+                        >
+                          <Shield size={15} /> Quyền
+                        </button>
+                        <button
+                          className="btn-action btn-copy"
+                          title="Xem lịch sử mượn sách"
+                          onClick={() => viewUserHistory(u)}
+                        >
+                          <History size={15} /> Lịch sử
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -116,6 +273,177 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
           </div>
         )}
       </div>
+
+      {/* Modal Phân Quyền Vai Trò */}
+      {isRoleModalOpen && roleUser && (
+        <div className="modal-backdrop" onClick={() => setIsRoleModalOpen(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Shield size={20} color="#f59e0b" />
+                <h3>Phân Quyền: {roleUser.fullName}</h3>
+              </div>
+              <button className="btn-icon" onClick={() => setIsRoleModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRoles} className="form-content">
+              <p style={{ margin: '0 0 16px 0', color: '#94a3b8', fontSize: '13px' }}>
+                Email: <strong>{roleUser.email}</strong> | SĐT: <strong>{roleUser.phoneNumber || 'Chưa cập nhật'}</strong>
+              </p>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>
+                  Chọn các vai trò kích hoạt:
+                </label>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* Role Admin */}
+                  <label
+                    onClick={() => toggleRole('Admin')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: userRoles.includes('Admin') ? 'rgba(239, 68, 68, 0.15)' : '#0f172a',
+                      border: userRoles.includes('Admin') ? '1px solid #ef4444' : '1px solid #334155',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: userRoles.includes('Admin') ? '#ef4444' : 'transparent',
+                        border: '1px solid #ef4444',
+                        color: '#fff',
+                      }}
+                    >
+                      {userRoles.includes('Admin') && <Check size={14} />}
+                    </div>
+                    <div>
+                      <strong style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Shield size={14} /> Admin (Quản trị viên)
+                      </strong>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        Toàn quyền quản lý hệ thống, sách, người dùng và phân quyền
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Role Staff */}
+                  <label
+                    onClick={() => toggleRole('Staff')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: userRoles.includes('Staff') ? 'rgba(59, 130, 246, 0.15)' : '#0f172a',
+                      border: userRoles.includes('Staff') ? '1px solid #3b82f6' : '1px solid #334155',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: userRoles.includes('Staff') ? '#3b82f6' : 'transparent',
+                        border: '1px solid #3b82f6',
+                        color: '#fff',
+                      }}
+                    >
+                      {userRoles.includes('Staff') && <Check size={14} />}
+                    </div>
+                    <div>
+                      <strong style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Briefcase size={14} /> Staff (Nhân viên / Thủ thư)
+                      </strong>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        Xử lý tạo phiếu mượn, xác nhận trả sách và tra cứu kho sách
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Role Member */}
+                  <label
+                    onClick={() => toggleRole('Member')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: userRoles.includes('Member') ? 'rgba(16, 185, 129, 0.15)' : '#0f172a',
+                      border: userRoles.includes('Member') ? '1px solid #10b981' : '1px solid #334155',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: userRoles.includes('Member') ? '#10b981' : 'transparent',
+                        border: '1px solid #10b981',
+                        color: '#fff',
+                      }}
+                    >
+                      {userRoles.includes('Member') && <Check size={14} />}
+                    </div>
+                    <div>
+                      <strong style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <UserCheck size={14} /> Member (Độc giả / Khách hàng)
+                      </strong>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        Xem sách đang mượn, lịch sử mượn sách và quản lý hồ sơ cá nhân
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsRoleModalOpen(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submittingRoles}
+                >
+                  {submittingRoles ? (
+                    <>
+                      <RefreshCw size={16} className="spin" /> Đang lưu...
+                    </>
+                  ) : (
+                    'Lưu phân quyền'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Lịch Sử Mượn Trả Của Độc Giả */}
       {isHistoryModalOpen && selectedUser && (
@@ -138,7 +466,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify }) => {
               ) : userBorrows.length === 0 ? (
                 <div className="empty-state">
                   <BookOpen size={40} color="#94a3b8" />
-                  <p>Độc giả này chưa từng mượn cuốn sách nào.</p>
+                  <p>Người dùng này chưa từng mượn cuốn sách nào.</p>
                 </div>
               ) : (
                 <div className="table-responsive">

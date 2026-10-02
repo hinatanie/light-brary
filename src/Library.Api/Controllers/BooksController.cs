@@ -42,6 +42,7 @@ public class BooksController : ControllerBase
     /// Tạo mới một đầu sách
     /// </summary>
     [HttpPost]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BookResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -55,6 +56,7 @@ public class BooksController : ControllerBase
     /// Cập nhật thông tin đầu sách
     /// </summary>
     [HttpPut("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BookResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -68,6 +70,7 @@ public class BooksController : ControllerBase
     /// Xóa một đầu sách
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
