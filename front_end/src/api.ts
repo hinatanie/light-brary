@@ -176,18 +176,18 @@ export const authApi = {
 // ─── 2. Categories API ───────────────────────────────────────────────────────
 export const categoriesApi = {
   getAll: () => request<Category[]>('/categories'),
-  getById: (id: number) => request<Category>(`/categories/${id}`),
+  getById: (id: string) => request<Category>(`/categories/${id}`),
   create: (data: { name: string; description?: string }) =>
     request<Category>('/categories', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  update: (id: number, data: { name: string; description?: string }) =>
+  update: (id: string, data: { name: string; description?: string }) =>
     request<Category>(`/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-  delete: (id: number) =>
+  delete: (id: string) =>
     request<void>(`/categories/${id}`, {
       method: 'DELETE',
     }),
@@ -196,35 +196,35 @@ export const categoriesApi = {
 // ─── 3. Books API ────────────────────────────────────────────────────────────
 export const booksApi = {
   getAll: () => request<Book[]>('/books'),
-  getById: (id: number) => request<Book>(`/books/${id}`),
+  getById: (id: string) => request<Book>(`/books/${id}`),
   create: (data: {
     title: string;
     author: string;
     isbn?: string;
     publishYear?: number;
     imageUrl?: string;
-    categoryId: number;
+    categoryId: string;
   }) =>
     request<Book>('/books', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   update: (
-    id: number,
+    id: string,
     data: {
       title: string;
       author: string;
       isbn?: string;
       publishYear?: number;
       imageUrl?: string;
-      categoryId: number;
+      categoryId: string;
     }
   ) =>
     request<Book>(`/books/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-  delete: (id: number) =>
+  delete: (id: string) =>
     request<void>(`/books/${id}`, {
       method: 'DELETE',
     }),
@@ -232,19 +232,19 @@ export const booksApi = {
 
 // ─── 4. Book Copies API ──────────────────────────────────────────────────────
 export const bookCopiesApi = {
-  getByBookId: (bookId: number) => request<BookCopy[]>(`/books/${bookId}/copies`),
-  getById: (id: number) => request<BookCopy>(`/book-copies/${id}`),
-  create: (data: { bookId: number; barcode: string; conditionNote?: string }) =>
+  getByBookId: (bookId: string) => request<BookCopy[]>(`/books/${bookId}/copies`),
+  getById: (id: string) => request<BookCopy>(`/book-copies/${id}`),
+  create: (data: { bookId: string; barcode: string; conditionNote?: string }) =>
     request<BookCopy>('/book-copies', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  updateCondition: (id: number, data: { conditionNote?: string }) =>
+  updateCondition: (id: string, data: { conditionNote?: string }) =>
     request<BookCopy>(`/book-copies/${id}/condition`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
-  delete: (id: number) =>
+  delete: (id: string) =>
     request<void>(`/book-copies/${id}`, {
       method: 'DELETE',
     }),
@@ -278,12 +278,12 @@ export const rolesApi = {
 export const borrowRecordsApi = {
   getAll: (status?: string) =>
     request<BorrowRecord[]>(status ? `/borrow-records?status=${encodeURIComponent(status)}` : '/borrow-records'),
-  getById: (id: number) => request<BorrowRecord>(`/borrow-records/${id}`),
+  getById: (id: string) => request<BorrowRecord>(`/borrow-records/${id}`),
   getMyBorrowRecords: () => request<BorrowRecord[]>('/my/borrow-records'),
   create: (data: {
     userId: string;
     dueDate: string;
-    bookCopyIds: number[];
+    bookCopyIds: string[];
     note?: string;
   }) =>
     request<BorrowRecord>('/borrow-records', {
@@ -291,16 +291,16 @@ export const borrowRecordsApi = {
       body: JSON.stringify(data),
     }),
   returnBooks: (
-    borrowRecordId: number,
-    data: { items: { borrowDetailId: number; fineAmount: number }[] }
+    borrowRecordId: string,
+    data: { items: { borrowDetailId: string; fineAmount: number }[] }
   ) =>
     request<BorrowRecord>(`/borrow-records/${borrowRecordId}/return`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
   markLost: (
-    borrowRecordId: number,
-    detailId: number,
+    borrowRecordId: string,
+    detailId: string,
     data: { fineAmount: number; note?: string }
   ) =>
     request<BorrowRecord>(`/borrow-records/${borrowRecordId}/details/${detailId}/lost`, {

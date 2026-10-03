@@ -32,11 +32,11 @@ public class BorrowRecordsController : ControllerBase
     /// <summary>
     /// Lấy thông tin chi tiết một phiếu mượn
     /// </summary>
-    [HttpGet("borrow-records/{id:int}")]
+    [HttpGet("borrow-records/{id:guid}")]
     [Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BorrowRecordResponse>> GetById(int id)
+    public async Task<ActionResult<BorrowRecordResponse>> GetById(Guid id)
     {
         var record = await _borrowRecordService.GetByIdAsync(id);
         return Ok(record);
@@ -86,12 +86,12 @@ public class BorrowRecordsController : ControllerBase
     /// <summary>
     /// Xử lý trả sách
     /// </summary>
-    [HttpPatch("borrow-records/{id:int}/return")]
+    [HttpPatch("borrow-records/{id:guid}/return")]
     [Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BorrowRecordResponse>> ReturnBooks(int id, [FromBody] ReturnBooksRequest request)
+    public async Task<ActionResult<BorrowRecordResponse>> ReturnBooks(Guid id, [FromBody] ReturnBooksRequest request)
     {
         var updated = await _borrowRecordService.ReturnBooksAsync(id, request);
         return Ok(updated);
@@ -100,12 +100,12 @@ public class BorrowRecordsController : ControllerBase
     /// <summary>
     /// Báo mất sách trong một phiếu mượn
     /// </summary>
-    [HttpPatch("borrow-records/{id:int}/details/{detailId:int}/lost")]
+    [HttpPatch("borrow-records/{id:guid}/details/{detailId:guid}/lost")]
     [Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BorrowRecordResponse>> MarkLost(int id, int detailId, [FromBody] MarkLostRequest request)
+    public async Task<ActionResult<BorrowRecordResponse>> MarkLost(Guid id, Guid detailId, [FromBody] MarkLostRequest request)
     {
         var updated = await _borrowRecordService.MarkLostAsync(id, detailId, request);
         return Ok(updated);

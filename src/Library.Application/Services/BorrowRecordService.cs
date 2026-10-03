@@ -35,7 +35,7 @@ public class BorrowRecordService : IBorrowRecordService
         return records.Select(r => MapToResponse(r, now)).ToList();
     }
 
-    public async Task<BorrowRecordResponse> GetByIdAsync(int id)
+    public async Task<BorrowRecordResponse> GetByIdAsync(Guid id)
     {
         var record = await _borrowRecordRepository.GetByIdWithDetailsAsync(id);
         if (record == null)
@@ -110,7 +110,7 @@ public class BorrowRecordService : IBorrowRecordService
         return await GetByIdAsync(borrowRecordId);
     }
 
-    public async Task<BorrowRecordResponse> ReturnBooksAsync(int borrowRecordId, ReturnBooksRequest request)
+    public async Task<BorrowRecordResponse> ReturnBooksAsync(Guid borrowRecordId, ReturnBooksRequest request)
     {
         var duplicated = request.Items.GroupBy(i => i.BorrowDetailId).FirstOrDefault(g => g.Count() > 1);
         if (duplicated != null)
@@ -153,7 +153,7 @@ public class BorrowRecordService : IBorrowRecordService
         return await GetByIdAsync(borrowRecordId);
     }
 
-    public async Task<BorrowRecordResponse> MarkLostAsync(int borrowRecordId, int borrowDetailId, MarkLostRequest request)
+    public async Task<BorrowRecordResponse> MarkLostAsync(Guid borrowRecordId, Guid borrowDetailId, MarkLostRequest request)
     {
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -179,7 +179,7 @@ public class BorrowRecordService : IBorrowRecordService
         return await GetByIdAsync(borrowRecordId);
     }
 
-    private static BorrowDetail FindDetail(BorrowRecord record, int borrowDetailId, int borrowRecordId) =>
+    private static BorrowDetail FindDetail(BorrowRecord record, Guid borrowDetailId, Guid borrowRecordId) =>
         record.BorrowDetails.FirstOrDefault(d => d.Id == borrowDetailId)
         ?? throw new NotFoundException($"Chi tiết mượn (ID: {borrowDetailId}) không thuộc phiếu mượn #{borrowRecordId}.");
 

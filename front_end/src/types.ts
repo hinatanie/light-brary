@@ -1,18 +1,18 @@
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   description?: string | null;
   bookCount: number;
 }
 
 export interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   isbn?: string | null;
   publishYear?: number | null;
   imageUrl?: string | null;
-  categoryId: number;
+  categoryId: string;
   categoryName?: string | null;
   createdAt: string;
 }
@@ -20,8 +20,8 @@ export interface Book {
 export type BookCopyStatus = 'Available' | 'Borrowed' | 'Lost';
 
 export interface BookCopy {
-  id: number;
-  bookId: number;
+  id: string;
+  bookId: string;
   bookTitle: string;
   bookAuthor: string;
   barcode: string;
@@ -49,8 +49,8 @@ export type BorrowRecordStatus = 'Borrowing' | 'Returned' | 'Overdue';
 export type BorrowDetailStatus = 'Borrowing' | 'Returned' | 'Lost';
 
 export interface BorrowDetail {
-  id: number;
-  bookCopyId: number;
+  id: string;
+  bookCopyId: string;
   barcode: string;
   bookTitle: string;
   bookAuthor: string;
@@ -61,7 +61,7 @@ export interface BorrowDetail {
 }
 
 export interface BorrowRecord {
-  id: number;
+  id: string;
   userId: string;
   userFullName: string;
   borrowDate: string;

@@ -15,13 +15,13 @@ public class BookCopyService : IBookCopyService
         _bookCopyRepository = bookCopyRepository;
     }
 
-    public async Task<List<BookCopyResponse>> GetByBookIdAsync(int bookId)
+    public async Task<List<BookCopyResponse>> GetByBookIdAsync(Guid bookId)
     {
         var copies = await _bookCopyRepository.GetByBookIdAsync(bookId);
         return copies.Select(MapToResponse).ToList();
     }
 
-    public async Task<BookCopyResponse> GetByIdAsync(int id)
+    public async Task<BookCopyResponse> GetByIdAsync(Guid id)
     {
         var copy = await _bookCopyRepository.GetByIdAsync(id);
         if (copy == null)
@@ -52,7 +52,7 @@ public class BookCopyService : IBookCopyService
         return MapToResponse(withBook);
     }
 
-    public async Task<BookCopyResponse> UpdateConditionAsync(int id, UpdateBookCopyConditionRequest request)
+    public async Task<BookCopyResponse> UpdateConditionAsync(Guid id, UpdateBookCopyConditionRequest request)
     {
         var copy = await _bookCopyRepository.GetByIdAsync(id);
         if (copy == null)
@@ -65,7 +65,7 @@ public class BookCopyService : IBookCopyService
         return MapToResponse(updated);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var copy = await _bookCopyRepository.GetByIdAsync(id);
         if (copy == null)

@@ -13,7 +13,7 @@ public record CreateBorrowRequest(
     [Required(ErrorMessage = "Phải chọn ít nhất một bản sao sách để mượn")]
     [MinLength(1, ErrorMessage = "Phải chọn ít nhất một bản sao sách để mượn")]
     [MaxLength(AuthConstants.MaxCopiesPerBorrow, ErrorMessage = "Mỗi phiếu mượn tối đa 10 bản sao sách")]
-    List<int> BookCopyIds,
+    List<Guid> BookCopyIds,
 
     [MaxLength(255, ErrorMessage = "Ghi chú không được vượt quá 255 ký tự")]
     string? Note

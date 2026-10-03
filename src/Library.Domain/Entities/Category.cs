@@ -9,7 +9,7 @@ namespace Library.Domain.Entities;
 public class Category
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
     [MaxLength(100)]

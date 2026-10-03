@@ -1,6 +1,7 @@
 using Library.Application.DTOs.Auth;
 using Library.Application.Exceptions;
 using Library.Application.Interfaces;
+using Library.Domain.Constants;
 using Library.Domain.Entities;
 using Library.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,11 +46,11 @@ public class DuplicateConstraintTests : IClassFixture<CustomWebApplicationFactor
 
         var isbn = $"978{Random.Shared.Next(100000000, 999999999)}X";
 
-        var book1 = new Book { Title = "Book 1", Author = "Author 1", CategoryId = 1, Isbn = isbn };
+        var book1 = new Book { Title = "Book 1", Author = "Author 1", CategoryId = CategorySeedIds.ItId, Isbn = isbn };
         await context.Books.AddAsync(book1);
         await context.SaveChangesAsync();
 
-        var book2 = new Book { Title = "Book 2", Author = "Author 2", CategoryId = 1, Isbn = isbn };
+        var book2 = new Book { Title = "Book 2", Author = "Author 2", CategoryId = CategorySeedIds.ItId, Isbn = isbn };
         await context.Books.AddAsync(book2);
 
         // Bị chặn bởi filtered unique index UX_Books_Isbn và ném ConflictException

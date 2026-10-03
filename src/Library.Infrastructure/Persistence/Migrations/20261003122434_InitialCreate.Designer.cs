@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Library.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    [Migration("20261003100012_InitialCreate")]
+    [Migration("20261003122434_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -28,11 +28,9 @@ namespace Library.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Library.Domain.Entities.Book", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Author")
                         .IsRequired()
@@ -40,8 +38,8 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("Author");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
                         .HasColumnName("CategoryId");
 
                     b.Property<DateTime>("CreatedAt")
@@ -84,11 +82,9 @@ namespace Library.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Library.Domain.Entities.BookCopy", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Barcode")
                         .IsRequired()
@@ -96,8 +92,8 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("Barcode");
 
-                    b.Property<int>("BookId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uuid")
                         .HasColumnName("BookId");
 
                     b.Property<string>("ConditionNote")
@@ -122,18 +118,16 @@ namespace Library.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Library.Domain.Entities.BorrowDetail", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BookCopyId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("BookCopyId")
+                        .HasColumnType("uuid")
                         .HasColumnName("BookCopyId");
 
-                    b.Property<int>("BorrowRecordId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("BorrowRecordId")
+                        .HasColumnType("uuid")
                         .HasColumnName("BorrowRecordId");
 
                     b.Property<decimal>("FineAmount")
@@ -162,11 +156,9 @@ namespace Library.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Library.Domain.Entities.BorrowRecord", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("BorrowDate")
                         .HasColumnType("timestamp with time zone")
@@ -198,11 +190,9 @@ namespace Library.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Library.Domain.Entities.Category", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Description")
                         .HasMaxLength(255)
@@ -225,19 +215,19 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1,
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             Description = "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu",
                             Name = "Công nghệ thông tin"
                         },
                         new
                         {
-                            Id = 2,
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             Description = "Sách tài chính, khởi nghiệp và quản lý kinh doanh",
                             Name = "Kinh tế & Quản trị"
                         },
                         new
                         {
-                            Id = 3,
+                            Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
                             Description = "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển",
                             Name = "Văn học & Nghệ thuật"
                         });

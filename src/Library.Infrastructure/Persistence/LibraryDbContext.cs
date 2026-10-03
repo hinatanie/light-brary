@@ -130,11 +130,11 @@ public class LibraryDbContext : DbContext
             new Role { Id = RoleNames.MemberId, Name = RoleNames.Member }
         );
 
-        // Data Seeding cho Category
+        // Data Seeding cho Category (sử dụng Guid cố định)
         modelBuilder.Entity<Category>().HasData(
-            new Category { Id = 1, Name = "Công nghệ thông tin", Description = "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu" },
-            new Category { Id = 2, Name = "Kinh tế & Quản trị", Description = "Sách tài chính, khởi nghiệp và quản lý kinh doanh" },
-            new Category { Id = 3, Name = "Văn học & Nghệ thuật", Description = "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển" }
+            new Category { Id = CategorySeedIds.ItId, Name = "Công nghệ thông tin", Description = "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu" },
+            new Category { Id = CategorySeedIds.BusinessId, Name = "Kinh tế & Quản trị", Description = "Sách tài chính, khởi nghiệp và quản lý kinh doanh" },
+            new Category { Id = CategorySeedIds.LiteratureId, Name = "Văn học & Nghệ thuật", Description = "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển" }
         );
     }
 

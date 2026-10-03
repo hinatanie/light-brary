@@ -33,7 +33,7 @@ export const StaffBooksPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleViewCopies = (bookId: number) => {
+  const handleViewCopies = (bookId: string) => {
     navigate(`/staff/book-copies?bookId=${bookId}`);
   };
 

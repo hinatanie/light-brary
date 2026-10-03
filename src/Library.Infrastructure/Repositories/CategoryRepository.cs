@@ -23,20 +23,20 @@ public class CategoryRepository : ICategoryRepository
             .ToListAsync();
     }
 
-    public async Task<Category?> GetByIdAsync(int id)
+    public async Task<Category?> GetByIdAsync(Guid id)
     {
         return await _context.Categories
             .Include(c => c.Books)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null)
+    public async Task<bool> ExistsByNameAsync(string name, Guid? excludeId = null)
     {
         return await _context.Categories
             .AnyAsync(c => c.Name == name && (excludeId == null || c.Id != excludeId));
     }
 
-    public async Task<bool> HasBooksAsync(int id)
+    public async Task<bool> HasBooksAsync(Guid id)
     {
         return await _context.Books.AnyAsync(b => b.CategoryId == id);
     }

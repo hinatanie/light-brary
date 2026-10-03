@@ -37,7 +37,7 @@ export const MemberBorrowsPage: React.FC = () => {
 
   const filteredBorrows = borrows.filter((b) => {
     const matchesSearch =
-      b.id.toString().includes(searchTerm) ||
+      b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.details.some(
         (d) =>
           d.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||

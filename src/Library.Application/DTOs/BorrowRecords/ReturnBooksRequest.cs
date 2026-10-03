@@ -11,7 +11,7 @@ public record ReturnBooksRequest(
 
 public record ReturnBookItem(
     [Required(ErrorMessage = "Mã chi tiết mượn không được để trống")]
-    int BorrowDetailId,
+    Guid BorrowDetailId,
 
     [Range(0, AuthConstants.MaxFineAmount, ErrorMessage = "Tiền phạt phải từ 0 đến 10.000.000")]
     decimal FineAmount

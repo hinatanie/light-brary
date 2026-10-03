@@ -9,7 +9,7 @@ namespace Library.Domain.Entities;
 public class Book
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
     [MaxLength(250)]
@@ -34,7 +34,7 @@ public class Book
     public string? ImageUrl { get; set; }
 
     [Column("CategoryId")]
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
     [ForeignKey(nameof(CategoryId))]
     public Category? Category { get; set; }

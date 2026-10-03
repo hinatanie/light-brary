@@ -37,7 +37,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
 
   // Mark lost modal states
   const [isLostModalOpen, setIsLostModalOpen] = useState(false);
-  const [lostTargetDetail, setLostTargetDetail] = useState<{ detailId: number; title: string; barcode: string } | null>(null);
+  const [lostTargetDetail, setLostTargetDetail] = useState<{ detailId: string; title: string; barcode: string } | null>(null);
   const [lostFineAmount, setLostFineAmount] = useState<number>(50000);
   const [lostNote, setLostNote] = useState<string>('');
   const [submittingLost, setSubmittingLost] = useState(false);
@@ -49,13 +49,13 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
     d.setDate(d.getDate() + 14); // Mặc định hẹn trả sau 14 ngày
     return d.toISOString().split('T')[0];
   });
-  const [selectedCopyIds, setSelectedCopyIds] = useState<number[]>([]);
+  const [selectedCopyIds, setSelectedCopyIds] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Return form states: map detailId -> { selected: boolean, fine: number }
   const [returnItemsState, setReturnItemsState] = useState<
-    Record<number, { selected: boolean; fine: number }>
+    Record<string, { selected: boolean; fine: number }>
   >({});
 
   const openCreateModal = () => {
@@ -68,7 +68,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
     setIsCreateModalOpen(true);
   };
 
-  const toggleCopySelection = (copyId: number) => {
+  const toggleCopySelection = (copyId: string) => {
     setSelectedCopyIds((prev) =>
       prev.includes(copyId) ? prev.filter((id) => id !== copyId) : [...prev, copyId]
     );
@@ -101,7 +101,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
 
   const openReturnModal = (record: BorrowRecord) => {
     setSelectedRecord(record);
-    const initial: Record<number, { selected: boolean; fine: number }> = {};
+    const initial: Record<string, { selected: boolean; fine: number }> = {};
     record.details.forEach((d) => {
       // Chỉ chọn mặc định những cuốn đang mượn (chưa trả và chưa báo mất)
       if (d.status === 'Borrowing') {
@@ -139,7 +139,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
     const itemsToReturn = Object.entries(returnItemsState)
       .filter(([_, val]) => val.selected)
       .map(([detailId, val]) => ({
-        borrowDetailId: Number(detailId),
+        borrowDetailId: detailId,
         fineAmount: Number(val.fine) || 0,
       }));
 

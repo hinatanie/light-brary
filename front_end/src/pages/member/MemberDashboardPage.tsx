@@ -42,7 +42,7 @@ export const MemberDashboardPage: React.FC = () => {
   // Currently borrowed details
   const activeRecords = myBorrows.filter((b) => b.status === 'Borrowing' || b.status === 'Overdue');
   const borrowingDetails: {
-    recordId: number;
+    recordId: string;
     bookTitle: string;
     barcode: string;
     dueDate: string;

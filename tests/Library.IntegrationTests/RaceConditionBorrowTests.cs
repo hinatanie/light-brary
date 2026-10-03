@@ -42,7 +42,7 @@ public class RaceConditionBorrowTests : IClassFixture<CustomWebApplicationFactor
         {
             Title = "Concurrency in C#",
             Author = "Stephen Cleary",
-            CategoryId = 1,
+            CategoryId = CategorySeedIds.ItId,
             CreatedAt = DateTime.UtcNow
         };
         await context.Books.AddAsync(book);
@@ -72,7 +72,7 @@ public class RaceConditionBorrowTests : IClassFixture<CustomWebApplicationFactor
                 var req = new CreateBorrowRequest(
                     user.Id,
                     DateTime.UtcNow.AddDays(7),
-                    new List<int> { copy.Id },
+                    new List<Guid> { copy.Id },
                     "Mượn thử nghiệm đồng thời");
 
                 await service.CreateAsync(req);

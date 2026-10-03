@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -21,8 +20,7 @@ namespace Library.Infrastructure.Persistence.Migrations
                 name: "Categories",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "citext", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
                 },
@@ -67,14 +65,13 @@ namespace Library.Infrastructure.Persistence.Migrations
                 name: "Books",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
                     Author = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     ISBN = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     PublishYear = table.Column<int>(type: "integer", nullable: true),
                     ImageUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    CategoryId = table.Column<int>(type: "integer", nullable: false),
+                    CategoryId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -92,8 +89,7 @@ namespace Library.Infrastructure.Persistence.Migrations
                 name: "BorrowRecords",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     BorrowDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DueDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -163,9 +159,8 @@ namespace Library.Infrastructure.Persistence.Migrations
                 name: "BookCopies",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    BookId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    BookId = table.Column<Guid>(type: "uuid", nullable: false),
                     Barcode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Status = table.Column<byte>(type: "smallint", nullable: false),
                     ConditionNote = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
@@ -185,10 +180,9 @@ namespace Library.Infrastructure.Persistence.Migrations
                 name: "BorrowDetails",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    BorrowRecordId = table.Column<int>(type: "integer", nullable: false),
-                    BookCopyId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    BorrowRecordId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BookCopyId = table.Column<Guid>(type: "uuid", nullable: false),
                     ReturnDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<byte>(type: "smallint", nullable: false),
                     FineAmount = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
@@ -215,9 +209,9 @@ namespace Library.Infrastructure.Persistence.Migrations
                 columns: new[] { "Id", "Description", "Name" },
                 values: new object[,]
                 {
-                    { 1, "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu", "Công nghệ thông tin" },
-                    { 2, "Sách tài chính, khởi nghiệp và quản lý kinh doanh", "Kinh tế & Quản trị" },
-                    { 3, "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển", "Văn học & Nghệ thuật" }
+                    { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu", "Công nghệ thông tin" },
+                    { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Sách tài chính, khởi nghiệp và quản lý kinh doanh", "Kinh tế & Quản trị" },
+                    { new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển", "Văn học & Nghệ thuật" }
                 });
 
             migrationBuilder.InsertData(

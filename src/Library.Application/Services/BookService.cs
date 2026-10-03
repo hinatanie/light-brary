@@ -21,7 +21,7 @@ public class BookService : IBookService
         return books.Select(MapToResponse).ToList();
     }
 
-    public async Task<BookResponse> GetBookByIdAsync(int id)
+    public async Task<BookResponse> GetBookByIdAsync(Guid id)
     {
         var book = await _bookRepository.GetByIdAsync(id);
         if (book == null)
@@ -59,7 +59,7 @@ public class BookService : IBookService
         return MapToResponse(bookWithCategory);
     }
 
-    public async Task<BookResponse> UpdateBookAsync(int id, UpdateBookRequest request)
+    public async Task<BookResponse> UpdateBookAsync(Guid id, UpdateBookRequest request)
     {
         var existingBook = await _bookRepository.GetByIdAsync(id);
         if (existingBook == null)
@@ -92,7 +92,7 @@ public class BookService : IBookService
         return MapToResponse(updatedBook);
     }
 
-    public async Task DeleteBookAsync(int id)
+    public async Task DeleteBookAsync(Guid id)
     {
         var book = await _bookRepository.GetByIdAsync(id);
         if (book == null)
@@ -111,7 +111,7 @@ public class BookService : IBookService
     }
 
     /// <summary>Kiểm tra trước để báo lỗi dễ hiểu; chỉ mục unique ở DB là lớp bảo vệ khi có request đồng thời.</summary>
-    private async Task EnsureIsbnAvailableAsync(string? isbn, int? excludeBookId)
+    private async Task EnsureIsbnAvailableAsync(string? isbn, Guid? excludeBookId)
     {
         if (isbn == null) return;
 

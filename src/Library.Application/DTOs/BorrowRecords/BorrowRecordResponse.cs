@@ -1,7 +1,7 @@
 namespace Library.Application.DTOs.BorrowRecords;
 
 public record BorrowRecordResponse(
-    int Id,
+    Guid Id,
     Guid UserId,
     string UserFullName,
     DateTime BorrowDate,
@@ -12,8 +12,8 @@ public record BorrowRecordResponse(
 );
 
 public record BorrowDetailResponse(
-    int Id,
-    int BookCopyId,
+    Guid Id,
+    Guid BookCopyId,
     string Barcode,
     string BookTitle,
     string BookAuthor,

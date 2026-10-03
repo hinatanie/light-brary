@@ -8,7 +8,7 @@ namespace Library.Domain.Entities;
 public class BorrowRecord
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Column("UserId")]
     public Guid UserId { get; set; }

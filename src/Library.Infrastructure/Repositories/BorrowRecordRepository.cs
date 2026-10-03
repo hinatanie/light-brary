@@ -50,7 +50,7 @@ public class BorrowRecordRepository : IBorrowRecordRepository
             .ToListAsync();
     }
 
-    public async Task<BorrowRecord?> GetByIdWithDetailsAsync(int id)
+    public async Task<BorrowRecord?> GetByIdWithDetailsAsync(Guid id)
     {
         return await _context.BorrowRecords
             .Include(br => br.User)
@@ -91,7 +91,7 @@ public class BorrowRecordRepository : IBorrowRecordRepository
         return await _context.Users.AnyAsync(u => u.Id == userId);
     }
 
-    public async Task<List<BookCopy>> LockBookCopiesAsync(IReadOnlyCollection<int> bookCopyIds)
+    public async Task<List<BookCopy>> LockBookCopiesAsync(IReadOnlyCollection<Guid> bookCopyIds)
     {
         var sortedIds = bookCopyIds.OrderBy(id => id).ToArray();
 
@@ -101,7 +101,7 @@ public class BorrowRecordRepository : IBorrowRecordRepository
             .ToListAsync();
     }
 
-    public async Task LockBorrowRecordAsync(int borrowRecordId)
+    public async Task LockBorrowRecordAsync(Guid borrowRecordId)
     {
         // Khóa hàng phiếu mượn bằng SELECT ... FOR UPDATE để bảo vệ thao tác trả sách và báo mất đồng thời
         await _context.Database.ExecuteSqlInterpolatedAsync(
