@@ -21,13 +21,40 @@ export const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    const cleanPhone = phoneNumber.trim();
+    if (!cleanPhone) {
+      setError('Số điện thoại là bắt buộc!');
+      return;
+    }
+
+    const phoneRegex = /^(0|\+84)[0-9]{9}$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      setError('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (bắt đầu bằng 0 hoặc +84).');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp!');
       return;
     }
 
-    if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự!');
+    if (password.length < 10) {
+      setError('Mật khẩu phải có ít nhất 10 ký tự!');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError('Mật khẩu phải chứa ít nhất một chữ cái in hoa (A-Z)!');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError('Mật khẩu phải chứa ít nhất một chữ cái in thường (a-z)!');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError('Mật khẩu phải chứa ít nhất một chữ số (0-9)!');
       return;
     }
 
@@ -38,7 +65,7 @@ export const RegisterPage: React.FC = () => {
         fullName: fullName.trim(),
         email: email.trim(),
         password,
-        phoneNumber: phoneNumber.trim() || undefined,
+        phoneNumber: cleanPhone,
         address: address.trim() || undefined,
       });
 
@@ -127,14 +154,14 @@ export const RegisterPage: React.FC = () => {
 
         <div className="form-group" style={{ marginBottom: '14px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-            <Lock size={14} /> Mật khẩu *
+            <Lock size={14} /> Mật khẩu * (Tối thiểu 10 ký tự, gồm chữ hoa, chữ thường, số)
           </label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Ít nhất 6 ký tự"
+            placeholder="Tối thiểu 10 ký tự, có hoa, thường, số"
             style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
           />
         </div>

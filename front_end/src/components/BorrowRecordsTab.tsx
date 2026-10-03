@@ -10,7 +10,8 @@ import {
   Calendar,
   X,
   FileText,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 
 interface BorrowRecordsTabProps {
@@ -33,6 +34,13 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BorrowRecord | null>(null);
+
+  // Mark lost modal states
+  const [isLostModalOpen, setIsLostModalOpen] = useState(false);
+  const [lostTargetDetail, setLostTargetDetail] = useState<{ detailId: number; title: string; barcode: string } | null>(null);
+  const [lostFineAmount, setLostFineAmount] = useState<number>(50000);
+  const [lostNote, setLostNote] = useState<string>('');
+  const [submittingLost, setSubmittingLost] = useState(false);
 
   // Create form states
   const [userId, setUserId] = useState<string>(users[0]?.id || '');
@@ -95,13 +103,33 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
     setSelectedRecord(record);
     const initial: Record<number, { selected: boolean; fine: number }> = {};
     record.details.forEach((d) => {
-      // Chỉ chọn mặc định những cuốn chưa trả
-      if (d.status !== 'Returned') {
-        initial[d.id] = { selected: true, fine: 0 };
+      // Chỉ chọn mặc định những cuốn đang mượn (chưa trả và chưa báo mất)
+      if (d.status === 'Borrowing') {
+        initial[d.id] = { selected: true, fine: d.fineAmount || 0 };
       }
     });
     setReturnItemsState(initial);
     setIsReturnModalOpen(true);
+  };
+
+  const handleMarkLost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecord || !lostTargetDetail) return;
+    setSubmittingLost(true);
+    try {
+      await borrowRecordsApi.markLost(selectedRecord.id, lostTargetDetail.detailId, {
+        fineAmount: Number(lostFineAmount) || 0,
+        note: lostNote.trim() || undefined,
+      });
+      onNotify(`Đã ghi nhận báo mất cuốn sách "${lostTargetDetail.title}"!`);
+      setIsLostModalOpen(false);
+      setIsReturnModalOpen(false);
+      onRefresh();
+    } catch (err: any) {
+      onNotify(err.message || 'Lỗi khi báo mất sách', 'error');
+    } finally {
+      setSubmittingLost(false);
+    }
   };
 
   const handleReturnSubmit = async (e: React.FormEvent) => {
@@ -205,7 +233,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
               </thead>
               <tbody>
                 {filteredRecords.map((br) => {
-                  const returnedCount = br.details.filter((d) => d.status === 'Returned').length;
+                  const finishedCount = br.details.filter((d) => d.status === 'Returned' || d.status === 'Lost').length;
                   return (
                     <tr key={br.id}>
                       <td><strong>#{br.id}</strong></td>
@@ -215,8 +243,9 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                       </td>
                       <td>{new Date(br.borrowDate).toLocaleDateString('vi-VN')}</td>
                       <td>
-                        <span style={{ fontWeight: 500 }}>
+                        <span style={{ fontWeight: 500, color: (br.status === 'Overdue' || br.details.some(d => d.isOverdue)) ? '#ef4444' : 'inherit' }}>
                           {new Date(br.dueDate).toLocaleDateString('vi-VN')}
+                          {(br.status === 'Overdue' || br.details.some(d => d.isOverdue)) && ' (Quá hạn)'}
                         </span>
                       </td>
                       <td>
@@ -225,14 +254,16 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                             <span
                               key={d.id}
                               className={`pill-item ${d.status === 'Returned' ? 'pill-returned' : ''}`}
+                              style={d.status === 'Lost' ? { background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' } : undefined}
                             >
                               {d.bookTitle} (<code>{d.barcode}</code>)
                               {d.status === 'Returned' && ' ✓'}
+                              {d.status === 'Lost' && ' ✕ (Mất)'}
                             </span>
                           ))}
                         </div>
                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                          Tiến độ: {returnedCount}/{br.details.length} cuốn đã trả
+                          Tiến độ: {finishedCount}/{br.details.length} cuốn đã hoàn tất
                         </div>
                       </td>
                       <td>
@@ -396,16 +427,18 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                 {selectedRecord.details.map((d) => {
                   const state = returnItemsState[d.id] || { selected: false, fine: 0 };
                   const isAlreadyReturned = d.status === 'Returned';
+                  const isAlreadyLost = d.status === 'Lost';
+                  const isDone = isAlreadyReturned || isAlreadyLost;
 
                   return (
                     <div
                       key={d.id}
-                      className={`return-item-row ${isAlreadyReturned ? 'already-returned' : ''}`}
+                      className={`return-item-row ${isDone ? 'already-returned' : ''}`}
                     >
                       <div className="return-check">
                         <input
                           type="checkbox"
-                          disabled={isAlreadyReturned}
+                          disabled={isDone}
                           checked={state.selected}
                           onChange={(e) => {
                             setReturnItemsState((prev) => ({
@@ -429,28 +462,59 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                             Đã trả vào ngày {new Date(d.returnDate!).toLocaleDateString('vi-VN')} (Phạt: {d.fineAmount.toLocaleString('vi-VN')}đ)
                           </span>
                         )}
+                        {isAlreadyLost && (
+                          <span className="badge" style={{ marginTop: '4px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
+                            Đã báo mất (Bồi thường: {d.fineAmount.toLocaleString('vi-VN')}đ)
+                          </span>
+                        )}
                       </div>
 
-                      {!isAlreadyReturned && (
-                        <div className="return-fine-input">
-                          <label style={{ fontSize: '12px', color: '#64748b' }}>Phạt quá hạn / hỏng (VNĐ):</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step={1000}
-                            disabled={!state.selected}
-                            value={state.fine}
-                            onChange={(e) => {
-                              const val = Number(e.target.value);
-                              setReturnItemsState((prev) => ({
-                                ...prev,
-                                [d.id]: {
-                                  ...prev[d.id],
-                                  fine: val,
-                                },
-                              }));
+                      {!isDone && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div className="return-fine-input">
+                            <label style={{ fontSize: '12px', color: '#64748b' }}>Phạt trễ/hỏng (VNĐ):</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={1000}
+                              disabled={!state.selected}
+                              value={state.fine}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setReturnItemsState((prev) => ({
+                                  ...prev,
+                                  [d.id]: {
+                                    ...prev[d.id],
+                                    fine: val,
+                                  },
+                                }));
+                              }}
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            className="btn-action"
+                            style={{
+                              alignSelf: 'flex-end',
+                              color: '#ef4444',
+                              borderColor: 'rgba(239, 68, 68, 0.3)',
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap'
                             }}
-                          />
+                            title="Báo mất cuốn sách này"
+                            onClick={() => {
+                              setLostTargetDetail({ detailId: d.id, title: d.bookTitle, barcode: d.barcode });
+                              setLostFineAmount(50000);
+                              setLostNote('');
+                              setIsLostModalOpen(true);
+                            }}
+                          >
+                            <AlertTriangle size={14} /> Báo mất
+                          </button>
                         </div>
                       )}
                     </div>
@@ -475,6 +539,75 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                   }
                 >
                   {submitting ? 'Đang xử lý...' : 'Xác Nhận Trả Sách Vào Kệ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Báo Mất Sách */}
+      {isLostModalOpen && lostTargetDetail && selectedRecord && (
+        <div className="modal-backdrop" onClick={() => setIsLostModalOpen(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+                <AlertTriangle size={20} />
+                <h3>Báo Mất Sách</h3>
+              </div>
+              <button className="btn-icon" onClick={() => setIsLostModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleMarkLost} className="form-content">
+              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>
+                Độc giả làm mất cuốn sách: <strong style={{ color: '#f8fafc' }}>{lostTargetDetail.title}</strong> (Mã vạch: <code>{lostTargetDetail.barcode}</code>). Cuốn sách này sẽ được đánh dấu trạng thái "Lost" và không thể mượn lại cho đến khi được thay thế.
+              </p>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Số tiền đền bù / bồi thường (VNĐ) *
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={5000}
+                  required
+                  value={lostFineAmount}
+                  onChange={(e) => setLostFineAmount(Number(e.target.value))}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                  Ghi chú lý do / tình trạng
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Độc giả làm rơi mất trong quá trình đi tàu..."
+                  value={lostNote}
+                  onChange={(e) => setLostNote(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsLostModalOpen(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ background: '#ef4444', borderColor: '#ef4444' }}
+                  disabled={submittingLost}
+                >
+                  {submittingLost ? 'Đang ghi nhận...' : 'Xác Nhận Báo Mất'}
                 </button>
               </div>
             </form>

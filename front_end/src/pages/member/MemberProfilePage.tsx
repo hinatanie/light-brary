@@ -69,11 +69,22 @@ export const MemberProfilePage: React.FC = () => {
     e.preventDefault();
     if (!user) return;
 
+    const cleanPhone = phoneNumber.trim();
+    if (!cleanPhone) {
+      showToast('Số điện thoại là bắt buộc!', 'error');
+      return;
+    }
+
+    if (!/^(0|\+84)[0-9]{9}$/.test(cleanPhone)) {
+      showToast('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số.', 'error');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const updated = await usersApi.update(user.userId, {
         fullName: fullName.trim(),
-        phoneNumber: phoneNumber.trim() || undefined,
+        phoneNumber: cleanPhone,
         address: address.trim() || undefined,
       });
 

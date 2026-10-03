@@ -33,10 +33,11 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  phoneNumber?: string | null;
+  phoneNumber: string;
   address?: string | null;
   createdAt: string;
-  roles?: string[];
+  roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface Role {
@@ -56,6 +57,7 @@ export interface BorrowDetail {
   returnDate?: string | null;
   status: BorrowDetailStatus | string;
   fineAmount: number;
+  isOverdue?: boolean;
 }
 
 export interface BorrowRecord {
@@ -74,20 +76,24 @@ export interface AuthResponse {
   userId: string;
   fullName: string;
   email: string;
+  phoneNumber: string;
   expiresAt: string;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface MeResponse {
   userId: string;
   fullName: string;
   email: string;
-  phoneNumber?: string | null;
+  phoneNumber: string;
+  address?: string | null;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface UpdateUserRequest {
   fullName: string;
-  phoneNumber?: string | null;
+  phoneNumber: string;
   address?: string | null;
 }

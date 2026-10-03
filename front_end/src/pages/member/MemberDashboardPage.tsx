@@ -40,7 +40,7 @@ export const MemberDashboardPage: React.FC = () => {
   }, []);
 
   // Currently borrowed details
-  const activeRecords = myBorrows.filter((b) => b.status === 'Borrowing');
+  const activeRecords = myBorrows.filter((b) => b.status === 'Borrowing' || b.status === 'Overdue');
   const borrowingDetails: {
     recordId: number;
     bookTitle: string;
@@ -52,7 +52,7 @@ export const MemberDashboardPage: React.FC = () => {
   activeRecords.forEach((rec) => {
     rec.details.forEach((d) => {
       if (d.status !== 'Returned') {
-        const isOverdue = new Date(rec.dueDate) < new Date();
+        const isOverdue = Boolean(d.isOverdue ?? rec.status === 'Overdue');
         borrowingDetails.push({
           recordId: rec.id,
           bookTitle: d.bookTitle,

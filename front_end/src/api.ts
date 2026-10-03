@@ -14,11 +14,24 @@ const API_BASE = '/api/v1';
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  lockoutEndUtc?: string;
+
+  constructor(message: string, status: number, code?: string, lockoutEndUtc?: string) {
     super(message);
     this.status = status;
+    this.code = code;
+    this.lockoutEndUtc = lockoutEndUtc;
     this.name = 'ApiError';
   }
+}
+
+let isRefreshing = false;
+let refreshSubscribers: ((token: string | null) => void)[] = [];
+
+function onRefreshed(token: string | null) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -35,10 +48,70 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include', // Gửi kèm HttpOnly cookie cho refresh token
   });
 
   if (response.status === 204) {
     return {} as T;
+  }
+
+  // Xử lý tự động Refresh Token khi Access Token hết hạn (401)
+  const isAuthEndpoint =
+    endpoint.includes('/auth/login') ||
+    endpoint.includes('/auth/register') ||
+    endpoint.includes('/auth/refresh') ||
+    endpoint.includes('/auth/logout');
+
+  if (response.status === 401 && !isAuthEndpoint && token) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+
+        if (refreshRes.ok) {
+          const authData: AuthResponse = await refreshRes.json();
+          localStorage.setItem('lightbrary_token', authData.token);
+          localStorage.setItem('lightbrary_user', JSON.stringify({
+            userId: authData.userId,
+            fullName: authData.fullName,
+            email: authData.email,
+            phoneNumber: authData.phoneNumber,
+            roles: authData.roles,
+            mustChangePassword: authData.mustChangePassword,
+          }));
+          isRefreshing = false;
+          onRefreshed(authData.token);
+          // Thử lại request ban đầu với token mới
+          return request<T>(endpoint, options);
+        } else {
+          isRefreshing = false;
+          onRefreshed(null);
+          localStorage.removeItem('lightbrary_token');
+          localStorage.removeItem('lightbrary_user');
+          window.location.href = '/login';
+          throw new ApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 401, 'SESSION_EXPIRED');
+        }
+      } catch (err) {
+        isRefreshing = false;
+        onRefreshed(null);
+        throw err;
+      }
+    }
+
+    // Đang có request khác refresh, xếp hàng chờ
+    return new Promise<T>((resolve, reject) => {
+      refreshSubscribers.push((newToken) => {
+        if (newToken) {
+          resolve(request<T>(endpoint, options));
+        } else {
+          reject(new ApiError('Phiên đăng nhập đã hết hạn.', 401, 'SESSION_EXPIRED'));
+        }
+      });
+    });
   }
 
   let data: any = null;
@@ -55,7 +128,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       data?.title ||
       (typeof data === 'string' && data) ||
       `Yêu cầu thất bại (${response.status})`;
-    throw new ApiError(errorMsg, response.status);
+    throw new ApiError(errorMsg, response.status, data?.code, data?.lockoutEndUtc);
   }
 
   return data as T;
@@ -73,10 +146,26 @@ export const authApi = {
     fullName: string;
     email: string;
     password: string;
-    phoneNumber?: string;
+    phoneNumber: string;
     address?: string;
   }) =>
     request<AuthResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  refresh: () =>
+    request<AuthResponse>('/auth/refresh', {
+      method: 'POST',
+    }),
+
+  logout: () =>
+    request<void>('/auth/logout', {
+      method: 'POST',
+    }),
+
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    request<AuthResponse>('/auth/change-password', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -187,7 +276,8 @@ export const rolesApi = {
 
 // ─── 7. Borrow Records API ───────────────────────────────────────────────────
 export const borrowRecordsApi = {
-  getAll: () => request<BorrowRecord[]>('/borrow-records'),
+  getAll: (status?: string) =>
+    request<BorrowRecord[]>(status ? `/borrow-records?status=${encodeURIComponent(status)}` : '/borrow-records'),
   getById: (id: number) => request<BorrowRecord>(`/borrow-records/${id}`),
   getMyBorrowRecords: () => request<BorrowRecord[]>('/my/borrow-records'),
   create: (data: {
@@ -205,6 +295,15 @@ export const borrowRecordsApi = {
     data: { items: { borrowDetailId: number; fineAmount: number }[] }
   ) =>
     request<BorrowRecord>(`/borrow-records/${borrowRecordId}/return`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  markLost: (
+    borrowRecordId: number,
+    detailId: number,
+    data: { fineAmount: number; note?: string }
+  ) =>
+    request<BorrowRecord>(`/borrow-records/${borrowRecordId}/details/${detailId}/lost`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
