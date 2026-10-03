@@ -4,7 +4,10 @@ namespace Library.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResponse> RegisterAsync(RegisterRequest request);
-    Task<AuthResponse> LoginAsync(LoginRequest request);
-    Task<MeResponse> GetMeAsync(string userId);
+    Task<AuthResult> RegisterAsync(RegisterRequest request);
+    Task<AuthResult> LoginAsync(LoginRequest request);
+    Task<AuthResult> RefreshAsync(string? refreshToken);
+    Task LogoutAsync(string? refreshToken);
+    Task<AuthResult> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
+    Task<MeResponse> GetMeAsync(Guid userId);
 }

@@ -74,6 +74,13 @@ public class BookCopyService : IBookCopyService
         if (copy.Status == BookCopyStatus.Borrowed)
             throw new BusinessException($"Bản sao sách (Barcode: {copy.Barcode}) đang được mượn, không thể xóa.");
 
+        // Đã từng có lịch sử mượn (kể cả đã trả hoặc báo mất) thì không được xóa cứng để bảo toàn phiếu mượn.
+        if (await _bookCopyRepository.HasBorrowHistoryAsync(id))
+        {
+            throw new ConflictException(
+                $"Bản sao sách (Barcode: {copy.Barcode}) đã có lịch sử mượn nên không thể xóa.");
+        }
+
         await _bookCopyRepository.DeleteAsync(copy);
     }
 

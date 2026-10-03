@@ -2,7 +2,7 @@ namespace Library.Application.DTOs.BorrowRecords;
 
 public record BorrowRecordResponse(
     int Id,
-    string UserId,
+    Guid UserId,
     string UserFullName,
     DateTime BorrowDate,
     DateTime DueDate,
@@ -19,5 +19,6 @@ public record BorrowDetailResponse(
     string BookAuthor,
     DateTime? ReturnDate,
     string Status,
-    decimal FineAmount
+    decimal FineAmount,
+    bool IsOverdue
 );
