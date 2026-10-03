@@ -23,16 +23,29 @@ public class BookRepository : IBookRepository
             .ToListAsync();
     }
 
-    public async Task<Book?> GetByIdAsync(int id)
+    public async Task<Book?> GetByIdAsync(Guid id)
     {
         return await _context.Books
             .Include(b => b.Category)
             .FirstOrDefaultAsync(b => b.Id == id);
     }
 
-    public async Task<bool> CategoryExistsAsync(int categoryId)
+    public async Task<bool> CategoryExistsAsync(Guid categoryId)
     {
         return await _context.Categories.AnyAsync(c => c.Id == categoryId);
+    }
+
+    public async Task<Book?> GetByIsbnAsync(string isbn)
+    {
+        return await _context.Books
+            .Include(b => b.Category)
+            .FirstOrDefaultAsync(b => b.Isbn == isbn);
+    }
+
+    public async Task<bool> HasBorrowHistoryAsync(Guid bookId)
+    {
+        return await _context.BorrowDetails
+            .AnyAsync(bd => bd.BookCopy != null && bd.BookCopy.BookId == bookId);
     }
 
     public async Task<Book> AddAsync(Book book)

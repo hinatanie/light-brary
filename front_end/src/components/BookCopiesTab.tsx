@@ -6,7 +6,7 @@ import { Plus, Search, Edit3, Trash2, Barcode, X, RefreshCw } from 'lucide-react
 interface BookCopiesTabProps {
   copies: BookCopy[];
   books: Book[];
-  selectedBookId: number | null;
+  selectedBookId: string | null;
   onClearSelectedBook: () => void;
   onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
@@ -29,7 +29,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   const [targetCopy, setTargetCopy] = useState<BookCopy | null>(null);
 
   // Form states for Add Copy
-  const [bookId, setBookId] = useState<number>(selectedBookId || books[0]?.id || 1);
+  const [bookId, setBookId] = useState<string>(selectedBookId || books[0]?.id || '');
   const [barcode, setBarcode] = useState('');
   const [conditionNote, setConditionNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,7 +40,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   };
 
   const openAddModal = () => {
-    setBookId(selectedBookId || books[0]?.id || 1);
+    setBookId(selectedBookId || books[0]?.id || '');
     generateBarcode();
     setConditionNote('Sách mới nhập kho');
     setIsAddModalOpen(true);
@@ -51,7 +51,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
     setSubmitting(true);
     try {
       await bookCopiesApi.create({
-        bookId: Number(bookId),
+        bookId: bookId,
         barcode: barcode.trim(),
         conditionNote: conditionNote.trim() || undefined,
       });
@@ -260,7 +260,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                 <select
                   required
                   value={bookId}
-                  onChange={(e) => setBookId(Number(e.target.value))}
+                  onChange={(e) => setBookId(e.target.value)}
                 >
                   {books.map((b) => (
                     <option key={b.id} value={b.id}>

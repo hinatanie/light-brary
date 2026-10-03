@@ -9,7 +9,7 @@ import { RefreshCw } from 'lucide-react';
 export const AdminBookCopiesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const bookIdParam = searchParams.get('bookId');
-  const selectedBookId = bookIdParam ? Number(bookIdParam) : null;
+  const selectedBookId = bookIdParam || null;
 
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);

@@ -21,5 +21,5 @@ public record CreateBookRequest(
     string? ImageUrl,
 
     [Required(ErrorMessage = "Thể loại sách không được để trống")]
-    int CategoryId
+    Guid CategoryId
 );

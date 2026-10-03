@@ -1,19 +1,21 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Domain.Entities;
 
-[Table("AspNetRoles")]
+[Table("Roles")]
+[Index(nameof(Name), IsUnique = true, Name = "UX_Roles_Name")]
 public class Role
 {
     [Key]
-    [MaxLength(450)]
     [Column("Id")]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
+    [Required]
     [MaxLength(256)]
-    [Column("Name")]
-    public string? Name { get; set; }
+    [Column("Name", TypeName = "citext")]
+    public string Name { get; set; } = string.Empty;
 
     // Navigation properties
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

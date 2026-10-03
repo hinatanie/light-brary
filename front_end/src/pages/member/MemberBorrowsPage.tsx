@@ -37,7 +37,7 @@ export const MemberBorrowsPage: React.FC = () => {
 
   const filteredBorrows = borrows.filter((b) => {
     const matchesSearch =
-      b.id.toString().includes(searchTerm) ||
+      b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.details.some(
         (d) =>
           d.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,7 +114,7 @@ export const MemberBorrowsPage: React.FC = () => {
               </thead>
               <tbody>
                 {filteredBorrows.map((b) => {
-                  const isOverdue = b.status === 'Borrowing' && new Date(b.dueDate) < new Date();
+                  const isOverdue = b.status === 'Overdue' || (b.status === 'Borrowing' && b.details.some(d => d.isOverdue));
                   return (
                     <tr key={b.id}>
                       <td>
@@ -130,7 +130,11 @@ export const MemberBorrowsPage: React.FC = () => {
                       <td>{b.details.length} cuốn</td>
                       <td>
                         <span className={`badge badge-${b.status.toLowerCase()}`}>
-                          {b.status === 'Borrowing' ? 'Đang mượn' : 'Đã trả đủ'}
+                          {b.status === 'Borrowing'
+                            ? 'Đang mượn'
+                            : b.status === 'Returned'
+                            ? 'Đã trả đủ'
+                            : 'Quá hạn'}
                         </span>
                       </td>
                       <td>{b.note || '—'}</td>
@@ -186,14 +190,18 @@ export const MemberBorrowsPage: React.FC = () => {
                 </div>
                 <div>
                   <span style={{ color: '#94a3b8' }}>Hạn trả: </span>
-                  <strong style={{ color: new Date(selectedRecord.dueDate) < new Date() && selectedRecord.status === 'Borrowing' ? '#ef4444' : '#f8fafc' }}>
+                  <strong style={{ color: (selectedRecord.status === 'Overdue' || selectedRecord.details.some(d => d.isOverdue)) ? '#ef4444' : '#f8fafc' }}>
                     {new Date(selectedRecord.dueDate).toLocaleDateString('vi-VN')}
                   </strong>
                 </div>
                 <div>
                   <span style={{ color: '#94a3b8' }}>Trạng thái phiếu: </span>
                   <span className={`badge badge-${selectedRecord.status.toLowerCase()}`}>
-                    {selectedRecord.status === 'Borrowing' ? 'Đang mượn' : 'Đã hoàn tất'}
+                    {selectedRecord.status === 'Borrowing'
+                      ? 'Đang mượn'
+                      : selectedRecord.status === 'Returned'
+                      ? 'Đã trả đủ'
+                      : 'Quá hạn'}
                   </span>
                 </div>
                 {selectedRecord.note && (
@@ -238,11 +246,17 @@ export const MemberBorrowsPage: React.FC = () => {
                         <td>
                           <span
                             style={{
-                              color: d.status === 'Returned' ? '#10b981' : '#f59e0b',
+                              color: d.status === 'Returned' ? '#10b981' : d.status === 'Lost' ? '#ef4444' : d.isOverdue ? '#f87171' : '#f59e0b',
                               fontWeight: 600,
                             }}
                           >
-                            {d.status === 'Returned' ? 'Đã trả' : 'Đang mượn'}
+                            {d.status === 'Returned'
+                              ? 'Đã trả'
+                              : d.status === 'Lost'
+                              ? 'Báo mất'
+                              : d.isOverdue
+                              ? 'Quá hạn'
+                              : 'Đang mượn'}
                           </span>
                         </td>
                         <td>

@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api';
-import { LogIn, Lock, Phone, Info, AlertCircle, RefreshCw } from 'lucide-react';
+import { LogIn, Lock, Phone, AlertCircle, RefreshCw } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [phoneNumber, setPhoneNumber] = useState('0916114536');
-  const [password, setPassword] = useState('Asdf1234!');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +27,14 @@ export const LoginPage: React.FC = () => {
 
       login(res);
 
+      if (res.mustChangePassword) {
+        navigate('/change-password', { replace: true });
+        return;
+      }
+
       // Redirect based on role or state.from
       const from = (location.state as any)?.from?.pathname;
-      if (from && from !== '/login' && from !== '/unauthorized') {
+      if (from && from !== '/login' && from !== '/unauthorized' && from !== '/change-password') {
         navigate(from, { replace: true });
         return;
       }
@@ -42,7 +47,11 @@ export const LoginPage: React.FC = () => {
         navigate('/member', { replace: true });
       }
     } catch (err: any) {
-      setError(err.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
+      if (err.status === 423 || err.code === 'ACCOUNT_LOCKED') {
+        setError('Tài khoản đã bị tạm khóa do nhập sai mật khẩu quá nhiều lần (5 lần). Vui lòng thử lại sau 15 phút.');
+      } else {
+        setError(err.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,13 +66,6 @@ export const LoginPage: React.FC = () => {
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
           Sử dụng số điện thoại đã đăng ký để truy cập
         </p>
-      </div>
-
-      <div className="login-tip-banner" style={{ marginBottom: '20px' }}>
-        <Info size={16} style={{ flexShrink: 0 }} />
-        <span>
-          Admin mặc định: SĐT <strong>0916114536</strong> | MK: <strong>Asdf1234!</strong>
-        </span>
       </div>
 
       {error && (

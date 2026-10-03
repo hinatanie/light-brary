@@ -19,9 +19,9 @@ public class BookCopiesController : ControllerBase
     /// <summary>
     /// Lấy danh sách tất cả bản sao vật lý của một đầu sách
     /// </summary>
-    [HttpGet("books/{bookId:int}/copies")]
+    [HttpGet("books/{bookId:guid}/copies")]
     [ProducesResponseType(typeof(List<BookCopyResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<BookCopyResponse>>> GetByBookId(int bookId)
+    public async Task<ActionResult<List<BookCopyResponse>>> GetByBookId(Guid bookId)
     {
         var copies = await _bookCopyService.GetByBookIdAsync(bookId);
         return Ok(copies);
@@ -30,10 +30,10 @@ public class BookCopiesController : ControllerBase
     /// <summary>
     /// Lấy thông tin chi tiết một bản sao sách theo ID
     /// </summary>
-    [HttpGet("book-copies/{id:int}")]
+    [HttpGet("book-copies/{id:guid}")]
     [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BookCopyResponse>> GetById(int id)
+    public async Task<ActionResult<BookCopyResponse>> GetById(Guid id)
     {
         var copy = await _bookCopyService.GetByIdAsync(id);
         return Ok(copy);
@@ -56,10 +56,10 @@ public class BookCopiesController : ControllerBase
     /// <summary>
     /// Cập nhật ghi chú tình trạng bản sao sách (mới, cũ, rách bìa...)
     /// </summary>
-    [HttpPatch("book-copies/{id:int}/condition")]
+    [HttpPatch("book-copies/{id:guid}/condition")]
     [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BookCopyResponse>> UpdateCondition(int id, [FromBody] UpdateBookCopyConditionRequest request)
+    public async Task<ActionResult<BookCopyResponse>> UpdateCondition(Guid id, [FromBody] UpdateBookCopyConditionRequest request)
     {
         var updated = await _bookCopyService.UpdateConditionAsync(id, request);
         return Ok(updated);
@@ -68,11 +68,11 @@ public class BookCopiesController : ControllerBase
     /// <summary>
     /// Xóa bản sao sách khỏi hệ thống (chặn nếu đang được mượn)
     /// </summary>
-    [HttpDelete("book-copies/{id:int}")]
+    [HttpDelete("book-copies/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         await _bookCopyService.DeleteAsync(id);
         return NoContent();

@@ -19,8 +19,16 @@ public class RoleRepository : IRoleRepository
         return await _context.Roles.FirstOrDefaultAsync(r => r.Name == name);
     }
 
+    public async Task<List<Role>> GetByNamesAsync(IEnumerable<string> names)
+    {
+        var nameList = names.ToList();
+        return await _context.Roles
+            .Where(r => nameList.Contains(r.Name))
+            .ToListAsync();
+    }
+
     public async Task<List<Role>> GetAllAsync()
     {
-        return await _context.Roles.AsNoTracking().ToListAsync();
+        return await _context.Roles.AsNoTracking().OrderBy(r => r.Name).ToListAsync();
     }
 }

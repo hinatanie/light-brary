@@ -13,11 +13,12 @@ public record RegisterRequest(
     string Email,
 
     [Required(ErrorMessage = "Mật khẩu không được để trống")]
-    [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+    [MaxLength(128, ErrorMessage = "Mật khẩu quá dài")]
     string Password,
 
-    [MaxLength(50, ErrorMessage = "Số điện thoại không được vượt quá 50 ký tự")]
-    string? PhoneNumber,
+    [Required(ErrorMessage = "Số điện thoại không được để trống")]
+    [MaxLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự")]
+    string PhoneNumber,
 
     [MaxLength(255, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự")]
     string? Address

@@ -13,6 +13,7 @@ import { MemberLayout } from './layouts/MemberLayout';
 // Auth & Status Pages
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -53,6 +54,10 @@ const RootRedirect: React.FC = () => {
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user.mustChangePassword) {
+    return <Navigate to="/change-password" replace />;
   }
 
   if (user.roles && user.roles.some((r) => r.toLowerCase() === 'admin')) {
@@ -110,6 +115,11 @@ export function App() {
                 <Route path="borrows" element={<MemberBorrowsPage />} />
                 <Route path="profile" element={<MemberProfilePage />} />
               </Route>
+            </Route>
+
+            {/* Change Password (bất kỳ user đăng nhập nào) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/change-password" element={<ChangePasswordPage />} />
             </Route>
 
             {/* Common / Error Pages */}

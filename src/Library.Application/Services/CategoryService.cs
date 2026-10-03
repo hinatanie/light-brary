@@ -20,7 +20,7 @@ public class CategoryService : ICategoryService
         return categories.Select(c => MapToResponse(c, c.Books.Count)).ToList();
     }
 
-    public async Task<CategoryResponse> GetByIdAsync(int id)
+    public async Task<CategoryResponse> GetByIdAsync(Guid id)
     {
         var category = await _categoryRepository.GetByIdAsync(id);
         if (category == null)
@@ -45,7 +45,7 @@ public class CategoryService : ICategoryService
         return MapToResponse(created, 0);
     }
 
-    public async Task<CategoryResponse> UpdateAsync(int id, UpdateCategoryRequest request)
+    public async Task<CategoryResponse> UpdateAsync(Guid id, UpdateCategoryRequest request)
     {
         var category = await _categoryRepository.GetByIdAsync(id);
         if (category == null)
@@ -64,7 +64,7 @@ public class CategoryService : ICategoryService
         return MapToResponse(updated, updated.Books.Count);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var category = await _categoryRepository.GetByIdAsync(id);
         if (category == null)

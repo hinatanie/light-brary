@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Library.Application.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Api.Middleware;
 
@@ -32,25 +33,36 @@ public class ExceptionHandlingMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        var (statusCode, message) = exception switch
+        var (statusCode, code, message) = exception switch
         {
-            NotFoundException notFound       => (HttpStatusCode.NotFound, notFound.Message),
-            ConflictException conflict       => (HttpStatusCode.Conflict, conflict.Message),
-            BusinessException biz            => (HttpStatusCode.BadRequest, biz.Message),
-            UnauthorizedException unauth     => (HttpStatusCode.Unauthorized, unauth.Message),
-            ArgumentException argEx          => (HttpStatusCode.BadRequest, argEx.Message),
-            _                                => (HttpStatusCode.InternalServerError, "Đã xảy ra lỗi hệ thống không mong muốn.")
+            LockedException locked           => ((HttpStatusCode)423, "LOCKED", locked.Message),
+            NotFoundException notFound       => (HttpStatusCode.NotFound, "NOT_FOUND", notFound.Message),
+            ConflictException conflict       => (HttpStatusCode.Conflict, "CONFLICT", conflict.Message),
+            BusinessException biz            => (HttpStatusCode.BadRequest, "BAD_REQUEST", biz.Message),
+            UnauthorizedException unauth     => (HttpStatusCode.Unauthorized, "UNAUTHORIZED", unauth.Message),
+            ArgumentException argEx          => (HttpStatusCode.BadRequest, "BAD_REQUEST", argEx.Message),
+            DbUpdateException dbEx           => (HttpStatusCode.Conflict, "DATABASE_CONFLICT", "Xung đột dữ liệu cơ sở dữ liệu."),
+            _                                => (HttpStatusCode.InternalServerError, "INTERNAL_ERROR", "Đã xảy ra lỗi hệ thống không mong muốn.")
         };
 
         context.Response.StatusCode = (int)statusCode;
 
-        var response = new
-        {
-            status = (int)statusCode,
-            message
-        };
+        object responseObj = exception is LockedException lockedEx
+            ? new
+            {
+                status = (int)statusCode,
+                code,
+                message,
+                lockoutEndUtc = lockedEx.LockoutEndUtc
+            }
+            : new
+            {
+                status = (int)statusCode,
+                code,
+                message
+            };
 
-        var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+        var json = JsonSerializer.Serialize(responseObj, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });

@@ -1,10 +1,10 @@
 namespace Library.Application.DTOs.Users;
 
 public record UserResponse(
-    string Id,
+    Guid Id,
     string FullName,
     string Email,
-    string? PhoneNumber,
+    string PhoneNumber,
     string? Address,
     DateTime CreatedAt,
     List<string> Roles

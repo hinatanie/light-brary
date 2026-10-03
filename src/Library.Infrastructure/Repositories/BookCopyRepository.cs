@@ -14,7 +14,7 @@ public class BookCopyRepository : IBookCopyRepository
         _context = context;
     }
 
-    public async Task<List<BookCopy>> GetByBookIdAsync(int bookId)
+    public async Task<List<BookCopy>> GetByBookIdAsync(Guid bookId)
     {
         return await _context.BookCopies
             .Include(bc => bc.Book)
@@ -24,22 +24,27 @@ public class BookCopyRepository : IBookCopyRepository
             .ToListAsync();
     }
 
-    public async Task<BookCopy?> GetByIdAsync(int id)
+    public async Task<BookCopy?> GetByIdAsync(Guid id)
     {
         return await _context.BookCopies
             .Include(bc => bc.Book)
             .FirstOrDefaultAsync(bc => bc.Id == id);
     }
 
-    public async Task<bool> BarcodeExistsAsync(string barcode, int? excludeId = null)
+    public async Task<bool> BarcodeExistsAsync(string barcode, Guid? excludeId = null)
     {
         return await _context.BookCopies
             .AnyAsync(bc => bc.Barcode == barcode && (excludeId == null || bc.Id != excludeId));
     }
 
-    public async Task<bool> BookExistsAsync(int bookId)
+    public async Task<bool> BookExistsAsync(Guid bookId)
     {
         return await _context.Books.AnyAsync(b => b.Id == bookId);
+    }
+
+    public async Task<bool> HasBorrowHistoryAsync(Guid bookCopyId)
+    {
+        return await _context.BorrowDetails.AnyAsync(bd => bd.BookCopyId == bookCopyId);
     }
 
     public async Task<BookCopy> AddAsync(BookCopy bookCopy)
