@@ -42,6 +42,11 @@ public class BookCopyRepository : IBookCopyRepository
         return await _context.Books.AnyAsync(b => b.Id == bookId);
     }
 
+    public async Task<bool> HasBorrowHistoryAsync(int bookCopyId)
+    {
+        return await _context.BorrowDetails.AnyAsync(bd => bd.BookCopyId == bookCopyId);
+    }
+
     public async Task<BookCopy> AddAsync(BookCopy bookCopy)
     {
         await _context.BookCopies.AddAsync(bookCopy);

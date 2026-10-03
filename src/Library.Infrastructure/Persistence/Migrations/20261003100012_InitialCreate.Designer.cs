@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Library.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    [Migration("20261001175141_RemoveAccessFailedCountFromUser")]
-    partial class RemoveAccessFailedCountFromUser
+    [Migration("20261003100012_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,6 +23,7 @@ namespace Library.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Library.Domain.Entities.Book", b =>
@@ -47,9 +48,14 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
 
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ImageUrl");
+
                     b.Property<string>("Isbn")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("ISBN");
 
                     b.Property<int?>("PublishYear")
@@ -65,6 +71,13 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("Isbn")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Books_Isbn")
+                        .HasFilter("\"ISBN\" IS NOT NULL");
+
+                    b.HasIndex(new[] { "CategoryId" }, "IX_Books_CategoryId");
 
                     b.ToTable("Books");
                 });
@@ -99,7 +112,8 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Barcode")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("UX_BookCopies_Barcode");
 
                     b.HasIndex("BookId");
 
@@ -136,7 +150,10 @@ namespace Library.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookCopyId");
+                    b.HasIndex("BookCopyId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BorrowDetails_ActiveCopy")
+                        .HasFilter("\"Status\" = 0");
 
                     b.HasIndex("BorrowRecordId");
 
@@ -168,10 +185,8 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("Status");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("character varying(450)")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
                         .HasColumnName("UserId");
 
                     b.HasKey("Id");
@@ -197,36 +212,129 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasColumnType("citext")
                         .HasColumnName("Name");
 
                     b.HasKey("Id");
 
+                    b.HasIndex(new[] { "Name" }, "UX_Categories_Name")
+                        .IsUnique();
+
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Sách lập trình, kiến trúc phần mềm và cơ sở dữ liệu",
+                            Name = "Công nghệ thông tin"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Sách tài chính, khởi nghiệp và quản lý kinh doanh",
+                            Name = "Kinh tế & Quản trị"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Tiểu thuyết, truyện ngắn và tác phẩm văn học kinh điển",
+                            Name = "Văn học & Nghệ thuật"
+                        });
+                });
+
+            modelBuilder.Entity("Library.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("Id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ExpiresAt");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("FamilyId");
+
+                    b.Property<Guid?>("ReplacedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReplacedById");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("RevokedAt");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("TokenHash");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "FamilyId" }, "IX_RefreshTokens_FamilyId");
+
+                    b.HasIndex(new[] { "UserId" }, "IX_RefreshTokens_UserId");
+
+                    b.HasIndex(new[] { "TokenHash" }, "UX_RefreshTokens_TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("Library.Domain.Entities.Role", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasMaxLength(450)
-                        .HasColumnType("character varying(450)")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
                         .HasColumnName("Id");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
+                        .HasColumnType("citext")
                         .HasColumnName("Name");
 
                     b.HasKey("Id");
 
-                    b.ToTable("AspNetRoles");
+                    b.HasIndex(new[] { "Name" }, "UX_Roles_Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("7a0b1c10-1d2e-4f30-8a41-5b6c7d8e9f01"),
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("7a0b1c10-1d2e-4f30-8a41-5b6c7d8e9f02"),
+                            Name = "Staff"
+                        },
+                        new
+                        {
+                            Id = new Guid("7a0b1c10-1d2e-4f30-8a41-5b6c7d8e9f03"),
+                            Name = "Member"
+                        });
                 });
 
             modelBuilder.Entity("Library.Domain.Entities.User", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasMaxLength(450)
-                        .HasColumnType("character varying(450)")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
                         .HasColumnName("Id");
 
                     b.Property<string>("Address")
@@ -238,43 +346,66 @@ namespace Library.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("citext")
+                        .HasColumnName("Email");
+
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("FailedLoginCount");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)")
                         .HasColumnName("FullName");
 
+                    b.Property<DateTime?>("LockoutEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("LockoutEndUtc");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean")
+                        .HasColumnName("MustChangePassword");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("PasswordHash");
 
                     b.Property<string>("PhoneNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("PhoneNumber");
 
                     b.HasKey("Id");
 
-                    b.ToTable("AspNetUsers");
+                    b.HasIndex(new[] { "Email" }, "UX_Users_Email")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "PhoneNumber" }, "UX_Users_PhoneNumber")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Library.Domain.Entities.UserRole", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("character varying(450)")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
                         .HasColumnName("UserId");
 
-                    b.Property<string>("RoleId")
-                        .HasMaxLength(450)
-                        .HasColumnType("character varying(450)")
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
                         .HasColumnName("RoleId");
 
                     b.HasKey("UserId", "RoleId");
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles");
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("Library.Domain.Entities.Book", b =>
@@ -329,6 +460,17 @@ namespace Library.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Library.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("Library.Domain.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Library.Domain.Entities.UserRole", b =>
                 {
                     b.HasOne("Library.Domain.Entities.Role", "Role")
@@ -376,6 +518,8 @@ namespace Library.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Library.Domain.Entities.User", b =>
                 {
                     b.Navigation("BorrowRecords");
+
+                    b.Navigation("RefreshTokens");
 
                     b.Navigation("UserRoles");
                 });

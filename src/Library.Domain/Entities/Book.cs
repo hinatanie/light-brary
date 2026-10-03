@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Domain.Entities;
 
 [Table("Books")]
+[Index(nameof(CategoryId), Name = "IX_Books_CategoryId")]
 public class Book
 {
     [Key]
@@ -19,7 +21,8 @@ public class Book
     [Column("Author")]
     public string Author { get; set; } = string.Empty;
 
-    [MaxLength(50)]
+    /// <summary>ISBN đã chuẩn hóa (bỏ dấu gạch/khoảng trắng). Duy nhất khi có giá trị (filtered unique index).</summary>
+    [MaxLength(20)]
     [Column("ISBN")]
     public string? Isbn { get; set; }
 
