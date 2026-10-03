@@ -1,0 +1,6 @@
+@light_brary_HostAddress = http://localhost:5218
+
+GET {{light_brary_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
