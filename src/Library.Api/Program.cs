@@ -1,3 +1,4 @@
+using System.Text;
 using Library.Api.Middleware;
 using Library.Application.Interfaces;
 using Library.Application.Interfaces.Authentication;
@@ -5,43 +6,58 @@ using Library.Application.Services;
 using Library.Infrastructure.Authentication;
 using Library.Infrastructure.Persistence;
 using Library.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ─── Database ──────────────────────────────────────────────────────────────────
+// ─── 1. Database ──────────────────────────────────────────────────────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Chuỗi kết nối cơ sở dữ liệu 'DefaultConnection' chưa được cấu hình.");
+}
+
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// ─── Authentication Infrastructure ────────────────────────────────────────────
+// ─── 2. Authentication & JWT Configuration ────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
-// ─── JWT Authentication ────────────────────────────────────────────────────────
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "change-this-to-a-strong-secret-key-in-production";
+builder.Services.AddOptions<JwtOptions>()
+    .BindConfiguration(JwtOptions.SectionName)
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+.AddJwtBearer();
+
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtOptions>>((options, jwtOpt) =>
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSecretKey)),
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "LightBraryAPI",
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "LightBraryClient",
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-});
+        var cfg = jwtOpt.Value;
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg.SecretKey)),
+            ValidateIssuer = true,
+            ValidIssuer = cfg.Issuer,
+            ValidateAudience = true,
+            ValidAudience = cfg.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -50,46 +66,55 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("MemberOrAbove", p => p.RequireRole("Admin", "Staff", "Member"));
 });
 
-// ─── Dependency Injection: Repositories ───────────────────────────────────────
+// ─── 3. Dependency Injection: Repositories ────────────────────────────────────
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IBookCopyRepository, BookCopyRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBorrowRecordRepository, BorrowRecordRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
-// ─── Dependency Injection: Services ───────────────────────────────────────────
+// ─── 4. Dependency Injection: Services ────────────────────────────────────────
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IBookCopyService, BookCopyService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IBorrowRecordService, BorrowRecordService>();
 
-// ─── CORS ──────────────────────────────────────────────────────────────────────
+// ─── 5. CORS ──────────────────────────────────────────────────────────────────
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+if (configuredOrigins.Length == 0 && builder.Environment.IsDevelopment())
+{
+    configuredOrigins = new[] { "http://localhost:3000" };
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        if (configuredOrigins.Length > 0)
+        {
+            policy.WithOrigins(configuredOrigins)
+                  .AllowAnyHeader()
+                  .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+                  .AllowCredentials(); // Hỗ trợ gửi HttpOnly cookie refresh token
+        }
     });
 });
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// ─── Middleware Pipeline ───────────────────────────────────────────────────────
-// Xử lý lỗi toàn cục tập trung
+// ─── 6. Middleware Pipeline ───────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseCors();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -103,18 +128,31 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseMiddleware<PasswordChangeRequiredMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// ─── Khởi tạo dữ liệu ban đầu (First Run / Seed Admin) ─────────────────────────
+// ─── 7. Cơ sở dữ liệu: Migration & Bootstrap Admin ───────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<LibraryDbContext>();
     var passwordHasher = services.GetRequiredService<IPasswordHasher>();
     var logger = services.GetRequiredService<ILogger<Program>>();
-    await DbInitializer.SeedAsync(context, passwordHasher, logger);
+
+    var autoMigrate = builder.Configuration.GetValue("Database:AutoMigrate", builder.Environment.IsDevelopment());
+    await DatabaseInitializer.ApplyMigrationsAsync(context, autoMigrate, logger);
+
+    var bootstrapOptions = builder.Configuration.GetSection(BootstrapAdminOptions.SectionName).Get<BootstrapAdminOptions>();
+    await DatabaseInitializer.BootstrapAdminAsync(
+        context,
+        passwordHasher,
+        bootstrapOptions,
+        requireAdmin: builder.Environment.IsProduction(),
+        logger);
 }
 
 app.Run();
+
+public partial class Program { }

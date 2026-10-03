@@ -1,13 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Domain.Entities;
 
 [Table("Books")]
+[Index(nameof(CategoryId), Name = "IX_Books_CategoryId")]
 public class Book
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
     [MaxLength(250)]
@@ -19,7 +21,8 @@ public class Book
     [Column("Author")]
     public string Author { get; set; } = string.Empty;
 
-    [MaxLength(50)]
+    /// <summary>ISBN đã chuẩn hóa (bỏ dấu gạch/khoảng trắng). Duy nhất khi có giá trị (filtered unique index).</summary>
+    [MaxLength(20)]
     [Column("ISBN")]
     public string? Isbn { get; set; }
 
@@ -31,7 +34,7 @@ public class Book
     public string? ImageUrl { get; set; }
 
     [Column("CategoryId")]
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
     [ForeignKey(nameof(CategoryId))]
     public Category? Category { get; set; }

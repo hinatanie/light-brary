@@ -8,10 +8,10 @@ namespace Library.Domain.Entities;
 public class BookCopy
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Column("BookId")]
-    public int BookId { get; set; }
+    public Guid BookId { get; set; }
 
     [ForeignKey(nameof(BookId))]
     public Book? Book { get; set; }

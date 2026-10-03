@@ -3,19 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Library.Domain.Entities;
 
-[Table("AspNetUserRoles")]
+[Table("UserRoles")]
 public class UserRole
 {
-    [MaxLength(450)]
     [Column("UserId")]
-    public string UserId { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
 
     [ForeignKey(nameof(UserId))]
     public User? User { get; set; }
 
-    [MaxLength(450)]
     [Column("RoleId")]
-    public string RoleId { get; set; } = string.Empty;
+    public Guid RoleId { get; set; }
 
     [ForeignKey(nameof(RoleId))]
     public Role? Role { get; set; }

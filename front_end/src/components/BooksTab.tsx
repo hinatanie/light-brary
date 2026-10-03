@@ -8,7 +8,7 @@ interface BooksTabProps {
   categories: Category[];
   onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
-  onViewCopies: (bookId: number) => void;
+  onViewCopies: (bookId: string) => void;
   readOnly?: boolean;
 }
 
@@ -21,7 +21,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
   readOnly = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
@@ -31,7 +31,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
   const [isbn, setIsbn] = useState('');
   const [publishYear, setPublishYear] = useState<number | ''>('');
   const [imageUrl, setImageUrl] = useState('');
-  const [categoryId, setCategoryId] = useState<number>(categories[0]?.id || 1);
+  const [categoryId, setCategoryId] = useState<string>(categories[0]?.id || '');
   const [submitting, setSubmitting] = useState(false);
 
   const openCreateModal = () => {
@@ -41,7 +41,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
     setIsbn('');
     setPublishYear(new Date().getFullYear());
     setImageUrl('');
-    setCategoryId(categories[0]?.id || 1);
+    setCategoryId(categories[0]?.id || '');
     setIsModalOpen(true);
   };
 
@@ -66,7 +66,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
         isbn: isbn.trim() || undefined,
         publishYear: publishYear ? Number(publishYear) : undefined,
         imageUrl: imageUrl.trim() || undefined,
-        categoryId: Number(categoryId),
+        categoryId: categoryId,
       };
 
       if (editingBook) {
@@ -136,9 +136,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
         <select
           className="filter-select"
           value={categoryFilter}
-          onChange={(e) =>
-            setCategoryFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
-          }
+          onChange={(e) => setCategoryFilter(e.target.value)}
         >
           <option value="all">Tất cả thể loại ({books.length})</option>
           {categories.map((c) => (
@@ -319,7 +317,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                 <select
                   required
                   value={categoryId}
-                  onChange={(e) => setCategoryId(Number(e.target.value))}
+                  onChange={(e) => setCategoryId(e.target.value)}
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>

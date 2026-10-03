@@ -29,10 +29,10 @@ public class BooksController : ControllerBase
     /// <summary>
     /// Lấy thông tin chi tiết một đầu sách theo ID
     /// </summary>
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(BookResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BookResponse>> GetById(int id)
+    public async Task<ActionResult<BookResponse>> GetById(Guid id)
     {
         var book = await _bookService.GetBookByIdAsync(id);
         return Ok(book);
@@ -55,12 +55,12 @@ public class BooksController : ControllerBase
     /// <summary>
     /// Cập nhật thông tin đầu sách
     /// </summary>
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(typeof(BookResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BookResponse>> Update(int id, [FromBody] UpdateBookRequest request)
+    public async Task<ActionResult<BookResponse>> Update(Guid id, [FromBody] UpdateBookRequest request)
     {
         var updatedBook = await _bookService.UpdateBookAsync(id, request);
         return Ok(updatedBook);
@@ -69,11 +69,11 @@ public class BooksController : ControllerBase
     /// <summary>
     /// Xóa một đầu sách
     /// </summary>
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:guid}")]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = "StaffOrAdmin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         await _bookService.DeleteBookAsync(id);
         return NoContent();

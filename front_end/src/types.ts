@@ -1,18 +1,18 @@
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   description?: string | null;
   bookCount: number;
 }
 
 export interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   isbn?: string | null;
   publishYear?: number | null;
   imageUrl?: string | null;
-  categoryId: number;
+  categoryId: string;
   categoryName?: string | null;
   createdAt: string;
 }
@@ -20,8 +20,8 @@ export interface Book {
 export type BookCopyStatus = 'Available' | 'Borrowed' | 'Lost';
 
 export interface BookCopy {
-  id: number;
-  bookId: number;
+  id: string;
+  bookId: string;
   bookTitle: string;
   bookAuthor: string;
   barcode: string;
@@ -33,10 +33,11 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  phoneNumber?: string | null;
+  phoneNumber: string;
   address?: string | null;
   createdAt: string;
-  roles?: string[];
+  roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface Role {
@@ -48,18 +49,19 @@ export type BorrowRecordStatus = 'Borrowing' | 'Returned' | 'Overdue';
 export type BorrowDetailStatus = 'Borrowing' | 'Returned' | 'Lost';
 
 export interface BorrowDetail {
-  id: number;
-  bookCopyId: number;
+  id: string;
+  bookCopyId: string;
   barcode: string;
   bookTitle: string;
   bookAuthor: string;
   returnDate?: string | null;
   status: BorrowDetailStatus | string;
   fineAmount: number;
+  isOverdue?: boolean;
 }
 
 export interface BorrowRecord {
-  id: number;
+  id: string;
   userId: string;
   userFullName: string;
   borrowDate: string;
@@ -74,20 +76,24 @@ export interface AuthResponse {
   userId: string;
   fullName: string;
   email: string;
+  phoneNumber: string;
   expiresAt: string;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface MeResponse {
   userId: string;
   fullName: string;
   email: string;
-  phoneNumber?: string | null;
+  phoneNumber: string;
+  address?: string | null;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface UpdateUserRequest {
   fullName: string;
-  phoneNumber?: string | null;
+  phoneNumber: string;
   address?: string | null;
 }

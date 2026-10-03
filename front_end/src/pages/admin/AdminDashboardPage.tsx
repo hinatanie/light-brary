@@ -56,12 +56,10 @@ export const AdminDashboardPage: React.FC = () => {
     loadData();
   }, []);
 
-  const activeBorrows = borrowRecords.filter((b) => b.status === 'Borrowing').length;
+  const activeBorrows = borrowRecords.filter((b) => b.status === 'Borrowing' || b.status === 'Overdue').length;
   const availableCopies = copies.filter((c) => c.status === 'Available').length;
   const borrowedCopies = copies.filter((c) => c.status === 'Borrowed').length;
-  const overdueBorrows = borrowRecords.filter(
-    (b) => b.status === 'Borrowing' && new Date(b.dueDate) < new Date()
-  ).length;
+  const overdueBorrows = borrowRecords.filter((b) => b.status === 'Overdue').length;
 
   return (
     <div className="tab-container">
@@ -195,7 +193,11 @@ export const AdminDashboardPage: React.FC = () => {
                       <td>{b.details.length} cuốn</td>
                       <td>
                         <span className={`badge badge-${b.status.toLowerCase()}`}>
-                          {b.status === 'Borrowing' ? 'Đang mượn' : 'Đã trả'}
+                          {b.status === 'Borrowing'
+                            ? 'Đang mượn'
+                            : b.status === 'Returned'
+                            ? 'Đã trả đủ'
+                            : 'Quá hạn'}
                         </span>
                       </td>
                     </tr>

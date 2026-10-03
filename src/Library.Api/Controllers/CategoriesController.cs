@@ -29,10 +29,10 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Lấy thông tin chi tiết một thể loại theo ID
     /// </summary>
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CategoryResponse>> GetById(int id)
+    public async Task<ActionResult<CategoryResponse>> GetById(Guid id)
     {
         var category = await _categoryService.GetByIdAsync(id);
         return Ok(category);
@@ -55,13 +55,13 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Cập nhật thông tin thể loại sách
     /// </summary>
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CategoryResponse>> Update(int id, [FromBody] UpdateCategoryRequest request)
+    public async Task<ActionResult<CategoryResponse>> Update(Guid id, [FromBody] UpdateCategoryRequest request)
     {
         var updated = await _categoryService.UpdateAsync(id, request);
         return Ok(updated);
@@ -70,12 +70,12 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Xóa một thể loại sách (chặn nếu còn chứa sách)
     /// </summary>
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:guid}")]
     [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         await _categoryService.DeleteAsync(id);
         return NoContent();

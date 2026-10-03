@@ -73,9 +73,6 @@ light-brary/
 - **[WeatherForecast.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/WeatherForecast.cs):** Class dữ liệu mẫu của template .NET, có thể xóa khi bắt đầu code tính năng chính thức.
 - **`bin/` và `obj/`:** Thư mục chứa file nhị phân sau khi biên dịch (`.dll`, `.pdb`). Trình biên dịch tự sinh ra, không sửa tay và đã chặn trong `.gitignore`.
 
-> [!NOTE]
-> **Thư mục `server/` (Legacy):** Là cấu trúc cũ lúc mới tạo dự án khi chưa phân tách Clean Architecture. Toàn bộ code đã được dời sang `src/`. Các file tạm `bin/`, `obj/` còn lại trong `server/` có thể xóa an toàn bằng lệnh: `rm -rf server`.
-
 ---
 
 ## 2. Các Lệnh .NET CLI Cốt Lõi
@@ -1113,20 +1110,20 @@ sequenceDiagram
     else hasUsers == false (Hệ thống mới tinh, chạy lần đầu!)
         Note over Seeder: 🚀 Bắt đầu quy trình cấp phát Admin mặc định
         
-        Seeder->>DB: Kiểm tra Role 'Admin' trong AspNetRoles
+        Seeder->>DB: Kiểm tra Role 'Admin' trong Roles
         alt Chưa có Role Admin
-            Seeder->>DB: context.Roles.Add(new Role { Name = "Admin" })
+            Seeder->>DB: context.Roles.Add(new Role { Id = RoleNames.AdminId, Name = RoleNames.Admin })
         end
         
-        Seeder->>Hasher: Hash("Asdf1234!") với BCrypt (workFactor: 12)
+        Seeder->>Hasher: Hash(adminPassword) với BCrypt (workFactor: 12)
         Hasher-->>Seeder: Chuỗi mật khẩu băm ($2a$12$...)
         
-        Note over Seeder: Khởi tạo User với SĐT 0916114536
-        Seeder->>DB: context.Users.Add(User: FullName, SĐT, Email, PasswordHash)
+        Note over Seeder: Khởi tạo User từ config AdminBootstrap (MustChangePassword: true)
+        Seeder->>DB: context.Users.Add(User: FullName, SĐT, Email, PasswordHash, MustChangePassword = true)
         Seeder->>DB: context.UserRoles.Add(UserRole: UserId <-> RoleId)
         Seeder->>DB: await context.SaveChangesAsync()
         
-        Note over Seeder: Ghi log thông báo khởi tạo thành công ✅
+        Note over Seeder: Ghi log thông báo khởi tạo an toàn (không log plaintext password) ✅
     end
 
     Scope-->>App: Giải phóng scope
@@ -1135,107 +1132,54 @@ sequenceDiagram
 
 #### 3. Chi tiết mã nguồn triển khai
 
-##### A. Tầng Infrastructure — [DbInitializer.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/DbInitializer.cs)
+##### A. Tầng Infrastructure — [DatabaseInitializer.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Infrastructure/Persistence/DatabaseInitializer.cs)
 ```csharp
-public static class DbInitializer
+public static class DatabaseInitializer
 {
-    public static async Task SeedAsync(LibraryDbContext context, IPasswordHasher passwordHasher, ILogger logger)
+    public static async Task InitializeAsync(
+        LibraryDbContext context,
+        IConfiguration config,
+        IPasswordHasher passwordHasher,
+        ILogger logger)
     {
-        try
-        {
-            // 1. Kiểm tra xem đã có bất kỳ User nào trong cơ sở dữ liệu chưa
-            var hasUsers = await context.Users.AnyAsync();
-            if (!hasUsers)
-            {
-                logger.LogInformation("🚀 Phát hiện hệ thống chạy lần đầu. Đang tạo tài khoản Admin mặc định...");
+        // 1. Áp dụng Migration tự động và fail-fast nếu gặp lỗi DB
+        await context.Database.MigrateAsync();
 
-                // 2. Tạo Role Admin nếu chưa có
-                var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
-                if (adminRole == null)
-                {
-                    adminRole = new Role { Id = Guid.NewGuid().ToString(), Name = "Admin" };
-                    await context.Roles.AddAsync(adminRole);
-                }
-
-                // 3. Tạo tài khoản Admin với SĐT 0916114536 và mật khẩu băm của Asdf1234!
-                var adminUser = new User
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    FullName = "Quản trị viên (Admin)",
-                    Email = "admin@lightbrary.vn",
-                    PhoneNumber = "0916114536",
-                    PasswordHash = passwordHasher.Hash("Asdf1234!"), // Băm bằng BCrypt
-                    Address = "Hệ thống Thư viện LightBrary",
-                    CreatedAt = DateTime.UtcNow
-                };
-                await context.Users.AddAsync(adminUser);
-
-                // 4. Gán quyền Admin vào bảng liên kết AspNetUserRoles
-                await context.UserRoles.AddAsync(new UserRole
-                {
-                    UserId = adminUser.Id,
-                    RoleId = adminRole.Id
-                });
-
-                // 5. Lưu toàn bộ trong một Transaction duy nhất
-                await context.SaveChangesAsync();
-                logger.LogInformation("✅ Đã tạo thành công tài khoản Admin: SĐT '{PhoneNumber}', Email '{Email}', Mật khẩu 'Asdf1234!'.",
-                    adminUser.PhoneNumber, adminUser.Email);
-            }
-        }
-        catch (Exception ex)
-        {
-            // Bắt lỗi an toàn nếu DB Docker chưa bật hoặc chưa chạy migration
-            logger.LogWarning(ex, "⚠️ Không thể kiểm tra/khởi tạo dữ liệu người dùng ban đầu. Có thể DB chưa sẵn sàng.");
-        }
+        // 2. Khởi tạo tài khoản Admin từ cấu hình/biến môi trường AdminBootstrap
+        await BootstrapAdminAsync(context, config, passwordHasher, logger);
     }
 }
 ```
 
 ##### B. Tầng Api — Gọi Seeder trong [Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/src/Library.Api/Program.cs)
-Trong ASP.NET Core, các dịch vụ `DbContext` và `IPasswordHasher` được đăng ký với vòng đời **Scoped** (chỉ sống trong một phạm vi request). Do hàm `Main` / `Program.cs` chạy ở cấp độ Root Container, ta phải tạo một phạm vi tạm thời bằng `app.Services.CreateScope()`:
+Trong ASP.NET Core, DatabaseInitializer được gọi trước khi app bắt đầu nhận request:
 
 ```csharp
-// ─── Khởi tạo dữ liệu ban đầu (First Run / Seed Admin) ─────────────────────────
+// ─── Khởi tạo CSDL & Bootstrap Admin an toàn ─────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<LibraryDbContext>();
-    var passwordHasher = services.GetRequiredService<IPasswordHasher>();
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    await DbInitializer.SeedAsync(context, passwordHasher, logger);
+    var context = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await DatabaseInitializer.InitializeAsync(context, builder.Configuration, passwordHasher, logger);
 }
 
 app.Run(); // Bắt đầu nhận request
 ```
 
-##### C. Hỗ trợ đăng nhập linh hoạt bằng cả Số Điện Thoại & Email
-Để thuận tiện khi sử dụng tài khoản vừa tạo, endpoint `POST /api/v1/auth/login` được nâng cấp để độc giả hoặc Admin có thể đăng nhập bằng **Số điện thoại (`0916114536`)** hoặc **Email (`admin@lightbrary.vn`)**:
+##### C. Hỗ trợ đăng nhập bằng Số Điện Thoại
+Độc giả hoặc Quản trị viên đăng nhập thông qua endpoint `POST /api/v1/auth/login` bằng **Số điện thoại chuẩn hóa 10 chữ số**.
 
-```csharp
-// Trong AuthService.cs:
-public async Task<AuthResponse> LoginAsync(LoginRequest request)
-{
-    var identifier = request.Email.Trim(); // Người dùng có thể nhập Email hoặc SĐT
-    var user = await _userRepository.GetByEmailOrPhoneAsync(identifier)
-               ?? await _userRepository.GetByEmailAsync(identifier.ToLower());
+#### 4. Bảng thông tin cấu hình tài khoản Admin ban đầu (Development)
 
-    if (user == null || string.IsNullOrEmpty(user.PasswordHash))
-        throw new UnauthorizedException("Email/Số điện thoại hoặc mật khẩu không đúng.");
-
-    var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
-    // ...
-}
-```
-
-#### 4. Bảng thông tin tài khoản Admin mặc định
-
-| Thuộc tính | Giá trị thiết lập | Ghi chú |
+| Thuộc tính | Nguồn cấu hình | Ghi chú |
 | :--- | :--- | :--- |
-| **Họ và tên** | `Quản trị viên (Admin)` | Tên hiển thị trên hệ thống và giao diện |
-| **Số điện thoại** | `0916114536` | Dùng để đăng nhập hoặc liên hệ |
-| **Email** | `admin@lightbrary.vn` | Dùng để đăng nhập hoặc nhận thông báo |
-| **Mật khẩu thô** | `Asdf1234!` | Chỉ nhập khi đăng nhập, không lưu vào DB |
+| **Họ và tên** | `AdminBootstrap:FullName` | Mặc định: `Hệ Thống Quản Trị Viên` |
+| **Số điện thoại** | `AdminBootstrap:PhoneNumber` | Mặc định Dev: `0916114536` |
+| **Email** | `AdminBootstrap:Email` | Mặc định Dev: `admin@lightbrary.vn` |
+| **Mật khẩu khởi tạo** | `AdminBootstrap:Password` (Env / Secret Manager) | Mặc định Dev: `ThuVienSach2026!` (bắt buộc đổi ở lần đăng nhập đầu tiên) |
+| **Đổi MK lần đầu** | `MustChangePassword = true` | Hệ thống bắt buộc đổi mật khẩu mới trước khi thao tác |
+| **Vai trò (Role)** | `Admin` (UUID cố định) | Toàn quyền quản trị hệ thống |
 | **Mật khẩu trong DB** | Chuỗi băm BCrypt (`$2a$12$...`) | Bảo mật chống trộm cắp dữ liệu |
 | **Vai trò (Role)** | `Admin` | Có toàn quyền quản trị sách, thể loại, bản sao và độc giả |
 

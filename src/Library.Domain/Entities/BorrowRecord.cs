@@ -8,12 +8,10 @@ namespace Library.Domain.Entities;
 public class BorrowRecord
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Required]
-    [MaxLength(450)]
     [Column("UserId")]
-    public string UserId { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
 
     [ForeignKey(nameof(UserId))]
     public User? User { get; set; }

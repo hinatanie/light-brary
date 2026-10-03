@@ -1,6 +1,7 @@
+using Library.Application.DTOs.Roles;
 using Library.Application.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
 
@@ -8,18 +9,19 @@ namespace Library.Api.Controllers;
 [Route("api/v1/roles")]
 public class RolesController : ControllerBase
 {
-    private readonly IRoleRepository _roleRepository;
+    private readonly IRoleService _roleService;
 
-    public RolesController(IRoleRepository roleRepository)
+    public RolesController(IRoleService roleService)
     {
-        _roleRepository = roleRepository;
+        _roleService = roleService;
     }
 
     [HttpGet]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<ActionResult<List<string>>> GetAllRoles()
+    [ProducesResponseType(typeof(List<RoleResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<RoleResponse>>> GetAllRoles()
     {
-        var roles = await _roleRepository.GetAllAsync();
-        return Ok(roles.Select(r => r.Name).ToList());
+        var roles = await _roleService.GetAllAsync();
+        return Ok(roles);
     }
 }

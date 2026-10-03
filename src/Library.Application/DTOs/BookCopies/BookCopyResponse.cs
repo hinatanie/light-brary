@@ -1,8 +1,8 @@
 namespace Library.Application.DTOs.BookCopies;
 
 public record BookCopyResponse(
-    int Id,
-    int BookId,
+    Guid Id,
+    Guid BookId,
     string BookTitle,
     string BookAuthor,
     string Barcode,

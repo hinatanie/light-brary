@@ -8,6 +8,7 @@ export interface UserSession {
   email: string;
   phoneNumber?: string | null;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 interface AuthContextType {
@@ -37,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: parsed.email,
         phoneNumber: parsed.phoneNumber || null,
         roles: Array.isArray(parsed.roles) && parsed.roles.length > 0 ? parsed.roles : ['Member'],
+        mustChangePassword: Boolean(parsed.mustChangePassword),
       };
     } catch {
       return null;
@@ -61,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: me.email,
         phoneNumber: me.phoneNumber,
         roles,
+        mustChangePassword: Boolean(me.mustChangePassword),
       };
       setUser(updatedUser);
       localStorage.setItem('lightbrary_user', JSON.stringify(updatedUser));
@@ -86,7 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userId: data.userId,
       fullName: data.fullName,
       email: data.email,
+      phoneNumber: data.phoneNumber,
       roles,
+      mustChangePassword: Boolean(data.mustChangePassword),
     };
     localStorage.setItem('lightbrary_user', JSON.stringify(session));
     setToken(data.token);

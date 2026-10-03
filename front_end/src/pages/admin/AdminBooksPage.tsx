@@ -33,7 +33,7 @@ export const AdminBooksPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleViewCopies = (bookId: number) => {
+  const handleViewCopies = (bookId: string) => {
     navigate(`/admin/book-copies?bookId=${bookId}`);
   };
 

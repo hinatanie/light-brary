@@ -1,8 +1,8 @@
 namespace Library.Application.DTOs.BorrowRecords;
 
 public record BorrowRecordResponse(
-    int Id,
-    string UserId,
+    Guid Id,
+    Guid UserId,
     string UserFullName,
     DateTime BorrowDate,
     DateTime DueDate,
@@ -12,12 +12,13 @@ public record BorrowRecordResponse(
 );
 
 public record BorrowDetailResponse(
-    int Id,
-    int BookCopyId,
+    Guid Id,
+    Guid BookCopyId,
     string Barcode,
     string BookTitle,
     string BookAuthor,
     DateTime? ReturnDate,
     string Status,
-    decimal FineAmount
+    decimal FineAmount,
+    bool IsOverdue
 );

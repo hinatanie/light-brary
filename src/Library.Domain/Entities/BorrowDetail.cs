@@ -8,16 +8,16 @@ namespace Library.Domain.Entities;
 public class BorrowDetail
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Column("BorrowRecordId")]
-    public int BorrowRecordId { get; set; }
+    public Guid BorrowRecordId { get; set; }
 
     [ForeignKey(nameof(BorrowRecordId))]
     public BorrowRecord? BorrowRecord { get; set; }
 
     [Column("BookCopyId")]
-    public int BookCopyId { get; set; }
+    public Guid BookCopyId { get; set; }
 
     [ForeignKey(nameof(BookCopyId))]
     public BookCopy? BookCopy { get; set; }

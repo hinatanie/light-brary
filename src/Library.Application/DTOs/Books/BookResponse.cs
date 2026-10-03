@@ -1,13 +1,13 @@
 namespace Library.Application.DTOs.Books;
 
 public record BookResponse(
-    int Id,
+    Guid Id,
     string Title,
     string Author,
     string? Isbn,
     int? PublishYear,
     string? ImageUrl,
-    int CategoryId,
+    Guid CategoryId,
     string? CategoryName,
     DateTime CreatedAt
 );
