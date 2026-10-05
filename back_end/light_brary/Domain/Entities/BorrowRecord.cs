@@ -12,14 +12,20 @@ namespace light_brary.Domain.Entities
     [Table("BorrowRecords")]
     public class BorrowRecord
     {
-        [Key] public int Id {get; set;}
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id {get; set;}
+
         public DateTime BorrowDate {get; set;} = DateTime.UtcNow;
         public DateTime DueDate {get; set;} = DateTime.UtcNow;
         public BorrowRecordStatus Status {get; set;} = BorrowRecordStatus.Borrowing;
+
+        [StringLength(255)]
         public string? Note {get; set;}
+
+        [ForeignKey(nameof(User))]
         public int UserId {get; set;}
  
-        // Navigation property
         public User User {get; set;} = null!;
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }

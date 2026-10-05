@@ -4,21 +4,32 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 using light_brary.Domain.Enums;
 
 namespace light_brary.Domain.Entities
 {
     [Table("BookCopies")]
+    [Index(nameof(Barcode), IsUnique = true)]
     public class BookCopy
     {
-        [Key] public int Id {get; set;}
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id {get; set;}
+
+        [Required]
+        [StringLength(50)]
         public string Barcode {get; set;} = null!;
+
         public BookCopyStatus Status {get; set;} = BookCopyStatus.Available;
+
+        [StringLength(255)]
         public string? ConditionNote {get; set;}
+
+        [ForeignKey(nameof(Book))]
         public int BookId {get; set;}
  
-        // Navigation property
         public Book Book {get; set;} = null!;
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }
