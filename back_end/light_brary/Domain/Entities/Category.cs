@@ -11,7 +11,7 @@ namespace light_brary.Domain.Entities
     public class Category
     {
         [Key] public int Id {get; set;}
-        public string Name {get; set;} = string.Empty;
+        public string Name {get; set;} = null!;
         public string? Description {get; set;}
  
         // Navigation property

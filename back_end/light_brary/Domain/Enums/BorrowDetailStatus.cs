@@ -4,6 +4,6 @@ namespace light_brary.Domain.Enums
     {
         Borrowing,
         Returned,
-        Status
+        Lost
     }
 }

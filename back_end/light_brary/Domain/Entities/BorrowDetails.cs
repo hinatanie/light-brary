@@ -18,8 +18,7 @@ namespace light_brary.Domain.Entities
         public int BorrowRecordId {get; set;}
         public int BookCopyId {get; set;}
 
-        // Navigation
-        public BorrowRecord? BorrowRecord {get; set;}
-        public BookCopy? BookCopy {get; set;}
+        public BorrowRecord BorrowRecord {get; set;} = null!;
+        public BookCopy BookCopy {get; set;} = null!;
     }
 }

@@ -65,3 +65,58 @@ Bảng dưới đây sử dụng các giá trị enum hiện tại trong tài li
 | `IX_BorrowDetails_BorrowRecordId` | `BorrowDetails` | `BorrowRecordId` | Non-Unique | Tối ưu lấy toàn bộ danh sách các cuốn sách nằm trong một phiếu mượn. |
 | `IX_BorrowDetails_BookCopyId` | `BorrowDetails` | `BookCopyId` | Non-Unique | Tối ưu tra cứu lịch sử mượn của một cuốn sách vật lý cụ thể. |
 | `IX_AspNetUserRoles_RoleId` | `AspNetUserRoles` | `RoleId` | Non-Unique | Tối ưu tìm kiếm danh sách người dùng thuộc một vai trò nhất định. |
+
+
+## Enum của các Property
+
+### `BookCopyStatus`
+```csharp
+public enum BookCopyStatus : short
+{
+    Available = 0,
+    Borrowed = 1,
+    Lost = 2
+}
+```
+Ý nghĩa:
+```text
+0 = Available
+1 = Borrowed
+2 = Lost
+```
+
+---
+### `BorrowRecordStatus`
+Enum:
+```csharp
+public enum BorrowRecordStatus : short
+{
+    Borrowing = 0,
+    Returned = 1,
+    Lost = 2
+}
+```
+Ý nghĩa:
+```text
+0 = Borrowing
+1 = Returned
+2 = Lost
+```
+
+---
+### `BorrowDetailStatus`
+Enum:
+```csharp
+public enum BorrowDetailStatus : short
+{
+    Borrowing = 0,
+    Returned = 1,
+    Lost = 2
+}
+```
+Ý nghĩa:
+```text
+0 = Borrowing
+1 = Returned
+2 = Lost
+```

@@ -13,13 +13,13 @@ namespace light_brary.Domain.Entities
     public class BookCopy
     {
         [Key] public int Id {get; set;}
-        public string Barcode {get; set;} = string.Empty;
+        public string Barcode {get; set;} = null!;
         public BookCopyStatus Status {get; set;} = BookCopyStatus.Available;
         public string? ConditionNote {get; set;}
         public int BookId {get; set;}
  
         // Navigation property
-        public Book? Book {get; set;}
+        public Book Book {get; set;} = null!;
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }
 }
