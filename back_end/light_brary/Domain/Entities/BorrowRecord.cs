@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 using light_brary.Domain.Enums;
 
@@ -26,7 +27,11 @@ namespace light_brary.Domain.Entities
         public int UserId {get; set;}
  
         [ForeignKey(nameof(UserId))]
+        [InverseProperty(nameof(User.BorrowRecords))]
+        [DeleteBehavior(DeleteBehavior.Restrict)]
         public User User {get; set;} = null!;
+
+        [InverseProperty(nameof(BorrowDetail.BorrowRecord))]
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }
 }

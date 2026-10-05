@@ -30,7 +30,11 @@ namespace light_brary.Domain.Entities
         public int BookId {get; set;}
  
         [ForeignKey(nameof(BookId))]
+        [InverseProperty(nameof(Book.BookCopies))]
+        [DeleteBehavior(DeleteBehavior.Restrict)]
         public Book Book {get; set;} = null!;
+
+        [InverseProperty(nameof(BorrowDetail.BookCopy))]
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }
 }

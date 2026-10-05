@@ -23,6 +23,7 @@ namespace light_brary.Domain.Entities
         [StringLength(255)]
         public string? Description {get; set;}
  
+        [InverseProperty(nameof(Book.Category))]
         public ICollection<Book> Books {get; set;} = new List<Book>();
     }
 }

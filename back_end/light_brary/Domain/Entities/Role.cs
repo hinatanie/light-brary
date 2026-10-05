@@ -24,6 +24,7 @@ namespace light_brary.Domain.Entities
         [StringLength(50)]
         public string Name {get; set;} = string.Empty;
 
+        [InverseProperty(nameof(UserRole.Role))]
         public ICollection<UserRole> UserRoles {get; set;} = new List<UserRole>();
     }
 }

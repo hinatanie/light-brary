@@ -34,7 +34,11 @@ namespace light_brary.Domain.Entities
         public int CategoryId {get; set;}
  
         [ForeignKey(nameof(CategoryId))]
+        [InverseProperty(nameof(Category.Books))]
+        [DeleteBehavior(DeleteBehavior.Restrict)]
         public Category Category {get; set;} = null!;
+
+        [InverseProperty(nameof(BookCopy.Book))]
         public ICollection<BookCopy> BookCopies {get; set;} = new List<BookCopy>();
     }
 }

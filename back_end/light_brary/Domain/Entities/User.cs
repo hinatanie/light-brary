@@ -32,7 +32,10 @@ namespace light_brary.Domain.Entities
 
         public DateTime CreatedAt {get; set;} = DateTime.UtcNow;
 
+        [InverseProperty(nameof(UserRole.User))]
         public ICollection<UserRole> UserRoles {get; set;} = new List<UserRole>();
+
+        [InverseProperty(nameof(BorrowRecord.User))]
         public ICollection<BorrowRecord> BorrowRecords { get; set; } = new List<BorrowRecord>();
     }
 }
