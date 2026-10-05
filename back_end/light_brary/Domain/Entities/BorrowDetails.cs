@@ -19,13 +19,14 @@ namespace light_brary.Domain.Entities
         public DateTime? ReturnDate {get; set;}
         public BorrowDetailStatus Status {get; set;} = BorrowDetailStatus.Borrowing;
 
-        [ForeignKey(nameof(BorrowRecord))]
         public int BorrowRecordId {get; set;}
 
-        [ForeignKey(nameof(BookCopy))]
         public int BookCopyId {get; set;}
 
+        [ForeignKey(nameof(BorrowRecordId))]
         public BorrowRecord BorrowRecord {get; set;} = null!;
+
+        [ForeignKey(nameof(BookCopyId))]
         public BookCopy BookCopy {get; set;} = null!;
     }
 }

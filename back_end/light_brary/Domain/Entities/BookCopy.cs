@@ -27,9 +27,9 @@ namespace light_brary.Domain.Entities
         [StringLength(255)]
         public string? ConditionNote {get; set;}
 
-        [ForeignKey(nameof(Book))]
         public int BookId {get; set;}
  
+        [ForeignKey(nameof(BookId))]
         public Book Book {get; set;} = null!;
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }

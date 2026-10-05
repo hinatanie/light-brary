@@ -31,9 +31,9 @@ namespace light_brary.Domain.Entities
         public int? PublishYear {get; set;}
         public DateTime CreatedAt {get; set;} = DateTime.UtcNow;
 
-        [ForeignKey(nameof(Category))]
         public int CategoryId {get; set;}
  
+        [ForeignKey(nameof(CategoryId))]
         public Category Category {get; set;} = null!;
         public ICollection<BookCopy> BookCopies {get; set;} = new List<BookCopy>();
     }

@@ -10,13 +10,14 @@ namespace light_brary.Domain.Entities
     [Table("AspNetUserRoles")]
     public class UserRole
     {
-        [ForeignKey(nameof(User))]
         public int UserId {get; set;}
 
-        [ForeignKey(nameof(Role))]
         public int RoleId {get; set;}
 
+        [ForeignKey(nameof(UserId))]
         public User User {get; set;} = null!; 
+
+        [ForeignKey(nameof(RoleId))]
         public Role Role {get; set;} = null!;
     }
 }
