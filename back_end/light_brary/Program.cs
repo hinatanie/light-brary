@@ -1,10 +1,16 @@
 using light_brary.Application.Interfaces;
 using light_brary.Application.Services;
+using light_brary.Infrastructure.Persistence;
 using light_brary.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+/* Cấu hình Database */
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 /* Đăng ký các Serivce */
 builder.Services.AddScoped<IBookCopyService, BookCopyService>();
