@@ -1,13 +1,36 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using light_brary.Application.Interfaces;
+using light_brary.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
-namespace light_brary.Application.Services
+namespace light_brary.Infrastructure.Authentication
 {
+    /// <summary>
+    /// Bọc PasswordHasher có sẵn của ASP.NET Core Identity (PBKDF2 + salt ngẫu nhiên),
+    /// không cần cài thêm package.
+    /// </summary>
     public class PasswordHasher : IPasswordHasher
     {
-        
+        private readonly PasswordHasher<User> _hasher = new();
+
+        public string Hash(string password)
+        {
+            return _hasher.HashPassword(null!, password);
+        }
+
+        public bool Verify(string password, string passwordHash)
+        {
+            if (string.IsNullOrEmpty(passwordHash)) return false;
+
+            try
+            {
+                var result = _hasher.VerifyHashedPassword(null!, passwordHash, password);
+                return result != PasswordVerificationResult.Failed;
+            }
+            catch (FormatException)
+            {
+                // Chuỗi hash trong DB không đúng định dạng (vd: lưu plain text)
+                return false;
+            }
+        }
     }
 }

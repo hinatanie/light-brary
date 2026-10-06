@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using light_brary.Application.DTOs.Auth;
 
 namespace light_brary.Application.Interfaces
 {
     public interface IAuthService
     {
-        
+        Task<AuthResponse> LoginAsync(LoginRequest request);
     }
 }
