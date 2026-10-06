@@ -1,12 +1,13 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using light_brary.Domain.Entities;
 
 namespace light_brary.Application.Interfaces
 {
-    public interface IBookRepository
+    public interface IBookRepository : IGenericRepository<Book>
     {
-        
+        Task<Book?> GetByIsbnAsync(string isbn);
+        Task<IEnumerable<Book>> GetByCategoryIdAsync(int categoryId);
+        Task<Book?> GetWithDetailsAsync(int id);
     }
 }
