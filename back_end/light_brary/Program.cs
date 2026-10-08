@@ -4,6 +4,7 @@ using light_brary.Application.Services;
 using light_brary.Infrastructure.Authentication;
 using light_brary.Infrastructure.Persistence;
 using light_brary.Infrastructure.Repositories;
+using light_brary.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -74,7 +75,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
+// Custom Middleware: Tự bóc tách Bearer token và nạp User vào HttpContext.User
+app.UseJwtAuthenticationMiddleware();
 app.UseAuthorization();
 
 app.MapControllers();
