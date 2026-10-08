@@ -8,5 +8,6 @@ namespace light_brary.Application.Interfaces
     {
         Task<IEnumerable<BorrowRecord>> GetByUserIdAsync(int userId);
         Task<BorrowRecord?> GetWithDetailsAsync(int id);
+        Task<IEnumerable<BorrowRecord>> GetAllWithDetailsAsync(int? userId = null, string? status = null, bool? overdue = null);
     }
 }
