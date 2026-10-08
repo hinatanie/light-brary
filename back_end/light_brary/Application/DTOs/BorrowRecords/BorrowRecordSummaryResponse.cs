@@ -1,0 +1,20 @@
+using System;
+using light_brary.Application.DTOs.Users;
+
+namespace light_brary.Application.DTOs.BorrowRecords
+{
+    public class BorrowRecordSummaryResponse
+    {
+        public int Id { get; set; }
+        public UserResponse User { get; set; } = null!;
+        public DateTime BorrowDate { get; set; }
+        public DateTime DueDate { get; set; }
+        public string Status { get; set; } = null!;
+        public int TotalBooks { get; set; }
+        public int BorrowingCount { get; set; }
+        public int ReturnedCount { get; set; }
+        public int LostCount { get; set; }
+        public bool IsOverdue { get; set; }
+    }
+}
+
