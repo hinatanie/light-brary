@@ -9,5 +9,6 @@ namespace light_brary.Application.Interfaces
         Task<BookCopy?> GetByBarcodeAsync(string barcode);
         Task<IEnumerable<BookCopy>> GetByBookIdAsync(int bookId);
         Task<BookCopy?> GetWithBookAsync(int id);
+        Task<bool> HasBorrowHistoryAsync(int id);
     }
 }

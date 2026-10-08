@@ -24,7 +24,9 @@ namespace light_brary.Infrastructure.Repositories
         public async Task<IEnumerable<BookCopy>> GetByBookIdAsync(int bookId)
         {
             return await _context.BookCopies
+                .Include(bc => bc.Book)
                 .Where(bc => bc.BookId == bookId)
+                .OrderBy(bc => bc.Id)
                 .ToListAsync();
         }
 
@@ -33,6 +35,12 @@ namespace light_brary.Infrastructure.Repositories
             return await _context.BookCopies
                 .Include(bc => bc.Book)
                 .FirstOrDefaultAsync(bc => bc.Id == id);
+        }
+
+        public async Task<bool> HasBorrowHistoryAsync(int id)
+        {
+            return await _context.BorrowDetails
+                .AnyAsync(bd => bd.BookCopyId == id);
         }
     }
 }
