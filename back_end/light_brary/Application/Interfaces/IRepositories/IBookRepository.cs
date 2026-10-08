@@ -9,5 +9,6 @@ namespace light_brary.Application.Interfaces
         Task<Book?> GetByIsbnAsync(string isbn);
         Task<IEnumerable<Book>> GetByCategoryIdAsync(int categoryId);
         Task<Book?> GetWithDetailsAsync(int id);
+        Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, int? categoryId = null, string? author = null);
     }
 }
