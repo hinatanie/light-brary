@@ -40,7 +40,13 @@ builder.Services
             ClockSkew = TimeSpan.Zero,
         };
     });
-builder.Services.AddAuthorization();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", p => p.RequireRole(light_brary.Domain.Entities.Role.ADMIN));
+    options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(light_brary.Domain.Entities.Role.ADMIN, light_brary.Domain.Entities.Role.LIBRARIAN));
+    options.AddPolicy("UserOrAbove", p => p.RequireRole(light_brary.Domain.Entities.Role.ADMIN, light_brary.Domain.Entities.Role.LIBRARIAN, light_brary.Domain.Entities.Role.USER));
+});
 
 /* Đăng ký các Serivce */
 builder.Services.AddScoped<IBookCopyService, BookCopyService>();
@@ -73,6 +79,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // https://localhost:<port>/swagger
 }
 
+app.UseExceptionHandlingMiddleware();
 app.UseHttpsRedirection();
 
 // Custom Middleware: Tự bóc tách Bearer token và nạp User vào HttpContext.User

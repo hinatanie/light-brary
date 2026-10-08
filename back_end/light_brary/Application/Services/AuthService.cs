@@ -2,21 +2,28 @@ using light_brary.Application.DTOs.Auth;
 using light_brary.Application.DTOs.Users;
 using light_brary.Application.Exceptions;
 using light_brary.Application.Interfaces;
+using light_brary.Domain.Entities;
 
 namespace light_brary.Application.Services
 {
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
+        private readonly IUserRoleRepository _userRoleRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IJwtTokenService _jwtTokenService;
 
         public AuthService(
             IUserRepository userRepository,
+            IRoleRepository roleRepository,
+            IUserRoleRepository userRoleRepository,
             IPasswordHasher passwordHasher,
             IJwtTokenService jwtTokenService)
         {
             _userRepository = userRepository;
+            _roleRepository = roleRepository;
+            _userRoleRepository = userRoleRepository;
             _passwordHasher = passwordHasher;
             _jwtTokenService = jwtTokenService;
         }
@@ -52,6 +59,55 @@ namespace light_brary.Application.Services
                     Roles = roles,
                     CreatedAt = user.CreatedAt,
                 },
+            };
+        }
+
+        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+        {
+            var phone = request.PhoneNumber.Trim();
+            if (await _userRepository.ExistsByPhoneNumberAsync(phone))
+            {
+                throw new ConflictException("Số điện thoại này đã được đăng ký.");
+            }
+
+            var user = new User
+            {
+                FullName = request.FullName.Trim(),
+                PhoneNumber = phone,
+                Address = request.Address?.Trim(),
+                PasswordHash = _passwordHasher.Hash(request.Password),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.AddAsync(user);
+
+            var defaultRole = await _roleRepository.GetByNameAsync(Role.USER);
+            if (defaultRole is not null)
+            {
+                await _userRoleRepository.AddAsync(new UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = defaultRole.Id
+                });
+            }
+
+            var roles = defaultRole != null ? new List<string> { defaultRole.Name } : new List<string>();
+            var token = _jwtTokenService.GenerateToken(user, roles);
+
+            return new AuthResponse
+            {
+                AccessToken = token,
+                TokenType = "Bearer",
+                ExpiresIn = _jwtTokenService.ExpiresInSeconds,
+                User = new UserResponse
+                {
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    PhoneNumber = user.PhoneNumber,
+                    Address = user.Address,
+                    Roles = roles,
+                    CreatedAt = user.CreatedAt,
+                }
             };
         }
     }
