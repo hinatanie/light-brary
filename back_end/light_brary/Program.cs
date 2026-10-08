@@ -13,6 +13,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+/* Cấu hình CORS cho Frontend */
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 /* Cấu hình Swagger */
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -81,6 +93,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandlingMiddleware();
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 
 // Custom Middleware: Tự bóc tách Bearer token và nạp User vào HttpContext.User
 app.UseJwtAuthenticationMiddleware();
