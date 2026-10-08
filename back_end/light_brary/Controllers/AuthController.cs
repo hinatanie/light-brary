@@ -34,5 +34,16 @@ namespace light_brary.Controllers
                 return Unauthorized(new { message = ex.Message });
             }
         }
+
+        /// <summary>Đăng ký tài khoản người dùng mới.</summary>
+        [HttpPost("register")]
+        [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            var response = await _authService.RegisterAsync(request);
+            return StatusCode(StatusCodes.Status201Created, response);
+        }
     }
 }
