@@ -10,5 +10,7 @@ namespace light_brary.Application.Interfaces
         Task<bool> ExistsByPhoneNumberAsync(string phoneNumber);
         Task<User?> GetByIdWithRolesAsync(int id);
         Task<User?> GetByPhoneNumberWithRolesAsync(string phoneNumber);
+        Task<IEnumerable<User>> GetAllWithRolesAsync(string? keyword = null, string? role = null);
+        Task<bool> HasBorrowHistoryAsync(int userId);
     }
 }

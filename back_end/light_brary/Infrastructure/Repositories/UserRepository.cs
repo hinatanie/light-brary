@@ -39,5 +39,35 @@ namespace light_brary.Infrastructure.Repositories
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
         }
+
+        public async Task<IEnumerable<User>> GetAllWithRolesAsync(string? keyword = null, string? role = null)
+        {
+            var query = _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var kw = keyword.Trim().ToLower();
+                query = query.Where(u => u.FullName.ToLower().Contains(kw) || u.PhoneNumber.Contains(kw));
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                var r = role.Trim().ToLower();
+                query = query.Where(u => u.UserRoles.Any(ur => ur.Role.Name.ToLower() == r));
+            }
+
+            return await query
+                .OrderByDescending(u => u.CreatedAt)
+                .ThenByDescending(u => u.Id)
+                .ToListAsync();
+        }
+
+        public async Task<bool> HasBorrowHistoryAsync(int userId)
+        {
+            return await _context.BorrowRecords.AnyAsync(br => br.UserId == userId);
+        }
     }
 }
