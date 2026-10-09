@@ -38,8 +38,8 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    if (password.length < 10) {
-      setError('Mật khẩu phải có ít nhất 10 ký tự!');
+    if (password.length < 8) {
+      setError('Mật khẩu phải có ít nhất 8 ký tự!');
       return;
     }
 
