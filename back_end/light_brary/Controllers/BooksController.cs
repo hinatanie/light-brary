@@ -24,9 +24,10 @@ namespace light_brary.Controllers
         public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll(
             [FromQuery] string? keyword = null,
             [FromQuery] int? categoryId = null,
-            [FromQuery] string? author = null)
+            [FromQuery] string? author = null,
+            [FromQuery] bool? onlyAvailable = null)
         {
-            var books = await _bookService.GetAllAsync(keyword, categoryId, author);
+            var books = await _bookService.GetAllAsync(keyword, categoryId, author, onlyAvailable);
             return Ok(books);
         }
 

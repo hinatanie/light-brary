@@ -21,10 +21,15 @@ namespace light_brary.Application.Services
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, int? categoryId = null, string? author = null)
+        public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, int? categoryId = null, string? author = null, bool? onlyAvailable = null)
         {
             var books = await _bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
-            return books.Select(MapToResponse).ToList();
+            var responses = books.Select(MapToResponse);
+            if (onlyAvailable == true)
+            {
+                responses = responses.Where(b => b.AvailableCopies > 0);
+            }
+            return responses.ToList();
         }
 
         public async Task<BookResponse> GetByIdAsync(int id)
@@ -111,6 +116,8 @@ namespace light_brary.Application.Services
                 Author = book.Author,
                 ISBN = book.ISBN,
                 PublishYear = book.PublishYear,
+                CategoryId = book.CategoryId,
+                CategoryName = book.Category?.Name ?? string.Empty,
                 Category = book.Category != null ? new Category
                 {
                     Id = book.Category.Id,

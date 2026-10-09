@@ -20,7 +20,7 @@ namespace light_brary.Controllers
         /// Xem danh sách các bản sao của một đầu sách
         /// </summary>
         [HttpGet("books/{bookId:int}/copies")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<BookCopyResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<BookCopyResponse>>> GetByBookId(int bookId)
