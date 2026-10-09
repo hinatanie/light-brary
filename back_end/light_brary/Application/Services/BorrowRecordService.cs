@@ -370,7 +370,17 @@ namespace light_brary.Application.Services
                 BorrowingCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Borrowing),
                 ReturnedCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Returned),
                 LostCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Lost),
-                IsOverdue = isOverdue
+                IsOverdue = isOverdue,
+                Details = record.BorrowDetails.Select(d => new BorrowDetailResponse
+                {
+                    Id = d.Id,
+                    BookCopyId = d.BookCopyId,
+                    Barcode = d.BookCopy?.Barcode ?? string.Empty,
+                    BookId = d.BookCopy?.BookId ?? Guid.Empty,
+                    BookTitle = d.BookCopy?.Book?.Title ?? string.Empty,
+                    Status = d.Status.ToString(),
+                    ReturnDate = d.ReturnDate
+                }).ToList()
             };
         }
 

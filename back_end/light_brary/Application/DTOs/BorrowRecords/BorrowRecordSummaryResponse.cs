@@ -15,6 +15,7 @@ namespace light_brary.Application.DTOs.BorrowRecords
         public int ReturnedCount { get; set; }
         public int LostCount { get; set; }
         public bool IsOverdue { get; set; }
+        public List<BorrowDetailResponse> Details { get; set; } = new List<BorrowDetailResponse>();
     }
 }
 
