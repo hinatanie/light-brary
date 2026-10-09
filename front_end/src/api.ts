@@ -202,11 +202,30 @@ export const categoriesApi = {
 
 // ─── 3. Books API ────────────────────────────────────────────────────────────
 export const booksApi = {
-  getAll: (keyword?: string, categoryId?: number, author?: string) => {
+  getAll: (
+    filterOrKeyword?:
+      | string
+      | { keyword?: string; categoryId?: number | string; author?: string; onlyAvailable?: boolean },
+    categoryId?: number,
+    author?: string,
+    onlyAvailable?: boolean
+  ) => {
     const params = new URLSearchParams();
-    if (keyword) params.append('keyword', keyword);
-    if (categoryId) params.append('categoryId', categoryId.toString());
-    if (author) params.append('author', author);
+    if (typeof filterOrKeyword === 'object' && filterOrKeyword !== null) {
+      if (filterOrKeyword.keyword) params.append('keyword', filterOrKeyword.keyword);
+      if (filterOrKeyword.categoryId) params.append('categoryId', filterOrKeyword.categoryId.toString());
+      if (filterOrKeyword.author) params.append('author', filterOrKeyword.author);
+      if (filterOrKeyword.onlyAvailable !== undefined && filterOrKeyword.onlyAvailable !== null) {
+        params.append('onlyAvailable', filterOrKeyword.onlyAvailable.toString());
+      }
+    } else {
+      if (filterOrKeyword) params.append('keyword', filterOrKeyword);
+      if (categoryId) params.append('categoryId', categoryId.toString());
+      if (author) params.append('author', author);
+      if (onlyAvailable !== undefined && onlyAvailable !== null) {
+        params.append('onlyAvailable', onlyAvailable.toString());
+      }
+    }
     const qs = params.toString();
     return request<Book[]>(qs ? `/books?${qs}` : '/books');
   },
@@ -409,6 +428,21 @@ export const borrowRecordsApi = {
         userId: Number(data.userId),
         dueDate: data.dueDate,
         bookCopyIds: data.bookCopyIds.map(Number),
+        note: data.note,
+      }),
+    }),
+  borrowBookForMember: (data: {
+    bookId: string | number;
+    bookCopyId?: string | number;
+    dueDate?: string;
+    note?: string;
+  }) =>
+    request<BorrowRecord>('/me/borrow', {
+      method: 'POST',
+      body: JSON.stringify({
+        bookId: Number(data.bookId),
+        bookCopyId: data.bookCopyId ? Number(data.bookCopyId) : undefined,
+        dueDate: data.dueDate,
         note: data.note,
       }),
     }),
