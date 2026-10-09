@@ -58,7 +58,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(IEnumerable<BorrowRecordSummaryResponse>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BorrowRecordSummaryResponse>>> GetAll(
-            [FromQuery] int? userId = null,
+            [FromQuery] Guid? userId = null,
             [FromQuery] string? status = null,
             [FromQuery] bool? overdue = null)
         {
@@ -69,12 +69,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem chi tiết một phiếu mượn theo ID (Admin, Librarian hoặc chính độc giả sở hữu)
         /// </summary>
-        [HttpGet("api/borrow-records/{id:int}")]
+        [HttpGet("api/borrow-records/{id:guid}")]
         [Authorize]
         [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<BorrowRecordResponse>> GetById(int id)
+        public async Task<ActionResult<BorrowRecordResponse>> GetById(Guid id)
         {
             var record = await _borrowRecordService.GetByIdAsync(id);
             var userId = GetCurrentUserId();
@@ -89,12 +89,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Trả một cuốn sách theo ID chi tiết mượn (Librarian hoặc Admin)
         /// </summary>
-        [HttpPost("api/borrow-details/{id:int}/return")]
+        [HttpPost("api/borrow-details/{id:guid}/return")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BorrowDetailActionResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BorrowDetailActionResponse>> ReturnSingleBook(int id)
+        public async Task<ActionResult<BorrowDetailActionResponse>> ReturnSingleBook(Guid id)
         {
             var result = await _borrowRecordService.ReturnSingleBookAsync(id);
             return Ok(result);
@@ -118,23 +118,23 @@ namespace light_brary.Controllers
         /// <summary>
         /// Báo mất một cuốn sách đang mượn theo ID chi tiết mượn (Librarian hoặc Admin)
         /// </summary>
-        [HttpPost("api/borrow-details/{id:int}/mark-lost")]
+        [HttpPost("api/borrow-details/{id:guid}/mark-lost")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BorrowDetailActionResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BorrowDetailActionResponse>> MarkLostBook(int id)
+        public async Task<ActionResult<BorrowDetailActionResponse>> MarkLostBook(Guid id)
         {
             var result = await _borrowRecordService.MarkLostBookAsync(id);
             return Ok(result);
         }
 
-        private int GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
                       ?? User.FindFirstValue(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub);
 
-            if (string.IsNullOrEmpty(raw) || !int.TryParse(raw, out var userId))
+            if (string.IsNullOrEmpty(raw) || !Guid.TryParse(raw, out var userId))
                 throw new UnauthorizedException("Không xác định được danh tính người dùng.");
 
             return userId;

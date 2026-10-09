@@ -21,7 +21,7 @@ namespace light_brary.Application.Services
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, int? categoryId = null, string? author = null, bool? onlyAvailable = null)
+        public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null)
         {
             var books = await _bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
             var responses = books.Select(MapToResponse);
@@ -32,7 +32,7 @@ namespace light_brary.Application.Services
             return responses.ToList();
         }
 
-        public async Task<BookResponse> GetByIdAsync(int id)
+        public async Task<BookResponse> GetByIdAsync(Guid id)
         {
             var book = await _bookRepository.GetWithDetailsAsync(id);
             if (book is null)
@@ -57,6 +57,7 @@ namespace light_brary.Application.Services
                 Title = request.Title.Trim(),
                 Author = request.Author.Trim(),
                 ISBN = isbn,
+                ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim(),
                 PublishYear = request.PublishYear,
                 CategoryId = request.CategoryId,
                 CreatedAt = DateTime.UtcNow
@@ -68,7 +69,7 @@ namespace light_brary.Application.Services
             return MapToResponse(book);
         }
 
-        public async Task<BookResponse> UpdateAsync(int id, SaveBookRequest request)
+        public async Task<BookResponse> UpdateAsync(Guid id, SaveBookRequest request)
         {
             var book = await _bookRepository.GetWithDetailsAsync(id);
             if (book is null)
@@ -86,6 +87,7 @@ namespace light_brary.Application.Services
             book.Title = request.Title.Trim();
             book.Author = request.Author.Trim();
             book.ISBN = isbn;
+            book.ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim();
             book.PublishYear = request.PublishYear;
             book.CategoryId = request.CategoryId;
             book.Category = category;
@@ -95,7 +97,7 @@ namespace light_brary.Application.Services
             return MapToResponse(book);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var book = await _bookRepository.GetWithDetailsAsync(id);
             if (book is null)
@@ -115,6 +117,7 @@ namespace light_brary.Application.Services
                 Title = book.Title,
                 Author = book.Author,
                 ISBN = book.ISBN,
+                ImageUrl = book.ImageUrl,
                 PublishYear = book.PublishYear,
                 CategoryId = book.CategoryId,
                 CategoryName = book.Category?.Name ?? string.Empty,

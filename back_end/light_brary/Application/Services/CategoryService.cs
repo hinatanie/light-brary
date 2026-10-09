@@ -28,7 +28,7 @@ namespace light_brary.Application.Services
             }).ToList();
         }
 
-        public async Task<CategoryResponse> GetByIdAsync(int id)
+        public async Task<CategoryResponse> GetByIdAsync(Guid id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
             if (category is null)
@@ -65,7 +65,7 @@ namespace light_brary.Application.Services
             };
         }
 
-        public async Task<CategoryResponse> UpdateAsync(int id, SaveCategoryRequest request)
+        public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
             if (category is null)
@@ -89,7 +89,7 @@ namespace light_brary.Application.Services
             };
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var category = await _categoryRepository.GetWithBooksAsync(id);
             if (category is null)

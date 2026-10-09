@@ -31,10 +31,10 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem chi tiết một vai trò theo ID (Chỉ Admin)
         /// </summary>
-        [HttpGet("roles/{id:int}")]
+        [HttpGet("roles/{id:guid}")]
         [ProducesResponseType(typeof(RoleResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<RoleResponse>> GetById(int id)
+        public async Task<ActionResult<RoleResponse>> GetById(Guid id)
         {
             var role = await _roleService.GetByIdAsync(id);
             return Ok(role);
@@ -56,12 +56,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Đổi tên vai trò (Chỉ Admin, cấm đổi tên Admin/Librarian/User)
         /// </summary>
-        [HttpPut("roles/{id:int}")]
+        [HttpPut("roles/{id:guid}")]
         [ProducesResponseType(typeof(RoleResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<RoleResponse>> Update(int id, [FromBody] SaveRoleRequest request)
+        public async Task<ActionResult<RoleResponse>> Update(Guid id, [FromBody] SaveRoleRequest request)
         {
             var updated = await _roleService.UpdateAsync(id, request);
             return Ok(updated);
@@ -70,12 +70,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xóa vai trò (Chỉ Admin, cấm xóa role hệ thống hoặc role đang gán cho user)
         /// </summary>
-        [HttpDelete("roles/{id:int}")]
+        [HttpDelete("roles/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             await _roleService.DeleteAsync(id);
             return NoContent();
@@ -84,10 +84,10 @@ namespace light_brary.Controllers
         /// <summary>
         /// Lấy danh sách các vai trò của một người dùng (Chỉ Admin)
         /// </summary>
-        [HttpGet("users/{userId:int}/roles")]
+        [HttpGet("users/{userId:guid}/roles")]
         [ProducesResponseType(typeof(IEnumerable<RoleResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<RoleResponse>>> GetUserRoles(int userId)
+        public async Task<ActionResult<IEnumerable<RoleResponse>>> GetUserRoles(Guid userId)
         {
             var roles = await _roleService.GetUserRolesAsync(userId);
             return Ok(roles);
@@ -96,10 +96,10 @@ namespace light_brary.Controllers
         /// <summary>
         /// Gán vai trò cho người dùng (Chỉ Admin)
         /// </summary>
-        [HttpPost("users/{userId:int}/roles/{roleId:int}")]
+        [HttpPost("users/{userId:guid}/roles/{roleId:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> AssignRole(int userId, int roleId)
+        public async Task<IActionResult> AssignRole(Guid userId, Guid roleId)
         {
             await _roleService.AssignRoleToUserAsync(userId, roleId);
             return NoContent();
@@ -108,11 +108,11 @@ namespace light_brary.Controllers
         /// <summary>
         /// Gỡ vai trò khỏi người dùng (Chỉ Admin, chặn gỡ Admin cuối cùng)
         /// </summary>
-        [HttpDelete("users/{userId:int}/roles/{roleId:int}")]
+        [HttpDelete("users/{userId:guid}/roles/{roleId:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> RemoveRole(int userId, int roleId)
+        public async Task<IActionResult> RemoveRole(Guid userId, Guid roleId)
         {
             await _roleService.RemoveRoleFromUserAsync(userId, roleId);
             return NoContent();

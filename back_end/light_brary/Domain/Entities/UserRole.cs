@@ -12,9 +12,9 @@ namespace light_brary.Domain.Entities
     [PrimaryKey(nameof(UserId), nameof(RoleId))]
     public class UserRole
     {
-        public int UserId {get; set;}
+        public Guid UserId {get; set;}
 
-        public int RoleId {get; set;}
+        public Guid RoleId {get; set;}
 
         [ForeignKey(nameof(UserId))]
         [InverseProperty(nameof(User.UserRoles))]

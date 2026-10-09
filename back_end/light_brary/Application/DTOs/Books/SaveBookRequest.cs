@@ -20,10 +20,13 @@ namespace light_brary.Application.DTOs.Books
         [StringLength(50, MinimumLength = 1)]
         public string ISBN { get; set; } = null!;
 
+        [StringLength(500, ErrorMessage = "Đường dẫn ảnh không được vượt quá 500 ký tự")]
+        public string? ImageUrl { get; set; }
+
         [Range(1, int.MaxValue, ErrorMessage = "Năm xuất bản phải lớn hơn 0")]
         public int? PublishYear { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "Thể loại không hợp lệ")]
-        public int CategoryId { get; set; }
+        [Required(ErrorMessage = "Thể loại không được để trống")]
+        public Guid CategoryId { get; set; }
     }
 }

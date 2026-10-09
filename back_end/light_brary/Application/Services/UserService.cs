@@ -39,7 +39,7 @@ namespace light_brary.Application.Services
             return users.Select(MapToResponse).ToList();
         }
 
-        public async Task<UserResponse> GetByIdAsync(int id)
+        public async Task<UserResponse> GetByIdAsync(Guid id)
         {
             var user = await _userRepository.GetByIdWithRolesAsync(id);
             if (user is null)
@@ -79,7 +79,7 @@ namespace light_brary.Application.Services
             return MapToResponse(loadedUser ?? user);
         }
 
-        public async Task<UserResponse> UpdateAsync(int id, UpdateUserRequest request)
+        public async Task<UserResponse> UpdateAsync(Guid id, UpdateUserRequest request)
         {
             var user = await _userRepository.GetByIdWithRolesAsync(id);
             if (user is null)
@@ -99,7 +99,7 @@ namespace light_brary.Application.Services
             return MapToResponse(user);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var user = await _userRepository.GetByIdWithRolesAsync(id);
             if (user is null)
@@ -119,17 +119,17 @@ namespace light_brary.Application.Services
             await _userRepository.DeleteAsync(user);
         }
 
-        public async Task<UserResponse> GetProfileAsync(int userId)
+        public async Task<UserResponse> GetProfileAsync(Guid userId)
         {
             return await GetByIdAsync(userId);
         }
 
-        public async Task<UserResponse> UpdateProfileAsync(int userId, UpdateUserRequest request)
+        public async Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateUserRequest request)
         {
             return await UpdateAsync(userId, request);
         }
 
-        public async Task<IEnumerable<BorrowRecordResponse>> GetUserBorrowRecordsAsync(int userId)
+        public async Task<IEnumerable<BorrowRecordResponse>> GetUserBorrowRecordsAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdWithRolesAsync(userId);
             if (user is null)
@@ -141,7 +141,7 @@ namespace light_brary.Application.Services
             return records.Select(r => MapToBorrowRecordResponse(r, userResponse)).ToList();
         }
 
-        public async Task<IEnumerable<BorrowedBookResponse>> GetUserBorrowedBooksAsync(int userId)
+        public async Task<IEnumerable<BorrowedBookResponse>> GetUserBorrowedBooksAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
@@ -160,7 +160,7 @@ namespace light_brary.Application.Services
                         BorrowRecordId = record.Id,
                         BookCopyId = detail.BookCopyId,
                         Barcode = detail.BookCopy?.Barcode ?? string.Empty,
-                        BookId = detail.BookCopy?.BookId ?? 0,
+                        BookId = detail.BookCopy?.BookId ?? Guid.Empty,
                         BookTitle = detail.BookCopy?.Book?.Title ?? string.Empty,
                         BorrowDate = record.BorrowDate,
                         DueDate = record.DueDate,
@@ -203,7 +203,7 @@ namespace light_brary.Application.Services
                     Id = d.Id,
                     BookCopyId = d.BookCopyId,
                     Barcode = d.BookCopy?.Barcode ?? string.Empty,
-                    BookId = d.BookCopy?.BookId ?? 0,
+                    BookId = d.BookCopy?.BookId ?? Guid.Empty,
                     BookTitle = d.BookCopy?.Book?.Title ?? string.Empty,
                     Status = d.Status.ToString(),
                     ReturnDate = d.ReturnDate

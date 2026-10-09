@@ -14,8 +14,7 @@ namespace light_brary.Domain.Entities
     public class BorrowRecord
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id {get; set;}
+        public Guid Id {get; set;} = Guid.NewGuid();
 
         public DateTime BorrowDate {get; set;} = DateTime.UtcNow;
         public DateTime DueDate {get; set;} = DateTime.UtcNow;
@@ -24,7 +23,7 @@ namespace light_brary.Domain.Entities
         [StringLength(255)]
         public string? Note {get; set;}
 
-        public int UserId {get; set;}
+        public Guid UserId {get; set;}
  
         [ForeignKey(nameof(UserId))]
         [InverseProperty(nameof(User.BorrowRecords))]

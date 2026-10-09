@@ -33,7 +33,7 @@ namespace light_brary.Application.Services
             return roles.Select(r => new RoleResponse { Id = r.Id, Name = r.Name }).ToList();
         }
 
-        public async Task<RoleResponse> GetByIdAsync(int id)
+        public async Task<RoleResponse> GetByIdAsync(Guid id)
         {
             var role = await _roleRepository.GetByIdAsync(id);
             if (role is null)
@@ -55,7 +55,7 @@ namespace light_brary.Application.Services
             return new RoleResponse { Id = role.Id, Name = role.Name };
         }
 
-        public async Task<RoleResponse> UpdateAsync(int id, SaveRoleRequest request)
+        public async Task<RoleResponse> UpdateAsync(Guid id, SaveRoleRequest request)
         {
             var role = await _roleRepository.GetByIdAsync(id);
             if (role is null)
@@ -75,7 +75,7 @@ namespace light_brary.Application.Services
             return new RoleResponse { Id = role.Id, Name = role.Name };
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var role = await _roleRepository.GetByIdAsync(id);
             if (role is null)
@@ -91,7 +91,7 @@ namespace light_brary.Application.Services
             await _roleRepository.DeleteAsync(role);
         }
 
-        public async Task<IEnumerable<RoleResponse>> GetUserRolesAsync(int userId)
+        public async Task<IEnumerable<RoleResponse>> GetUserRolesAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
@@ -104,7 +104,7 @@ namespace light_brary.Application.Services
                 .ToList();
         }
 
-        public async Task AssignRoleToUserAsync(int userId, int roleId)
+        public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
@@ -125,7 +125,7 @@ namespace light_brary.Application.Services
             });
         }
 
-        public async Task RemoveRoleFromUserAsync(int userId, int roleId)
+        public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user is null)

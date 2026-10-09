@@ -4,9 +4,9 @@ namespace light_brary.Application.DTOs.BorrowRecords
 {
     public class BorrowDetailActionResponse
     {
-        public int Id { get; set; }
-        public int BorrowRecordId { get; set; }
-        public int BookCopyId { get; set; }
+        public Guid Id { get; set; }
+        public Guid BorrowRecordId { get; set; }
+        public Guid BookCopyId { get; set; }
         public string Status { get; set; } = null!;
         public DateTime? ReturnDate { get; set; }
         public string BookCopyStatus { get; set; } = null!;

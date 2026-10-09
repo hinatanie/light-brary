@@ -21,7 +21,7 @@ namespace light_brary.Infrastructure.Repositories
                 .FirstOrDefaultAsync(bc => bc.Barcode == barcode);
         }
 
-        public async Task<IEnumerable<BookCopy>> GetByBookIdAsync(int bookId)
+        public async Task<IEnumerable<BookCopy>> GetByBookIdAsync(Guid bookId)
         {
             return await _context.BookCopies
                 .Include(bc => bc.Book)
@@ -30,14 +30,14 @@ namespace light_brary.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<BookCopy?> GetWithBookAsync(int id)
+        public async Task<BookCopy?> GetWithBookAsync(Guid id)
         {
             return await _context.BookCopies
                 .Include(bc => bc.Book)
                 .FirstOrDefaultAsync(bc => bc.Id == id);
         }
 
-        public async Task<bool> HasBorrowHistoryAsync(int id)
+        public async Task<bool> HasBorrowHistoryAsync(Guid id)
         {
             return await _context.BorrowDetails
                 .AnyAsync(bd => bd.BookCopyId == id);

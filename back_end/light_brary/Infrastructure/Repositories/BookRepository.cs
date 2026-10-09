@@ -20,14 +20,14 @@ namespace light_brary.Infrastructure.Repositories
                 .FirstOrDefaultAsync(b => b.ISBN == isbn);
         }
 
-        public async Task<IEnumerable<Book>> GetByCategoryIdAsync(int categoryId)
+        public async Task<IEnumerable<Book>> GetByCategoryIdAsync(Guid categoryId)
         {
             return await _context.Books
                 .Where(b => b.CategoryId == categoryId)
                 .ToListAsync();
         }
 
-        public async Task<Book?> GetWithDetailsAsync(int id)
+        public async Task<Book?> GetWithDetailsAsync(Guid id)
         {
             return await _context.Books
                 .Include(b => b.Category)
@@ -35,7 +35,7 @@ namespace light_brary.Infrastructure.Repositories
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 
-        public async Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, int? categoryId = null, string? author = null)
+        public async Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, Guid? categoryId = null, string? author = null)
         {
             var query = _context.Books
                 .Include(b => b.Category)
@@ -48,7 +48,7 @@ namespace light_brary.Infrastructure.Repositories
                 query = query.Where(b => b.Title.ToLower().Contains(kw) || b.ISBN.ToLower().Contains(kw));
             }
 
-            if (categoryId.HasValue && categoryId.Value > 0)
+            if (categoryId.HasValue && categoryId.Value != Guid.Empty)
             {
                 query = query.Where(b => b.CategoryId == categoryId.Value);
             }

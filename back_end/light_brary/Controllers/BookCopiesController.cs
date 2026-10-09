@@ -19,11 +19,11 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem danh sách các bản sao của một đầu sách
         /// </summary>
-        [HttpGet("books/{bookId:int}/copies")]
+        [HttpGet("books/{bookId:guid}/copies")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<BookCopyResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<BookCopyResponse>>> GetByBookId(int bookId)
+        public async Task<ActionResult<IEnumerable<BookCopyResponse>>> GetByBookId(Guid bookId)
         {
             var copies = await _bookCopyService.GetByBookIdAsync(bookId);
             return Ok(copies);
@@ -32,13 +32,13 @@ namespace light_brary.Controllers
         /// <summary>
         /// Thêm một bản sao vật lý mới cho đầu sách
         /// </summary>
-        [HttpPost("books/{bookId:int}/copies")]
+        [HttpPost("books/{bookId:guid}/copies")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BookCopyResponse>> Create(int bookId, [FromBody] SaveBookCopyRequest request)
+        public async Task<ActionResult<BookCopyResponse>> Create(Guid bookId, [FromBody] SaveBookCopyRequest request)
         {
             var created = await _bookCopyService.CreateAsync(bookId, request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -47,11 +47,11 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem chi tiết một bản sao sách theo ID
         /// </summary>
-        [HttpGet("book-copies/{id:int}")]
+        [HttpGet("book-copies/{id:guid}")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<BookCopyResponse>> GetById(int id)
+        public async Task<ActionResult<BookCopyResponse>> GetById(Guid id)
         {
             var copy = await _bookCopyService.GetByIdAsync(id);
             return Ok(copy);
@@ -73,13 +73,13 @@ namespace light_brary.Controllers
         /// <summary>
         /// Sửa barcode hoặc condition note của bản sao
         /// </summary>
-        [HttpPut("book-copies/{id:int}")]
+        [HttpPut("book-copies/{id:guid}")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BookCopyResponse>> Update(int id, [FromBody] SaveBookCopyRequest request)
+        public async Task<ActionResult<BookCopyResponse>> Update(Guid id, [FromBody] SaveBookCopyRequest request)
         {
             var updated = await _bookCopyService.UpdateAsync(id, request);
             return Ok(updated);
@@ -88,12 +88,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xóa BookCopy nếu chưa có lịch sử mượn
         /// </summary>
-        [HttpDelete("book-copies/{id:int}")]
+        [HttpDelete("book-copies/{id:guid}")]
         [Authorize(Policy = "AdminOnly")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             await _bookCopyService.DeleteAsync(id);
             return NoContent();
@@ -102,12 +102,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Khôi phục sách mất (Lost) trở lại trạng thái Available
         /// </summary>
-        [HttpPost("book-copies/{id:int}/mark-available")]
+        [HttpPost("book-copies/{id:guid}/mark-available")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BookCopyResponse>> MarkAvailable(int id)
+        public async Task<ActionResult<BookCopyResponse>> MarkAvailable(Guid id)
         {
             var copy = await _bookCopyService.MarkAvailableAsync(id);
             return Ok(copy);
@@ -116,12 +116,12 @@ namespace light_brary.Controllers
         /// <summary>
         /// Đánh dấu sách mất ngoài nghiệp vụ mượn (Available -> Lost)
         /// </summary>
-        [HttpPost("book-copies/{id:int}/mark-lost")]
+        [HttpPost("book-copies/{id:guid}/mark-lost")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BookCopyResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BookCopyResponse>> MarkLost(int id)
+        public async Task<ActionResult<BookCopyResponse>> MarkLost(Guid id)
         {
             var copy = await _bookCopyService.MarkLostAsync(id);
             return Ok(copy);

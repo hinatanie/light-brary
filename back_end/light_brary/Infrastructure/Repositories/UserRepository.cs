@@ -24,7 +24,7 @@ namespace light_brary.Infrastructure.Repositories
                 .AnyAsync(u => u.PhoneNumber == phoneNumber);
         }
 
-        public async Task<User?> GetByIdWithRolesAsync(int id)
+        public async Task<User?> GetByIdWithRolesAsync(Guid id)
         {
             return await _context.Users
                 .Include(u => u.UserRoles)
@@ -65,7 +65,7 @@ namespace light_brary.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<bool> HasBorrowHistoryAsync(int userId)
+        public async Task<bool> HasBorrowHistoryAsync(Guid userId)
         {
             return await _context.BorrowRecords.AnyAsync(br => br.UserId == userId);
         }

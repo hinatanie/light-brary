@@ -15,8 +15,7 @@ namespace light_brary.Domain.Entities
     public class BookCopy
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id {get; set;}
+        public Guid Id {get; set;} = Guid.NewGuid();
 
         [Required]
         [StringLength(50)]
@@ -27,7 +26,7 @@ namespace light_brary.Domain.Entities
         [StringLength(255)]
         public string? ConditionNote {get; set;}
 
-        public int BookId {get; set;}
+        public Guid BookId {get; set;}
  
         [ForeignKey(nameof(BookId))]
         [InverseProperty(nameof(Book.BookCopies))]
