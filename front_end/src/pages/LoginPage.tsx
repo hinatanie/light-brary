@@ -21,7 +21,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
-  const { login, logout } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -93,25 +93,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
         password,
       });
 
-      const userRoles = (res.roles || []).map((r) => r.toLowerCase());
-
-      // ── Role Verification per portal ──
-      if (currentMode === 'admin') {
-        const hasAdminRole = userRoles.includes('admin');
-        if (!hasAdminRole) {
-          logout();
-          setError('Tài khoản này không có quyền Quản trị viên (Admin). Vui lòng đăng nhập đúng cổng được phân quyền.');
-          return;
-        }
-      } else if (currentMode === 'librarian') {
-        const hasStaffRole = userRoles.includes('librarian') || userRoles.includes('staff') || userRoles.includes('admin');
-        if (!hasStaffRole) {
-          logout();
-          setError('Tài khoản này không có quyền Thủ thư / Nhân viên. Vui lòng đăng nhập tại cổng Độc giả.');
-          return;
-        }
-      }
-
       // Successful login for this portal
       login(res);
 
@@ -120,26 +101,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
         return;
       }
 
-      // Redirect based on return state or target portal
+      // Điều hướng dựa vào đường dẫn đăng nhập (URL path), không phụ thuộc vào role của user
       const from = (location.state as any)?.from?.pathname;
-      if (from && !from.startsWith('/login') && from !== '/unauthorized' && from !== '/change-password') {
+      if (
+        from &&
+        !from.startsWith('/login') &&
+        from !== '/unauthorized' &&
+        from !== '/change-password' &&
+        from.startsWith(modeConfig.portalTarget)
+      ) {
         navigate(from, { replace: true });
         return;
       }
 
-      if (currentMode === 'admin') {
-        navigate('/admin', { replace: true });
-      } else if (currentMode === 'librarian') {
-        navigate('/staff', { replace: true });
-      } else {
-        if (userRoles.includes('admin')) {
-          navigate('/admin', { replace: true });
-        } else if (userRoles.includes('librarian') || userRoles.includes('staff')) {
-          navigate('/staff', { replace: true });
-        } else {
-          navigate('/member', { replace: true });
-        }
-      }
+      // /login -> /member (trang người dùng), /login/admin -> /admin, /login/librarian -> /staff (web thủ thư)
+      navigate(modeConfig.portalTarget, { replace: true });
     } catch (err: any) {
       if (err.status === 423 || err.code === 'ACCOUNT_LOCKED') {
         setError('Tài khoản đã bị tạm khóa do nhập sai mật khẩu quá 5 lần. Vui lòng thử lại sau 15 phút.');
