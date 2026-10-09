@@ -14,15 +14,14 @@ namespace light_brary.Domain.Entities
     public class BorrowDetail
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id {get; set;}
+        public Guid Id {get; set;} = Guid.NewGuid();
 
         public DateTime? ReturnDate {get; set;}
         public BorrowDetailStatus Status {get; set;} = BorrowDetailStatus.Borrowing;
 
-        public int BorrowRecordId {get; set;}
+        public Guid BorrowRecordId {get; set;}
 
-        public int BookCopyId {get; set;}
+        public Guid BookCopyId {get; set;}
 
         [ForeignKey(nameof(BorrowRecordId))]
         [InverseProperty(nameof(BorrowRecord.BorrowDetails))]

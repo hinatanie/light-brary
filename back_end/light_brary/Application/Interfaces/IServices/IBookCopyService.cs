@@ -6,13 +6,13 @@ namespace light_brary.Application.Interfaces
 {
     public interface IBookCopyService
     {
-        Task<IEnumerable<BookCopyResponse>> GetByBookIdAsync(int bookId);
-        Task<BookCopyResponse> GetByIdAsync(int id);
+        Task<IEnumerable<BookCopyResponse>> GetByBookIdAsync(Guid bookId);
+        Task<BookCopyResponse> GetByIdAsync(Guid id);
         Task<BookCopyResponse> GetByBarcodeAsync(string barcode);
-        Task<BookCopyResponse> CreateAsync(int bookId, SaveBookCopyRequest request);
-        Task<BookCopyResponse> UpdateAsync(int id, SaveBookCopyRequest request);
-        Task DeleteAsync(int id);
-        Task<BookCopyResponse> MarkAvailableAsync(int id);
-        Task<BookCopyResponse> MarkLostAsync(int id);
+        Task<BookCopyResponse> CreateAsync(Guid bookId, SaveBookCopyRequest request);
+        Task<BookCopyResponse> UpdateAsync(Guid id, SaveBookCopyRequest request);
+        Task DeleteAsync(Guid id);
+        Task<BookCopyResponse> MarkAvailableAsync(Guid id);
+        Task<BookCopyResponse> MarkLostAsync(Guid id);
     }
 }

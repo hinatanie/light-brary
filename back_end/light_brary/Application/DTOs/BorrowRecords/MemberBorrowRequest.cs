@@ -6,10 +6,9 @@ namespace light_brary.Application.DTOs.BorrowRecords
     public class MemberBorrowRequest
     {
         [Required(ErrorMessage = "Mã đầu sách không được để trống.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Mã đầu sách không hợp lệ.")]
-        public int BookId { get; set; }
+        public Guid BookId { get; set; }
 
-        public int? BookCopyId { get; set; }
+        public Guid? BookCopyId { get; set; }
 
         public DateTime? DueDate { get; set; }
 

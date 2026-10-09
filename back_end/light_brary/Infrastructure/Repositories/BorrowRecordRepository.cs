@@ -15,7 +15,7 @@ namespace light_brary.Infrastructure.Repositories
         {
         }
 
-        public async Task<IEnumerable<BorrowRecord>> GetByUserIdAsync(int userId)
+        public async Task<IEnumerable<BorrowRecord>> GetByUserIdAsync(Guid userId)
         {
             return await _context.BorrowRecords
                 .Include(br => br.BorrowDetails)
@@ -25,7 +25,7 @@ namespace light_brary.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<BorrowRecord?> GetWithDetailsAsync(int id)
+        public async Task<BorrowRecord?> GetWithDetailsAsync(Guid id)
         {
             return await _context.BorrowRecords
                 .Include(br => br.User)
@@ -37,7 +37,7 @@ namespace light_brary.Infrastructure.Repositories
                 .FirstOrDefaultAsync(br => br.Id == id);
         }
 
-        public async Task<IEnumerable<BorrowRecord>> GetAllWithDetailsAsync(int? userId = null, string? status = null, bool? overdue = null)
+        public async Task<IEnumerable<BorrowRecord>> GetAllWithDetailsAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
             var query = _context.BorrowRecords
                 .Include(br => br.User)
@@ -48,7 +48,7 @@ namespace light_brary.Infrastructure.Repositories
                         .ThenInclude(bc => bc!.Book)
                 .AsQueryable();
 
-            if (userId.HasValue && userId.Value > 0)
+            if (userId.HasValue && userId.Value != Guid.Empty)
             {
                 query = query.Where(br => br.UserId == userId.Value);
             }

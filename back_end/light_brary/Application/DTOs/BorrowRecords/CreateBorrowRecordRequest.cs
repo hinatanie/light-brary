@@ -8,12 +8,12 @@ namespace light_brary.Application.DTOs.BorrowRecords
 {
     public class CreateBorrowRecordRequest
     {
-        [Range(1, int.MaxValue, ErrorMessage = "Người mượn không hợp lệ.")]
-        public int UserId { get; set; }
+        [Required(ErrorMessage = "Người mượn không được để trống.")]
+        public Guid UserId { get; set; }
 
         [Required(ErrorMessage = "Danh sách bản sao không được để trống.")]
         [MinLength(1, ErrorMessage = "Phải có ít nhất một bản sao.")]
-        public List<int> BookCopyIds { get; set; } = new List<int>();
+        public List<Guid> BookCopyIds { get; set; } = new List<Guid>();
 
         [Required(ErrorMessage = "Hạn trả không được để trống.")]
         public DateTime DueDate { get; set; }

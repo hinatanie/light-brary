@@ -13,8 +13,7 @@ namespace light_brary.Domain.Entities
     public class Book
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id {get; set;}
+        public Guid Id {get; set;} = Guid.NewGuid();
 
         [Required]
         [StringLength(250)]
@@ -28,10 +27,13 @@ namespace light_brary.Domain.Entities
         [StringLength(50)]
         public string ISBN {get; set;} = null!;
 
+        [StringLength(500)]
+        public string? ImageUrl { get; set; }
+
         public int? PublishYear {get; set;}
         public DateTime CreatedAt {get; set;} = DateTime.UtcNow;
 
-        public int CategoryId {get; set;}
+        public Guid CategoryId {get; set;}
  
         [ForeignKey(nameof(CategoryId))]
         [InverseProperty(nameof(Category.Books))]

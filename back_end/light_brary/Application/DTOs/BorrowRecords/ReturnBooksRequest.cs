@@ -10,6 +10,6 @@ namespace light_brary.Application.DTOs.BorrowRecords
     {
         [Required(ErrorMessage = "Danh sách chi tiết không được để trống.")]
         [MinLength(1, ErrorMessage = "Danh sách chi tiết không được để trống.")]
-        public List<int> BorrowDetailIds { get; set; } = new List<int>();
+        public List<Guid> BorrowDetailIds { get; set; } = new List<Guid>();
     }
 }

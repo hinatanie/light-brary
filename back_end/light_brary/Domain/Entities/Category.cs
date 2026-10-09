@@ -13,8 +13,7 @@ namespace light_brary.Domain.Entities
     public class Category
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id {get; set;}
+        public Guid Id {get; set;} = Guid.NewGuid();
 
         [Required]
         [StringLength(150)]

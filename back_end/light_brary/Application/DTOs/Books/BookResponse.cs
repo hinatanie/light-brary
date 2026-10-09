@@ -8,12 +8,13 @@ namespace light_brary.Application.DTOs.Books
 {
     public class BookResponse
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Title { get; set; } = null!;
         public string Author { get; set; } = null!;
         public string ISBN { get; set; } = null!;
+        public string? ImageUrl { get; set; }
         public int? PublishYear { get; set; }
-        public int CategoryId { get; set; }
+        public Guid CategoryId { get; set; }
         public string CategoryName { get; set; } = null!;
         public Category Category { get; set; } = null!;
         public int TotalCopies { get; set; }

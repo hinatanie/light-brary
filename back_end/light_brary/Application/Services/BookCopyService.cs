@@ -21,7 +21,7 @@ namespace light_brary.Application.Services
             _bookRepository = bookRepository;
         }
 
-        public async Task<IEnumerable<BookCopyResponse>> GetByBookIdAsync(int bookId)
+        public async Task<IEnumerable<BookCopyResponse>> GetByBookIdAsync(Guid bookId)
         {
             var book = await _bookRepository.GetByIdAsync(bookId);
             if (book is null)
@@ -31,7 +31,7 @@ namespace light_brary.Application.Services
             return copies.Select(MapToResponse).ToList();
         }
 
-        public async Task<BookCopyResponse> GetByIdAsync(int id)
+        public async Task<BookCopyResponse> GetByIdAsync(Guid id)
         {
             var copy = await _bookCopyRepository.GetWithBookAsync(id);
             if (copy is null)
@@ -50,7 +50,7 @@ namespace light_brary.Application.Services
             return MapToResponse(copy);
         }
 
-        public async Task<BookCopyResponse> CreateAsync(int bookId, SaveBookCopyRequest request)
+        public async Task<BookCopyResponse> CreateAsync(Guid bookId, SaveBookCopyRequest request)
         {
             var book = await _bookRepository.GetByIdAsync(bookId);
             if (book is null)
@@ -75,7 +75,7 @@ namespace light_brary.Application.Services
             return MapToResponse(copy);
         }
 
-        public async Task<BookCopyResponse> UpdateAsync(int id, SaveBookCopyRequest request)
+        public async Task<BookCopyResponse> UpdateAsync(Guid id, SaveBookCopyRequest request)
         {
             var copy = await _bookCopyRepository.GetWithBookAsync(id);
             if (copy is null)
@@ -94,7 +94,7 @@ namespace light_brary.Application.Services
             return MapToResponse(copy);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var copy = await _bookCopyRepository.GetByIdAsync(id);
             if (copy is null)
@@ -107,7 +107,7 @@ namespace light_brary.Application.Services
             await _bookCopyRepository.DeleteAsync(copy);
         }
 
-        public async Task<BookCopyResponse> MarkAvailableAsync(int id)
+        public async Task<BookCopyResponse> MarkAvailableAsync(Guid id)
         {
             var copy = await _bookCopyRepository.GetWithBookAsync(id);
             if (copy is null)
@@ -125,7 +125,7 @@ namespace light_brary.Application.Services
             return MapToResponse(copy);
         }
 
-        public async Task<BookCopyResponse> MarkLostAsync(int id)
+        public async Task<BookCopyResponse> MarkLostAsync(Guid id)
         {
             var copy = await _bookCopyRepository.GetWithBookAsync(id);
             if (copy is null)

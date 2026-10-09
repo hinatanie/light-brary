@@ -7,9 +7,9 @@ namespace light_brary.Application.Interfaces
     public interface ICategoryService
     {
         Task<IEnumerable<CategoryResponse>> GetAllAsync();
-        Task<CategoryResponse> GetByIdAsync(int id);
+        Task<CategoryResponse> GetByIdAsync(Guid id);
         Task<CategoryResponse> CreateAsync(SaveCategoryRequest request);
-        Task<CategoryResponse> UpdateAsync(int id, SaveCategoryRequest request);
-        Task DeleteAsync(int id);
+        Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request);
+        Task DeleteAsync(Guid id);
     }
 }

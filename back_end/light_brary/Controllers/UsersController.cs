@@ -37,11 +37,11 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem chi tiết thông tin một người dùng theo ID (Librarian hoặc Admin)
         /// </summary>
-        [HttpGet("api/users/{id:int}")]
+        [HttpGet("api/users/{id:guid}")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<UserResponse>> GetById(int id)
+        public async Task<ActionResult<UserResponse>> GetById(Guid id)
         {
             var user = await _userService.GetByIdAsync(id);
             return Ok(user);
@@ -64,13 +64,13 @@ namespace light_brary.Controllers
         /// <summary>
         /// Cập nhật thông tin người dùng (Chỉ Admin)
         /// </summary>
-        [HttpPut("api/users/{id:int}")]
+        [HttpPut("api/users/{id:guid}")]
         [Authorize(Policy = "AdminOnly")]
         [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<UserResponse>> Update(int id, [FromBody] UpdateUserRequest request)
+        public async Task<ActionResult<UserResponse>> Update(Guid id, [FromBody] UpdateUserRequest request)
         {
             var updated = await _userService.UpdateAsync(id, request);
             return Ok(updated);
@@ -79,13 +79,13 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xóa người dùng (Chỉ Admin, chặn nếu có lịch sử mượn hoặc là Admin cuối cùng)
         /// </summary>
-        [HttpDelete("api/users/{id:int}")]
+        [HttpDelete("api/users/{id:guid}")]
         [Authorize(Policy = "AdminOnly")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             await _userService.DeleteAsync(id);
             return NoContent();
@@ -94,11 +94,11 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem lịch sử mượn của một người dùng (Librarian hoặc Admin)
         /// </summary>
-        [HttpGet("api/users/{id:int}/borrow-records")]
+        [HttpGet("api/users/{id:guid}/borrow-records")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(IEnumerable<BorrowRecordResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetUserBorrowRecords(int id)
+        public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetUserBorrowRecords(Guid id)
         {
             var records = await _userService.GetUserBorrowRecordsAsync(id);
             return Ok(records);
@@ -107,11 +107,11 @@ namespace light_brary.Controllers
         /// <summary>
         /// Xem những cuốn sách mà người dùng đang mượn (Librarian hoặc Admin)
         /// </summary>
-        [HttpGet("api/users/{id:int}/borrowed-books")]
+        [HttpGet("api/users/{id:guid}/borrowed-books")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(IEnumerable<BorrowedBookResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<BorrowedBookResponse>>> GetUserBorrowedBooks(int id)
+        public async Task<ActionResult<IEnumerable<BorrowedBookResponse>>> GetUserBorrowedBooks(Guid id)
         {
             var books = await _userService.GetUserBorrowedBooksAsync(id);
             return Ok(books);
@@ -181,12 +181,12 @@ namespace light_brary.Controllers
 
         #endregion
 
-        private int GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
                       ?? User.FindFirstValue(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub);
 
-            if (string.IsNullOrEmpty(raw) || !int.TryParse(raw, out var userId))
+            if (string.IsNullOrEmpty(raw) || !Guid.TryParse(raw, out var userId))
                 throw new UnauthorizedException("Không xác định được danh tính người dùng.");
 
             return userId;

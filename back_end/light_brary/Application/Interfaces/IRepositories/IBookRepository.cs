@@ -7,8 +7,8 @@ namespace light_brary.Application.Interfaces
     public interface IBookRepository : IGenericRepository<Book>
     {
         Task<Book?> GetByIsbnAsync(string isbn);
-        Task<IEnumerable<Book>> GetByCategoryIdAsync(int categoryId);
-        Task<Book?> GetWithDetailsAsync(int id);
-        Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, int? categoryId = null, string? author = null);
+        Task<IEnumerable<Book>> GetByCategoryIdAsync(Guid categoryId);
+        Task<Book?> GetWithDetailsAsync(Guid id);
+        Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, Guid? categoryId = null, string? author = null);
     }
 }

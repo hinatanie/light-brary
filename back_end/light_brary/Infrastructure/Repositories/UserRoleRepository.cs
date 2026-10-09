@@ -17,7 +17,7 @@ namespace light_brary.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<UserRole>> GetByUserIdAsync(int userId)
+        public async Task<IEnumerable<UserRole>> GetByUserIdAsync(Guid userId)
         {
             return await _context.UserRoles
                 .Include(ur => ur.Role)
@@ -25,7 +25,7 @@ namespace light_brary.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<UserRole>> GetByRoleIdAsync(int roleId)
+        public async Task<IEnumerable<UserRole>> GetByRoleIdAsync(Guid roleId)
         {
             return await _context.UserRoles
                 .Include(ur => ur.User)
@@ -33,7 +33,7 @@ namespace light_brary.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<UserRole?> GetByUserAndRoleIdAsync(int userId, int roleId)
+        public async Task<UserRole?> GetByUserAndRoleIdAsync(Guid userId, Guid roleId)
         {
             return await _context.UserRoles
                 .Include(ur => ur.User)
@@ -41,7 +41,7 @@ namespace light_brary.Infrastructure.Repositories
                 .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
         }
 
-        public async Task<bool> ExistsAsync(int userId, int roleId)
+        public async Task<bool> ExistsAsync(Guid userId, Guid roleId)
         {
             return await _context.UserRoles
                 .AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId);

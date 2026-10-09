@@ -101,11 +101,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-/* Khởi tạo dữ liệu mẫu ban đầu (Seeder) */
+/* Tự động áp dụng Migration (tạo bảng nếu chưa có) & Khởi tạo tài khoản Admin ban đầu */
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
+    await context.Database.MigrateAsync();
+
     var passwordHasher = services.GetRequiredService<IPasswordHasher>();
     await DataSeeder.SeedAsync(context, passwordHasher);
 }

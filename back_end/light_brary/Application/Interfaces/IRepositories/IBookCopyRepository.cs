@@ -7,8 +7,8 @@ namespace light_brary.Application.Interfaces
     public interface IBookCopyRepository : IGenericRepository<BookCopy>
     {
         Task<BookCopy?> GetByBarcodeAsync(string barcode);
-        Task<IEnumerable<BookCopy>> GetByBookIdAsync(int bookId);
-        Task<BookCopy?> GetWithBookAsync(int id);
-        Task<bool> HasBorrowHistoryAsync(int id);
+        Task<IEnumerable<BookCopy>> GetByBookIdAsync(Guid bookId);
+        Task<BookCopy?> GetWithBookAsync(Guid id);
+        Task<bool> HasBorrowHistoryAsync(Guid id);
     }
 }

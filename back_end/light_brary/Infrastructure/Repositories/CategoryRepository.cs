@@ -18,7 +18,7 @@ namespace light_brary.Infrastructure.Repositories
                 .FirstOrDefaultAsync(c => c.Name == name);
         }
 
-        public async Task<Category?> GetWithBooksAsync(int id)
+        public async Task<Category?> GetWithBooksAsync(Guid id)
         {
             return await _context.Categories
                 .Include(c => c.Books)

@@ -17,8 +17,7 @@ namespace light_brary.Domain.Entities
         public const string USER = "User";
 
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id {get; set;}
+        public Guid Id {get; set;} = Guid.NewGuid();
 
         [Required]
         [StringLength(50)]

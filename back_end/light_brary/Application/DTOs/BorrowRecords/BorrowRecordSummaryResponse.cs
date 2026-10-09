@@ -5,7 +5,7 @@ namespace light_brary.Application.DTOs.BorrowRecords
 {
     public class BorrowRecordSummaryResponse
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public UserResponse User { get; set; } = null!;
         public DateTime BorrowDate { get; set; }
         public DateTime DueDate { get; set; }

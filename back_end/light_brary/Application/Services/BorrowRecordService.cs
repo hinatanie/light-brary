@@ -97,7 +97,7 @@ namespace light_brary.Application.Services
             }
         }
 
-        public async Task<BorrowRecordResponse> BorrowForMemberAsync(int userId, MemberBorrowRequest request)
+        public async Task<BorrowRecordResponse> BorrowForMemberAsync(Guid userId, MemberBorrowRequest request)
         {
             var user = await _userRepository.GetByIdWithRolesAsync(userId);
             if (user is null)
@@ -111,7 +111,7 @@ namespace light_brary.Application.Services
             try
             {
                 BookCopy? copy = null;
-                if (request.BookCopyId.HasValue && request.BookCopyId.Value > 0)
+                if (request.BookCopyId.HasValue && request.BookCopyId.Value != Guid.Empty)
                 {
                     copy = await _context.BookCopies
                         .Include(bc => bc.Book)
@@ -168,13 +168,13 @@ namespace light_brary.Application.Services
             }
         }
 
-        public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(int? userId = null, string? status = null, bool? overdue = null)
+        public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
             var records = await _borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue);
             return records.Select(MapToSummaryResponse).ToList();
         }
 
-        public async Task<BorrowRecordResponse> GetByIdAsync(int id)
+        public async Task<BorrowRecordResponse> GetByIdAsync(Guid id)
         {
             var record = await _borrowRecordRepository.GetWithDetailsAsync(id);
             if (record is null)
@@ -183,7 +183,7 @@ namespace light_brary.Application.Services
             return MapToResponse(record);
         }
 
-        public async Task<BorrowDetailActionResponse> ReturnSingleBookAsync(int borrowDetailId)
+        public async Task<BorrowDetailActionResponse> ReturnSingleBookAsync(Guid borrowDetailId)
         {
             using var tx = await _context.Database.BeginTransactionAsync();
             try
@@ -295,7 +295,7 @@ namespace light_brary.Application.Services
             }
         }
 
-        public async Task<BorrowDetailActionResponse> MarkLostBookAsync(int borrowDetailId)
+        public async Task<BorrowDetailActionResponse> MarkLostBookAsync(Guid borrowDetailId)
         {
             using var tx = await _context.Database.BeginTransactionAsync();
             try
@@ -392,7 +392,7 @@ namespace light_brary.Application.Services
                     Id = d.Id,
                     BookCopyId = d.BookCopyId,
                     Barcode = d.BookCopy?.Barcode ?? string.Empty,
-                    BookId = d.BookCopy?.BookId ?? 0,
+                    BookId = d.BookCopy?.BookId ?? Guid.Empty,
                     BookTitle = d.BookCopy?.Book?.Title ?? string.Empty,
                     Status = d.Status.ToString(),
                     ReturnDate = d.ReturnDate

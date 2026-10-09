@@ -8,7 +8,7 @@ namespace light_brary.Infrastructure.Persistence
     {
         public static async Task SeedAsync(AppDbContext context, IPasswordHasher passwordHasher)
         {
-            // 1. Khởi tạo các Role cơ bản nếu chưa có
+            // 1. Khởi tạo các Role cơ bản nếu chưa có (Admin, Librarian, User)
             var defaultRoles = new[] { Role.ADMIN, Role.LIBRARIAN, Role.USER };
             foreach (var roleName in defaultRoles)
             {
@@ -19,9 +19,9 @@ namespace light_brary.Infrastructure.Persistence
             }
             await context.SaveChangesAsync();
 
-            // 2. Khởi tạo tài khoản Admin mặc định nếu chưa tồn tại
+            // 2. Kiểm tra nếu chưa có người dùng nào trong database thì tạo tài khoản Admin đầu tiên
             const string adminPhone = "0999999999";
-            if (!await context.Users.AnyAsync(u => u.PhoneNumber == adminPhone))
+            if (!await context.Users.AnyAsync())
             {
                 var adminRole = await context.Roles.FirstAsync(r => r.Name == Role.ADMIN);
 
@@ -30,7 +30,7 @@ namespace light_brary.Infrastructure.Persistence
                     FullName = "Administrator",
                     PhoneNumber = adminPhone,
                     Address = "Hệ thống LightBrary",
-                    PasswordHash = passwordHasher.Hash("Asdf1234"),
+                    PasswordHash = passwordHasher.Hash("Asdf1234!"),
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -47,3 +47,4 @@ namespace light_brary.Infrastructure.Persistence
         }
     }
 }
+
