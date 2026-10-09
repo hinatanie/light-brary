@@ -226,7 +226,6 @@ export const MemberBorrowsPage: React.FC = () => {
                       <th>Tác giả</th>
                       <th>Ngày trả thực tế</th>
                       <th>Trạng thái</th>
-                      <th>Tiền phạt</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -259,15 +258,6 @@ export const MemberBorrowsPage: React.FC = () => {
                               ? 'Quá hạn'
                               : 'Đang mượn'}
                           </span>
-                        </td>
-                        <td>
-                          {(d.fineAmount ?? 0) > 0 ? (
-                            <strong style={{ color: '#ef4444' }}>
-                              {(d.fineAmount ?? 0).toLocaleString('vi-VN')} VNĐ
-                            </strong>
-                          ) : (
-                            '0 VNĐ'
-                          )}
                         </td>
                       </tr>
                     ))}

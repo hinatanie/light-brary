@@ -153,7 +153,7 @@ export const authApi = {
   },
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
-    request<AuthResponse>('/me', {
+    request<{ message: string }>('/me/password', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
@@ -323,6 +323,15 @@ export const bookCopiesApi = {
     }),
 };
 
+const isRoleMatch = (r1: string, r2: string): boolean => {
+  const a = r1.trim().toLowerCase();
+  const b = r2.trim().toLowerCase();
+  if (a === b) return true;
+  if ((a === 'staff' || a === 'librarian') && (b === 'staff' || b === 'librarian')) return true;
+  if ((a === 'member' || a === 'user') && (b === 'member' || b === 'user')) return true;
+  return false;
+};
+
 // ─── 5. Users API ────────────────────────────────────────────────────────────
 export const usersApi = {
   getAll: (keyword?: string, role?: string) => {
@@ -333,17 +342,33 @@ export const usersApi = {
     return request<User[]>(qs ? `/users?${qs}` : '/users');
   },
   getById: (id: string | number) => request<User>(`/users/${id}`),
-  create: (data: {
+  create: async (data: {
     fullName: string;
     phoneNumber: string;
     password: string;
     address?: string;
-    roleIds: number[];
-  }) =>
-    request<User>('/users', {
+    roles?: string[];
+  }): Promise<User> => {
+    const user = await request<User>('/users', {
       method: 'POST',
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({
+        fullName: data.fullName.trim(),
+        phoneNumber: data.phoneNumber.trim(),
+        password: data.password,
+        address: data.address?.trim() || null,
+      }),
+    });
+
+    if (data.roles && data.roles.length > 0) {
+      try {
+        await usersApi.updateRoles(user.id, data.roles);
+      } catch (err) {
+        console.warn('Failed to assign initial roles:', err);
+      }
+    }
+
+    return user;
+  },
   update: (id: string | number, data: UpdateUserRequest) =>
     request<User>(`/users/${id}`, {
       method: 'PUT',
@@ -367,12 +392,12 @@ export const usersApi = {
       rolesApi.getAll(),
       request<Role[]>(`/users/${id}/roles`).catch(() => [] as Role[]),
     ]);
-    const currentRoleNames = currentRoles.map((r) => r.name.toLowerCase());
 
     // Gán role mới
     for (const rName of roleNames) {
-      if (!currentRoleNames.includes(rName.toLowerCase())) {
-        const found = allRoles.find((x) => x.name.toLowerCase() === rName.toLowerCase());
+      const alreadyHas = currentRoles.some((cr) => isRoleMatch(cr.name, rName));
+      if (!alreadyHas) {
+        const found = allRoles.find((x) => isRoleMatch(x.name, rName));
         if (found) {
           await request<void>(`/users/${id}/roles/${found.id}`, { method: 'POST' });
         }
@@ -381,7 +406,8 @@ export const usersApi = {
 
     // Gỡ role cũ
     for (const cr of currentRoles) {
-      if (!roleNames.some((rn) => rn.toLowerCase() === cr.name.toLowerCase())) {
+      const shouldKeep = roleNames.some((rn) => isRoleMatch(rn, cr.name));
+      if (!shouldKeep) {
         await request<void>(`/users/${id}/roles/${cr.id}`, { method: 'DELETE' });
       }
     }
@@ -390,6 +416,11 @@ export const usersApi = {
     request<BorrowRecord[]>(`/users/${userId}/borrow-records`),
   getUserBorrowedBooks: (userId: string | number) =>
     request<any[]>(`/users/${userId}/borrowed-books`),
+  updatePassword: (id: string | number, newPassword: string) =>
+    request<{ message: string }>(`/users/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ newPassword }),
+    }),
 };
 
 // ─── 6. Roles API ────────────────────────────────────────────────────────────
@@ -452,7 +483,7 @@ export const borrowRecordsApi = {
     }),
   returnBooks: (
     _borrowRecordId: string | number,
-    data: { items: { borrowDetailId: string | number; fineAmount?: number }[] }
+    data: { items: { borrowDetailId: string | number }[] }
   ) =>
     request<any>('/returns', {
       method: 'POST',
@@ -467,7 +498,7 @@ export const borrowRecordsApi = {
   markLost: (
     _borrowRecordId: string | number,
     detailId: string | number,
-    _data?: { fineAmount?: number; note?: string }
+    _data?: { note?: string }
   ) =>
     request<any>(`/borrow-details/${detailId}/mark-lost`, {
       method: 'POST',
