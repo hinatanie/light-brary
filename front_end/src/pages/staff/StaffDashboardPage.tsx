@@ -210,7 +210,7 @@ export const StaffDashboardPage: React.FC = () => {
                             {isOverdue && ' (Quá hạn)'}
                           </span>
                         </td>
-                        <td>{b.details.length} cuốn</td>
+                        <td>{b.totalBooks ?? b.details?.length ?? 0} cuốn</td>
                         <td>
                           <span className={`badge badge-${b.status.toLowerCase()}`}>
                             {b.status === 'Borrowing'

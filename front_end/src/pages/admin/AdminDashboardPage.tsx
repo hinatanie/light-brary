@@ -190,7 +190,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <td>{b.userFullName}</td>
                       <td>{new Date(b.borrowDate).toLocaleDateString('vi-VN')}</td>
                       <td>{new Date(b.dueDate).toLocaleDateString('vi-VN')}</td>
-                      <td>{b.details.length} cuốn</td>
+                      <td>{b.totalBooks ?? b.details?.length ?? 0} cuốn</td>
                       <td>
                         <span className={`badge badge-${b.status.toLowerCase()}`}>
                           {b.status === 'Borrowing'

@@ -407,6 +407,7 @@ export const borrowRecordsApi = {
       ...r,
       userFullName: r.user?.fullName || r.userFullName || 'Độc giả',
       details: r.details || [],
+      totalBooks: r.totalBooks ?? (r.details ? r.details.length : 0),
     }));
   },
   getById: (id: string | number) => request<BorrowRecord>(`/borrow-records/${id}`),
@@ -416,6 +417,7 @@ export const borrowRecordsApi = {
       ...r,
       userFullName: r.user?.fullName || r.userFullName || 'Tôi',
       details: r.details || [],
+      totalBooks: r.totalBooks ?? (r.details ? r.details.length : 0),
     }));
   },
   create: (data: {
