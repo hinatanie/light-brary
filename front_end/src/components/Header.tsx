@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, User as UserIcon, LogOut, LogIn, Shield, Briefcase, UserCheck } from 'lucide-react';
+import { BookOpen, User as UserIcon, LogOut, LogIn, Shield, Briefcase, UserCheck, KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -80,6 +80,14 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
               </div>
               <span className="user-email">{user.email}</span>
             </div>
+            <Link
+              to="/change-password"
+              className="btn-logout"
+              title="Đổi mật khẩu"
+              style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+            >
+              <KeyRound size={16} />
+            </Link>
             <button className="btn-logout" onClick={handleLogout} title="Đăng xuất">
               <LogOut size={16} />
             </button>
