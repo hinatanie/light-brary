@@ -22,7 +22,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    let loginRedirect = '/login';
+    if (location.pathname.startsWith('/admin')) {
+      loginRedirect = '/login/admin';
+    } else if (location.pathname.startsWith('/staff')) {
+      loginRedirect = '/login/librarian';
+    }
+    return <Navigate to={loginRedirect} state={{ from: location }} replace />;
   }
 
   if (user.mustChangePassword && location.pathname !== '/change-password') {

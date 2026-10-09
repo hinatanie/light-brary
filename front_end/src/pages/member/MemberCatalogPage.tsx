@@ -125,7 +125,7 @@ export const MemberCatalogPage: React.FC = () => {
     try {
       await borrowRecordsApi.borrowBookForMember({
         bookId: borrowModalBook.id,
-        bookCopyId: selectedCopyId ? Number(selectedCopyId) : undefined,
+        bookCopyId: selectedCopyId || undefined,
         dueDate: new Date(dueDate).toISOString(),
         note: borrowNote.trim() || undefined,
       });
@@ -412,32 +412,55 @@ export const MemberCatalogPage: React.FC = () => {
 
                 {/* Book Card Body */}
                 <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <h3
-                    style={{
-                      fontSize: '17px',
-                      fontWeight: 700,
-                      color: '#0f172a',
-                      marginBottom: '8px',
-                      lineHeight: '1.4',
-                    }}
-                  >
-                    {book.title}
-                  </h3>
+                  <div style={{ display: 'flex', gap: '14px', marginBottom: '14px' }}>
+                    {book.imageUrl ? (
+                      <img
+                        src={book.imageUrl}
+                        alt={book.title}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                        style={{
+                          width: '68px',
+                          height: '92px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                          flexShrink: 0,
+                          backgroundColor: '#f1f5f9',
+                          border: '1px solid #e2e8f0',
+                        }}
+                      />
+                    ) : null}
+                    <div style={{ flex: 1 }}>
+                      <h3
+                        style={{
+                          fontSize: '17px',
+                          fontWeight: 700,
+                          color: '#0f172a',
+                          marginBottom: '8px',
+                          lineHeight: '1.4',
+                        }}
+                      >
+                        {book.title}
+                      </h3>
 
-                  <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div>
-                      <strong>Tác giả:</strong> {book.author}
+                      <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div>
+                          <strong>Tác giả:</strong> {book.author}
+                        </div>
+                        {book.isbn && (
+                          <div>
+                            <strong>ISBN:</strong> <span style={{ fontFamily: 'monospace' }}>{book.isbn}</span>
+                          </div>
+                        )}
+                        {book.publishYear && (
+                          <div>
+                            <strong>Năm XB:</strong> {book.publishYear}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {book.isbn && (
-                      <div>
-                        <strong>ISBN:</strong> <span style={{ fontFamily: 'monospace' }}>{book.isbn}</span>
-                      </div>
-                    )}
-                    {book.publishYear && (
-                      <div>
-                        <strong>Năm XB:</strong> {book.publishYear}
-                      </div>
-                    )}
                   </div>
 
                   {/* Stock Availability Bar */}
@@ -649,17 +672,34 @@ export const MemberCatalogPage: React.FC = () => {
                     alignItems: 'center',
                   }}
                 >
-                  <div
-                    style={{
-                      backgroundColor: '#f59e0b',
-                      color: '#fff',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      display: 'flex',
-                    }}
-                  >
-                    <BookOpen size={24} />
-                  </div>
+                  {borrowModalBook.imageUrl ? (
+                    <img
+                      src={borrowModalBook.imageUrl}
+                      alt={borrowModalBook.title}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                      style={{
+                        width: '48px',
+                        height: '64px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        border: '1px solid #fde68a',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        backgroundColor: '#f59e0b',
+                        color: '#fff',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                      }}
+                    >
+                      <BookOpen size={24} />
+                    </div>
+                  )}
                   <div>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#92400e' }}>
                       {borrowModalBook.title}

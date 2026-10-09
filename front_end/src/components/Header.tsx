@@ -12,8 +12,15 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    const roles = (user?.roles || []).map((r) => r.toLowerCase());
     logout();
-    navigate('/login');
+    if (roles.includes('admin')) {
+      navigate('/login/admin');
+    } else if (roles.includes('staff') || roles.includes('librarian')) {
+      navigate('/login/librarian');
+    } else {
+      navigate('/login');
+    }
   };
 
   const getRoleBadge = () => {

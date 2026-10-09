@@ -83,7 +83,10 @@ export function App() {
 
             {/* Auth Routes */}
             <Route element={<AuthLayout />}>
-              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login" element={<LoginPage roleMode="member" />} />
+              <Route path="/login/admin" element={<LoginPage roleMode="admin" />} />
+              <Route path="/login/librarian" element={<LoginPage roleMode="librarian" />} />
+              <Route path="/login/librian" element={<Navigate to="/login/librarian" replace />} />
               <Route path="/register" element={<RegisterPage />} />
             </Route>
 

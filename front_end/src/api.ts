@@ -245,7 +245,8 @@ export const booksApi = {
         author: data.author,
         isbn: data.isbn?.trim() || `978-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
         publishYear: data.publishYear,
-        categoryId: Number(data.categoryId),
+        imageUrl: data.imageUrl?.trim() || undefined,
+        categoryId: data.categoryId,
       }),
     }),
   update: (
@@ -266,7 +267,8 @@ export const booksApi = {
         author: data.author,
         isbn: data.isbn?.trim() || `978-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
         publishYear: data.publishYear,
-        categoryId: Number(data.categoryId),
+        imageUrl: data.imageUrl?.trim() || undefined,
+        categoryId: data.categoryId,
       }),
     }),
   delete: (id: string | number) =>
@@ -425,9 +427,9 @@ export const borrowRecordsApi = {
     request<BorrowRecord>('/borrow-records', {
       method: 'POST',
       body: JSON.stringify({
-        userId: Number(data.userId),
+        userId: data.userId,
         dueDate: data.dueDate,
-        bookCopyIds: data.bookCopyIds.map(Number),
+        bookCopyIds: data.bookCopyIds,
         note: data.note,
       }),
     }),
@@ -440,8 +442,8 @@ export const borrowRecordsApi = {
     request<BorrowRecord>('/me/borrow', {
       method: 'POST',
       body: JSON.stringify({
-        bookId: Number(data.bookId),
-        bookCopyId: data.bookCopyId ? Number(data.bookCopyId) : undefined,
+        bookId: data.bookId,
+        bookCopyId: data.bookCopyId || undefined,
         dueDate: data.dueDate,
         note: data.note,
       }),
@@ -453,7 +455,7 @@ export const borrowRecordsApi = {
     request<any>('/returns', {
       method: 'POST',
       body: JSON.stringify({
-        borrowDetailIds: data.items.map((i) => Number(i.borrowDetailId)),
+        borrowDetailIds: data.items.map((i) => i.borrowDetailId),
       }),
     }),
   returnSingleBook: (detailId: string | number) =>
