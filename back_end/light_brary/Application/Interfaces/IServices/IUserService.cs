@@ -16,5 +16,7 @@ namespace light_brary.Application.Interfaces
         Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateUserRequest request);
         Task<IEnumerable<BorrowRecordResponse>> GetUserBorrowRecordsAsync(Guid userId);
         Task<IEnumerable<BorrowedBookResponse>> GetUserBorrowedBooksAsync(Guid userId);
+        Task AdminUpdatePasswordAsync(Guid id, AdminUpdatePasswordRequest request);
+        Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
     }
 }

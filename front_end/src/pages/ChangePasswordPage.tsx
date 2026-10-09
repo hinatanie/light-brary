@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api';
-import { KeyRound, Lock, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { KeyRound, Lock, AlertCircle, CheckCircle2, RefreshCw, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export const ChangePasswordPage: React.FC = () => {
   const { user, updateUserSession } = useAuth();
@@ -11,9 +11,18 @@ export const ChangePasswordPage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const getDashboardPath = () => {
+    if (user?.roles.some((r) => r.toLowerCase() === 'admin')) return '/admin';
+    if (user?.roles.some((r) => r.toLowerCase() === 'staff' || r.toLowerCase() === 'librarian')) return '/staff';
+    return '/member';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,23 +38,8 @@ export const ChangePasswordPage: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 10) {
-      setError('Mật khẩu mới phải có tối thiểu 10 ký tự!');
-      return;
-    }
-
-    if (!/[A-Z]/.test(newPassword)) {
-      setError('Mật khẩu mới phải chứa ít nhất một chữ in hoa (A-Z)!');
-      return;
-    }
-
-    if (!/[a-z]/.test(newPassword)) {
-      setError('Mật khẩu mới phải chứa ít nhất một chữ in thường (a-z)!');
-      return;
-    }
-
-    if (!/[0-9]/.test(newPassword)) {
-      setError('Mật khẩu mới phải chứa ít nhất một chữ số (0-9)!');
+    if (newPassword.length < 6) {
+      setError('Mật khẩu mới phải có tối thiểu 6 ký tự!');
       return;
     }
 
@@ -61,13 +55,7 @@ export const ChangePasswordPage: React.FC = () => {
       updateUserSession({ mustChangePassword: false });
 
       setTimeout(() => {
-        if (user?.roles.some((r) => r.toLowerCase() === 'admin')) {
-          navigate('/admin', { replace: true });
-        } else if (user?.roles.some((r) => r.toLowerCase() === 'staff')) {
-          navigate('/staff', { replace: true });
-        } else {
-          navigate('/member', { replace: true });
-        }
+        navigate(getDashboardPath(), { replace: true });
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.');
@@ -78,6 +66,25 @@ export const ChangePasswordPage: React.FC = () => {
 
   return (
     <div className="table-card" style={{ maxWidth: '480px', margin: '40px auto', padding: '32px 28px', borderRadius: '16px', background: '#1e293b', border: '1px solid #334155' }}>
+      {!user?.mustChangePassword && (
+        <div style={{ marginBottom: '16px' }}>
+          <Link
+            to={getDashboardPath()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '13px',
+              color: '#94a3b8',
+              textDecoration: 'none',
+              transition: 'color 0.15s',
+            }}
+          >
+            <ArrowLeft size={16} /> Quay lại trang chính
+          </Link>
+        </div>
+      )}
+
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', marginBottom: '12px' }}>
           <KeyRound size={28} />
@@ -115,42 +122,72 @@ export const ChangePasswordPage: React.FC = () => {
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
             <Lock size={14} /> Mật khẩu hiện tại *
           </label>
-          <input
-            type="password"
-            required
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Nhập mật khẩu đang sử dụng"
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type={showCurrent ? 'text' : 'password'}
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Nhập mật khẩu đang sử dụng"
+              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrent(!showCurrent)}
+              style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px' }}
+              title={showCurrent ? 'Ẩn' : 'Hiện'}
+            >
+              {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
 
         <div className="form-group" style={{ marginBottom: '16px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-            <Lock size={14} /> Mật khẩu mới * (Tối thiểu 10 ký tự, có chữ hoa, thường, số)
+            <Lock size={14} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
           </label>
-          <input
-            type="password"
-            required
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Nhập mật khẩu mới an toàn"
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type={showNew ? 'text' : 'password'}
+              required
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Nhập mật khẩu mới an toàn"
+              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px' }}
+              title={showNew ? 'Ẩn' : 'Hiện'}
+            >
+              {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
 
         <div className="form-group" style={{ marginBottom: '24px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
             <Lock size={14} /> Xác nhận mật khẩu mới *
           </label>
-          <input
-            type="password"
-            required
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Nhập lại mật khẩu mới"
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type={showConfirm ? 'text' : 'password'}
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Nhập lại mật khẩu mới"
+              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(!showConfirm)}
+              style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px' }}
+              title={showConfirm ? 'Ẩn' : 'Hiện'}
+            >
+              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
 
         <button

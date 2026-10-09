@@ -117,6 +117,21 @@ namespace light_brary.Controllers
             return Ok(books);
         }
 
+        /// <summary>
+        /// Cập nhật / Đặt lại mật khẩu của người dùng (Admin hoặc Librarian)
+        /// </summary>
+        [HttpPut("api/users/{id:guid}/password")]
+        [HttpPost("api/users/{id:guid}/reset-password")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AdminUpdatePassword(Guid id, [FromBody] AdminUpdatePasswordRequest request)
+        {
+            await _userService.AdminUpdatePasswordAsync(id, request);
+            return Ok(new { message = "Cập nhật mật khẩu người dùng thành công." });
+        }
+
         #endregion
 
         #region /api/me Endpoints
@@ -149,6 +164,22 @@ namespace light_brary.Controllers
             var userId = GetCurrentUserId();
             var updated = await _userService.UpdateProfileAsync(userId, request);
             return Ok(updated);
+        }
+
+        /// <summary>
+        /// Người dùng tự đổi mật khẩu của chính mình
+        /// </summary>
+        [HttpPut("api/me/password")]
+        [HttpPost("api/me/change-password")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userId = GetCurrentUserId();
+            await _userService.ChangePasswordAsync(userId, request);
+            return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
         /// <summary>

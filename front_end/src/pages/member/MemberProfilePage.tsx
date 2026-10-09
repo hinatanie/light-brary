@@ -13,7 +13,11 @@ import {
   UserCheck,
   Save,
   RefreshCw,
-  Calendar
+  Calendar,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 export const MemberProfilePage: React.FC = () => {
@@ -28,6 +32,15 @@ export const MemberProfilePage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
+
+  // Password states
+  const [currentPwd, setCurrentPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [submittingPwd, setSubmittingPwd] = useState(false);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -91,6 +104,39 @@ export const MemberProfilePage: React.FC = () => {
       showToast(err.message || 'Lỗi khi cập nhật thông tin', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPwd !== confirmPwd) {
+      showToast('Mật khẩu mới và xác nhận mật khẩu không khớp!', 'error');
+      return;
+    }
+    if (newPwd === currentPwd) {
+      showToast('Mật khẩu mới không được trùng với mật khẩu hiện tại!', 'error');
+      return;
+    }
+    if (newPwd.length < 6) {
+      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự!', 'error');
+      return;
+    }
+
+    setSubmittingPwd(true);
+    try {
+      await authApi.changePassword({
+        currentPassword: currentPwd,
+        newPassword: newPwd,
+      });
+      showToast('Đổi mật khẩu thành công!');
+      setCurrentPwd('');
+      setNewPwd('');
+      setConfirmPwd('');
+      updateUserSession({ mustChangePassword: false });
+    } catch (err: any) {
+      showToast(err.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.', 'error');
+    } finally {
+      setSubmittingPwd(false);
     }
   };
 
@@ -248,6 +294,104 @@ export const MemberProfilePage: React.FC = () => {
               ) : (
                 <>
                   <Save size={16} /> Lưu thay đổi
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Change Password Card */}
+        <div className="table-card" style={{ padding: '24px' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <KeyRound size={18} color="#f59e0b" /> Đổi Mật Khẩu
+          </h3>
+
+          <form onSubmit={handlePasswordChange}>
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+                <Lock size={14} /> Mật khẩu hiện tại *
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showCurrentPwd ? 'text' : 'password'}
+                  required
+                  value={currentPwd}
+                  onChange={(e) => setCurrentPwd(e.target.value)}
+                  placeholder="Nhập mật khẩu đang sử dụng"
+                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px' }}
+                  title={showCurrentPwd ? 'Ẩn' : 'Hiện'}
+                >
+                  {showCurrentPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+                <Lock size={14} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showNewPwd ? 'text' : 'password'}
+                  required
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  placeholder="Nhập mật khẩu mới an toàn"
+                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPwd(!showNewPwd)}
+                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px' }}
+                  title={showNewPwd ? 'Ẩn' : 'Hiện'}
+                >
+                  {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+                <Lock size={14} /> Xác nhận mật khẩu mới *
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showConfirmPwd ? 'text' : 'password'}
+                  required
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px' }}
+                  title={showConfirmPwd ? 'Ẩn' : 'Hiện'}
+                >
+                  {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submittingPwd}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              {submittingPwd ? (
+                <>
+                  <RefreshCw size={16} className="spin" /> Đang cập nhật...
+                </>
+              ) : (
+                <>
+                  <KeyRound size={16} /> Cập nhật mật khẩu
                 </>
               )}
             </button>

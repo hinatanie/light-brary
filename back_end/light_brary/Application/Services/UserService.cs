@@ -172,6 +172,32 @@ namespace light_brary.Application.Services
             return list.OrderBy(b => b.DueDate).ThenBy(b => b.BorrowDetailId).ToList();
         }
 
+        public async Task AdminUpdatePasswordAsync(Guid id, AdminUpdatePasswordRequest request)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user is null)
+                throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword.Trim());
+            await _userRepository.UpdateAsync(user);
+        }
+
+        public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user is null)
+                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
+
+            if (!_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+                throw new UnauthorizedException("Mật khẩu hiện tại không chính xác.");
+
+            if (request.NewPassword.Trim() == request.CurrentPassword)
+                throw new BusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword.Trim());
+            await _userRepository.UpdateAsync(user);
+        }
+
         private static UserResponse MapToResponse(User user)
         {
             return new UserResponse
