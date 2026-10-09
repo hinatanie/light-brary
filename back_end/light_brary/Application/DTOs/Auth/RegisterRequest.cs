@@ -20,6 +20,7 @@ namespace light_brary.Application.DTOs.Auth
         public string? Address { get; set; }
 
         [Required(ErrorMessage = "Mật khẩu không được để trống.")]
+        [MinLength(8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
         public string Password { get; set; } = null!;
     }
 }
