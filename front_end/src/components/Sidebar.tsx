@@ -115,6 +115,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         <>
           <div className="sidebar-group-title">BẠN ĐỌC</div>
           <NavLink
+            to="/member/catalog"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <Library size={18} />
+            <span>Tra cứu & Mượn sách</span>
+          </NavLink>
+          <NavLink
             to="/member"
             end
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}

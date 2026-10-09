@@ -163,12 +163,18 @@ export const MemberDashboardPage: React.FC = () => {
             {borrowingDetails.length === 0 ? (
               <div className="empty-state" style={{ padding: '40px 20px' }}>
                 <CheckCircle2 size={44} color="#10b981" />
-                <h4 style={{ margin: '12px 0 6px 0', color: '#f8fafc' }}>
+                <h4 style={{ margin: '12px 0 6px 0', color: '#0f172a' }}>
                   Bạn hiện không giữ cuốn sách nào
                 </h4>
-                <p style={{ margin: 0, color: '#94a3b8', fontSize: '14px' }}>
-                  Hãy đến quầy thư viện và liên hệ thủ thư để mượn những cuốn sách bạn yêu thích nhé!
+                <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '14px' }}>
+                  Hãy khám phá kho sách thư viện và đăng ký mượn những cuốn sách bạn yêu thích ngay hôm nay!
                 </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => navigate('/member/catalog')}
+                >
+                  <BookOpen size={16} /> Tra cứu kho sách & Mượn ngay
+                </button>
               </div>
             ) : (
               <div className="table-responsive">

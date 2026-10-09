@@ -85,7 +85,7 @@ export const LoginPage: React.FC = () => {
             required
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="0916114536"
+            placeholder="Số điện thoại"
             style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
           />
         </div>

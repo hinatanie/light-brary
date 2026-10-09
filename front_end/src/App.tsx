@@ -33,6 +33,7 @@ import { StaffBookCopiesPage } from './pages/staff/StaffBookCopiesPage';
 
 // Member Pages
 import { MemberDashboardPage } from './pages/member/MemberDashboardPage';
+import { MemberCatalogPage } from './pages/member/MemberCatalogPage';
 import { MemberBorrowsPage } from './pages/member/MemberBorrowsPage';
 import { MemberProfilePage } from './pages/member/MemberProfilePage';
 
@@ -112,6 +113,7 @@ export function App() {
             <Route element={<ProtectedRoute allowedRoles={['Member', 'User', 'Staff', 'Librarian', 'Admin']} />}>
               <Route path="/member" element={<MemberLayout />}>
                 <Route index element={<MemberDashboardPage />} />
+                <Route path="catalog" element={<MemberCatalogPage />} />
                 <Route path="borrows" element={<MemberBorrowsPage />} />
                 <Route path="profile" element={<MemberProfilePage />} />
               </Route>
