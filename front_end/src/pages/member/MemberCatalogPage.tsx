@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Book, Category, BookCopy } from '../../types';
-import { booksApi, categoriesApi, bookCopiesApi, borrowRecordsApi } from '../../api';
+import { booksApi, categoriesApi, bookCopiesApi } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import {
   Search,
@@ -10,10 +10,8 @@ import {
   AlertCircle,
   Bookmark,
   Layers,
-  Calendar,
   RefreshCw,
   X,
-  Clock,
   Sparkles
 } from 'lucide-react';
 
@@ -35,18 +33,6 @@ export const MemberCatalogPage: React.FC = () => {
   const [viewingCopiesBook, setViewingCopiesBook] = useState<Book | null>(null);
   const [bookCopies, setBookCopies] = useState<BookCopy[]>([]);
   const [loadingCopies, setLoadingCopies] = useState(false);
-
-  // Borrow Modal state
-  const [borrowModalBook, setBorrowModalBook] = useState<Book | null>(null);
-  const [selectedCopyId, setSelectedCopyId] = useState<string>('');
-  const [availableCopiesForBorrow, setAvailableCopiesForBorrow] = useState<BookCopy[]>([]);
-  const [dueDate, setDueDate] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 14);
-    return d.toISOString().split('T')[0];
-  });
-  const [borrowNote, setBorrowNote] = useState('');
-  const [borrowSubmitting, setBorrowSubmitting] = useState(false);
 
   // Load catalog & categories
   const loadData = useCallback(async () => {
@@ -81,66 +67,6 @@ export const MemberCatalogPage: React.FC = () => {
       setBookCopies([]);
     } finally {
       setLoadingCopies(false);
-    }
-  };
-
-  // Open Borrow Modal
-  const handleOpenBorrowModal = async (book: Book, preselectedCopyId?: string | number) => {
-    setBorrowModalBook(book);
-    setSelectedCopyId(preselectedCopyId ? String(preselectedCopyId) : '');
-    setBorrowNote('');
-    // Reset default due date (+14 days)
-    const d = new Date();
-    d.setDate(d.getDate() + 14);
-    setDueDate(d.toISOString().split('T')[0]);
-
-    // Load available copies for selection
-    try {
-      const copies = await bookCopiesApi.getByBookId(book.id);
-      const avail = copies.filter((c) => c.status === 'Available');
-      setAvailableCopiesForBorrow(avail);
-    } catch {
-      setAvailableCopiesForBorrow([]);
-    }
-  };
-
-  // Quick date selector helper
-  const setQuickDueDate = (days: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    setDueDate(d.toISOString().split('T')[0]);
-  };
-
-  // Submit borrow request
-  const handleConfirmBorrow = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!borrowModalBook) return;
-
-    if (!dueDate) {
-      showToast('Vui lòng chọn ngày hẹn trả', 'error');
-      return;
-    }
-
-    setBorrowSubmitting(true);
-    try {
-      await borrowRecordsApi.borrowBookForMember({
-        bookId: borrowModalBook.id,
-        bookCopyId: selectedCopyId || undefined,
-        dueDate: new Date(dueDate).toISOString(),
-        note: borrowNote.trim() || undefined,
-      });
-
-      showToast(`Đã mượn thành công sách "${borrowModalBook.title}"!`, 'success');
-      setBorrowModalBook(null);
-      if (viewingCopiesBook) {
-        setViewingCopiesBook(null);
-      }
-      // Refresh catalog data to update stock counts
-      await loadData();
-    } catch (err: any) {
-      showToast(err.message || 'Mượn sách không thành công. Vui lòng thử lại!', 'error');
-    } finally {
-      setBorrowSubmitting(false);
     }
   };
 
@@ -181,9 +107,9 @@ export const MemberCatalogPage: React.FC = () => {
       {/* Page Header */}
       <div className="section-header">
         <div>
-          <h2>📚 Tra Cứu & Mượn Sách Trực Tuyến</h2>
+          <h2>📚 Tra Cứu Danh Mục Sách</h2>
           <p className="section-desc">
-            Khám phá các đầu sách hiện có tại thư viện, theo dõi số lượng sách còn trên kệ và đăng ký mượn ngay.
+            Khám phá các đầu sách hiện có tại thư viện và kiểm tra tình trạng sách còn trên kệ. Để mượn sách, quý độc giả vui lòng liên hệ trực tiếp tại Quầy Thủ Thư.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -513,25 +439,10 @@ export const MemberCatalogPage: React.FC = () => {
                 >
                   <button
                     className="btn btn-secondary"
-                    style={{ flex: 1, fontSize: '13px', justifyContent: 'center' }}
+                    style={{ width: '100%', fontSize: '13px', justifyContent: 'center' }}
                     onClick={() => handleOpenCopiesModal(book)}
                   >
-                    <Layers size={15} /> Xem bản sao
-                  </button>
-
-                  <button
-                    className="btn btn-primary"
-                    style={{
-                      flex: 1,
-                      fontSize: '13px',
-                      justifyContent: 'center',
-                      opacity: isAvailable ? 1 : 0.6,
-                      cursor: isAvailable ? 'pointer' : 'not-allowed',
-                    }}
-                    disabled={!isAvailable}
-                    onClick={() => handleOpenBorrowModal(book)}
-                  >
-                    <BookOpen size={15} /> Mượn sách
+                    <Layers size={15} /> Xem bản sao trên kệ ({book.availableCopies ?? 0} cuốn khả dụng)
                   </button>
                 </div>
               </div>
@@ -576,15 +487,15 @@ export const MemberCatalogPage: React.FC = () => {
               ) : (
                 <>
                   <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 12px 0' }}>
-                    Danh sách các cuốn sách vật lý đang được quản lý. Bạn có thể chọn ngay một bản sao có trạng thái <strong>Sẵn sàng</strong> để mượn.
+                    Danh sách các cuốn sách vật lý đang được quản lý trên kệ thư viện:
                   </p>
                   <table className="custom-table">
                     <thead>
                       <tr>
                         <th>Mã vạch (Barcode)</th>
                         <th>Tình trạng vật lý</th>
-                        <th>Trạng thái</th>
-                        <th style={{ textAlign: 'right' }}>Hành động</th>
+                        <th>Trạng thái kệ</th>
+                        <th style={{ textAlign: 'right' }}>Hướng dẫn mượn</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -601,20 +512,19 @@ export const MemberCatalogPage: React.FC = () => {
                               </span>
                             </td>
                             <td>
-                              {isAvail && <span className="badge badge-available">Sẵn sàng</span>}
-                              {copy.status === 'Borrowed' && <span className="badge badge-borrowed">Đang mượn</span>}
-                              {copy.status === 'Lost' && <span className="badge badge-lost">Đã mất</span>}
+                              {isAvail && <span className="badge badge-available">Có sẵn trên kệ</span>}
+                              {copy.status === 'Borrowed' && <span className="badge badge-borrowed">Đang được mượn</span>}
+                              {copy.status === 'Lost' && <span className="badge badge-lost">Đã báo mất</span>}
                             </td>
                             <td style={{ textAlign: 'right' }}>
                               {isAvail ? (
-                                <button
-                                  className="btn btn-action btn-copy"
-                                  onClick={() => handleOpenBorrowModal(viewingCopiesBook, copy.id)}
-                                >
-                                  <BookOpen size={13} /> Mượn cuốn này
-                                </button>
+                                <span style={{ fontSize: '12px', color: '#059669', fontWeight: 500 }}>
+                                  Liên hệ Quầy Thủ Thư
+                                </span>
                               ) : (
-                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Không khả dụng</span>
+                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                  Chưa thể mượn
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -639,184 +549,6 @@ export const MemberCatalogPage: React.FC = () => {
                 Đóng
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL 2: BORROW CONFIRMATION MODAL ─────────────────────────────────── */}
-      {borrowModalBook && (
-        <div className="modal-backdrop" onClick={() => !borrowSubmitting && setBorrowModalBook(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Đăng Ký Mượn Sách</h3>
-              <button
-                className="btn-icon"
-                disabled={borrowSubmitting}
-                onClick={() => setBorrowModalBook(null)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmBorrow}>
-              <div className="form-content">
-                {/* Book Details Summary Box */}
-                <div
-                  style={{
-                    backgroundColor: '#fffbeb',
-                    border: '1px solid #fef3c7',
-                    borderRadius: '10px',
-                    padding: '14px 16px',
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'center',
-                  }}
-                >
-                  {borrowModalBook.imageUrl ? (
-                    <img
-                      src={borrowModalBook.imageUrl}
-                      alt={borrowModalBook.title}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                      style={{
-                        width: '48px',
-                        height: '64px',
-                        objectFit: 'cover',
-                        borderRadius: '6px',
-                        border: '1px solid #fde68a',
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        backgroundColor: '#f59e0b',
-                        color: '#fff',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        display: 'flex',
-                      }}
-                    >
-                      <BookOpen size={24} />
-                    </div>
-                  )}
-                  <div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#92400e' }}>
-                      {borrowModalBook.title}
-                    </h4>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#b45309' }}>
-                      Tác giả: {borrowModalBook.author} • Còn {borrowModalBook.availableCopies ?? 0} cuốn khả dụng
-                    </p>
-                  </div>
-                </div>
-
-                {/* Copy Selection */}
-                <div className="form-group">
-                  <label>Bản sao muốn mượn</label>
-                  <select
-                    value={selectedCopyId}
-                    onChange={(e) => setSelectedCopyId(e.target.value)}
-                  >
-                    <option value="">✨ Tự động chọn bản sao sẵn có tốt nhất</option>
-                    {availableCopiesForBorrow.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        Mã vạch: {c.barcode} ({c.conditionNote || 'Tình trạng tốt'})
-                      </option>
-                    ))}
-                  </select>
-                  <small style={{ color: '#64748b', fontSize: '12px' }}>
-                    Nếu bạn để mặc định, hệ thống sẽ tự động gán một cuốn sách có sẵn trên kệ cho bạn.
-                  </small>
-                </div>
-
-                {/* Due Date & Quick Buttons */}
-                <div className="form-group">
-                  <label>
-                    <Calendar size={14} /> Ngày hẹn trả sách *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    min={new Date().toISOString().split('T')[0]}
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-
-                  {/* Quick duration buttons */}
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                    <button
-                      type="button"
-                      className="btn-action"
-                      onClick={() => setQuickDueDate(7)}
-                    >
-                      <Clock size={12} /> +7 ngày
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-action"
-                      style={{ borderColor: '#f59e0b', color: '#b45309', backgroundColor: '#fffbeb' }}
-                      onClick={() => setQuickDueDate(14)}
-                    >
-                      <Clock size={12} /> +14 ngày (chuẩn)
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-action"
-                      onClick={() => setQuickDueDate(30)}
-                    >
-                      <Clock size={12} /> +30 ngày
-                    </button>
-                  </div>
-                </div>
-
-                {/* Note */}
-                <div className="form-group">
-                  <label>Ghi chú mượn (nếu có)</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Ví dụ: Mượn phục vụ viết luận văn, mượn đọc tại nhà..."
-                    value={borrowNote}
-                    onChange={(e) => setBorrowNote(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div
-                style={{
-                  padding: '16px 24px',
-                  borderTop: '1px solid #e2e8f0',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: '10px',
-                  backgroundColor: '#f8fafc',
-                }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  disabled={borrowSubmitting}
-                  onClick={() => setBorrowModalBook(null)}
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={borrowSubmitting}
-                >
-                  {borrowSubmitting ? (
-                    <>
-                      <RefreshCw size={16} className="spin" /> Đang tạo phiếu mượn...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={16} /> Xác nhận mượn sách
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

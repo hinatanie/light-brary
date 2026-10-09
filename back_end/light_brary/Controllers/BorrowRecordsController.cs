@@ -23,7 +23,7 @@ namespace light_brary.Controllers
         /// </summary>
         [HttpPost("api/me/borrow")]
         [HttpPost("api/borrow-records/borrow")]
-        [Authorize]
+        [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

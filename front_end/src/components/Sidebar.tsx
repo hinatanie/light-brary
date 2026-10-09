@@ -9,7 +9,8 @@ import {
   Users,
   RotateCcw,
   Library,
-  User
+  User,
+  FilePlus2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -84,6 +85,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
             <span>Bàn làm việc</span>
           </NavLink>
           <NavLink
+            to="/staff/create-borrow"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <FilePlus2 size={18} />
+            <span>Lập phiếu mượn</span>
+          </NavLink>
+          <NavLink
             to="/staff/borrows"
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
@@ -119,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <Library size={18} />
-            <span>Tra cứu & Mượn sách</span>
+            <span>Tra cứu danh mục sách</span>
           </NavLink>
           <NavLink
             to="/member"

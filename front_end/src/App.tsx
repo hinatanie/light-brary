@@ -28,6 +28,7 @@ import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 // Staff Pages
 import { StaffDashboardPage } from './pages/staff/StaffDashboardPage';
 import { StaffBorrowsPage } from './pages/staff/StaffBorrowsPage';
+import { StaffCreateBorrowPage } from './pages/staff/StaffCreateBorrowPage';
 import { StaffBooksPage } from './pages/staff/StaffBooksPage';
 import { StaffBookCopiesPage } from './pages/staff/StaffBookCopiesPage';
 
@@ -107,6 +108,7 @@ export function App() {
               <Route path="/staff" element={<StaffLayout />}>
                 <Route index element={<StaffDashboardPage />} />
                 <Route path="borrows" element={<StaffBorrowsPage />} />
+                <Route path="create-borrow" element={<StaffCreateBorrowPage />} />
                 <Route path="books" element={<StaffBooksPage />} />
                 <Route path="book-copies" element={<StaffBookCopiesPage />} />
               </Route>
