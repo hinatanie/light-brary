@@ -238,7 +238,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
             required
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="Ví dụ: 0999999999"
+            placeholder="Số điện thoại"
             style={{
               width: '100%',
               padding: '10px 14px',
