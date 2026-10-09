@@ -163,9 +163,9 @@ export const StaffDashboardPage: React.FC = () => {
                 <CheckCircle2 size={28} />
               </div>
               <div>
-                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#f8fafc' }}>Xác Nhận Trả Sách & Thu Phạt</h4>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#f8fafc' }}>Xác Nhận Trả Sách</h4>
                 <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>
-                  Kiểm tra tình trạng sách, nhận sách hoàn trả và nhập tiền phạt
+                  Kiểm tra tình trạng sách, nhận sách hoàn trả và cập nhật trạng thái phiếu
                 </p>
               </div>
             </div>

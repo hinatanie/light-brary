@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { BorrowRecord, User, BookCopy } from '../types';
 import { borrowRecordsApi } from '../api';
 import {
@@ -29,6 +30,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
   onRefresh,
   onNotify,
 }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -38,7 +40,6 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
   // Mark lost modal states
   const [isLostModalOpen, setIsLostModalOpen] = useState(false);
   const [lostTargetDetail, setLostTargetDetail] = useState<{ detailId: string; title: string; barcode: string } | null>(null);
-  const [lostFineAmount, setLostFineAmount] = useState<number>(50000);
   const [lostNote, setLostNote] = useState<string>('');
   const [submittingLost, setSubmittingLost] = useState(false);
 
@@ -53,10 +54,8 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Return form states: map detailId -> { selected: boolean, fine: number }
-  const [returnItemsState, setReturnItemsState] = useState<
-    Record<string, { selected: boolean; fine: number }>
-  >({});
+  // Return form states: map detailId -> boolean
+  const [returnItemsState, setReturnItemsState] = useState<Record<string, boolean>>({});
 
   const openCreateModal = () => {
     setUserId(String(users[0]?.id || ''));
@@ -109,11 +108,11 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
       }
     }
     setSelectedRecord(target);
-    const initial: Record<string, { selected: boolean; fine: number }> = {};
+    const initial: Record<string, boolean> = {};
     (target.details || []).forEach((d) => {
       // Chỉ chọn mặc định những cuốn đang mượn (chưa trả và chưa báo mất)
       if (d.status === 'Borrowing') {
-        initial[d.id] = { selected: true, fine: d.fineAmount || 0 };
+        initial[d.id] = true;
       }
     });
     setReturnItemsState(initial);
@@ -126,7 +125,6 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
     setSubmittingLost(true);
     try {
       await borrowRecordsApi.markLost(selectedRecord.id, lostTargetDetail.detailId, {
-        fineAmount: Number(lostFineAmount) || 0,
         note: lostNote.trim() || undefined,
       });
       onNotify(`Đã ghi nhận báo mất cuốn sách "${lostTargetDetail.title}"!`);
@@ -145,10 +143,9 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
     if (!selectedRecord) return;
 
     const itemsToReturn = Object.entries(returnItemsState)
-      .filter(([_, val]) => val.selected)
-      .map(([detailId, val]) => ({
+      .filter(([_, isSelected]) => isSelected)
+      .map(([detailId]) => ({
         borrowDetailId: detailId,
-        fineAmount: Number(val.fine) || 0,
       }));
 
     if (itemsToReturn.length === 0) {
@@ -190,12 +187,17 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
         <div>
           <h2>📋 Quản Lý Mượn & Trả Sách</h2>
           <p className="section-desc">
-            Lập phiếu mượn nhiều cuốn cùng lúc, theo dõi hạn trả và xử lý hoàn trả / tiền phạt
+            Lập phiếu mượn nhiều cuốn cùng lúc, theo dõi hạn trả và xử lý hoàn trả sách
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          <Plus size={18} /> Lập Phiếu Mượn Mới
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-primary" onClick={() => navigate('/staff/create-borrow')}>
+            <Plus size={18} /> Lập Phiếu Mượn Tại Quầy
+          </button>
+          <button className="btn btn-secondary" onClick={openCreateModal} title="Mở biểu mẫu nhanh dạng hộp thoại">
+            Lập Nhanh
+          </button>
+        </div>
       </div>
 
       <div className="filter-bar">
@@ -430,12 +432,12 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
 
             <form onSubmit={handleReturnSubmit} className="form-content">
               <label style={{ margin: '12px 0 8px 0', display: 'block', fontWeight: 600 }}>
-                Chọn các cuốn sách hoàn trả và nhập phí phạt (nếu có):
+                Chọn các cuốn sách độc giả hoàn trả:
               </label>
 
               <div className="return-items-list">
                 {selectedRecord.details.map((d) => {
-                  const state = returnItemsState[d.id] || { selected: false, fine: 0 };
+                  const isSelected = Boolean(returnItemsState[d.id]);
                   const isAlreadyReturned = d.status === 'Returned';
                   const isAlreadyLost = d.status === 'Lost';
                   const isDone = isAlreadyReturned || isAlreadyLost;
@@ -449,14 +451,11 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                         <input
                           type="checkbox"
                           disabled={isDone}
-                          checked={state.selected}
+                          checked={isSelected}
                           onChange={(e) => {
                             setReturnItemsState((prev) => ({
                               ...prev,
-                              [d.id]: {
-                                ...prev[d.id],
-                                selected: e.target.checked,
-                              },
+                              [d.id]: e.target.checked,
                             }));
                           }}
                         />
@@ -469,56 +468,36 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                         </div>
                         {isAlreadyReturned && (
                           <span className="badge badge-returned" style={{ marginTop: '4px' }}>
-                            Đã trả vào ngày {new Date(d.returnDate!).toLocaleDateString('vi-VN')} (Phạt: {(d.fineAmount ?? 0).toLocaleString('vi-VN')}đ)
+                            Đã trả vào ngày {new Date(d.returnDate!).toLocaleDateString('vi-VN')}
                           </span>
                         )}
                         {isAlreadyLost && (
                           <span className="badge" style={{ marginTop: '4px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
-                            Đã báo mất (Bồi thường: {(d.fineAmount ?? 0).toLocaleString('vi-VN')}đ)
+                            Đã báo mất
                           </span>
                         )}
                       </div>
 
                       {!isDone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div className="return-fine-input">
-                            <label style={{ fontSize: '12px', color: '#64748b' }}>Phạt trễ/hỏng (VNĐ):</label>
-                            <input
-                              type="number"
-                              min={0}
-                              step={1000}
-                              disabled={!state.selected}
-                              value={state.fine}
-                              onChange={(e) => {
-                                const val = Number(e.target.value);
-                                setReturnItemsState((prev) => ({
-                                  ...prev,
-                                  [d.id]: {
-                                    ...prev[d.id],
-                                    fine: val,
-                                  },
-                                }));
-                              }}
-                            />
-                          </div>
-
+                        <div>
                           <button
                             type="button"
                             className="btn-action"
                             style={{
-                              alignSelf: 'flex-end',
                               color: '#ef4444',
                               borderColor: 'rgba(239, 68, 68, 0.3)',
                               padding: '8px 12px',
                               borderRadius: '6px',
                               fontSize: '12px',
                               fontWeight: 600,
-                              whiteSpace: 'nowrap'
+                              whiteSpace: 'nowrap',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
                             }}
                             title="Báo mất cuốn sách này"
                             onClick={() => {
                               setLostTargetDetail({ detailId: String(d.id), title: d.bookTitle, barcode: d.barcode });
-                              setLostFineAmount(50000);
                               setLostNote('');
                               setIsLostModalOpen(true);
                             }}
@@ -545,7 +524,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                   className="btn btn-primary"
                   disabled={
                     submitting ||
-                    !Object.values(returnItemsState).some((item) => item.selected)
+                    !Object.values(returnItemsState).some(Boolean)
                   }
                 >
                   {submitting ? 'Đang xử lý...' : 'Xác Nhận Trả Sách Vào Kệ'}
@@ -574,21 +553,6 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
               <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>
                 Độc giả làm mất cuốn sách: <strong style={{ color: '#f8fafc' }}>{lostTargetDetail.title}</strong> (Mã vạch: <code>{lostTargetDetail.barcode}</code>). Cuốn sách này sẽ được đánh dấu trạng thái "Lost" và không thể mượn lại cho đến khi được thay thế.
               </p>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                  Số tiền đền bù / bồi thường (VNĐ) *
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  step={5000}
-                  required
-                  value={lostFineAmount}
-                  onChange={(e) => setLostFineAmount(Number(e.target.value))}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
-                />
-              </div>
 
               <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>

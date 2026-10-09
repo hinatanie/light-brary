@@ -58,7 +58,6 @@ export interface BorrowDetail {
   bookAuthor?: string;
   returnDate?: string | null;
   status: BorrowDetailStatus | string;
-  fineAmount?: number;
   isOverdue?: boolean;
 }
 
