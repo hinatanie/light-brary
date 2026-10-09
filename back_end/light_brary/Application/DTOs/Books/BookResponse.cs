@@ -13,6 +13,8 @@ namespace light_brary.Application.DTOs.Books
         public string Author { get; set; } = null!;
         public string ISBN { get; set; } = null!;
         public int? PublishYear { get; set; }
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = null!;
         public Category Category { get; set; } = null!;
         public int TotalCopies { get; set; }
         public int AvailableCopies { get; set; }

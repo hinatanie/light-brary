@@ -97,6 +97,77 @@ namespace light_brary.Application.Services
             }
         }
 
+        public async Task<BorrowRecordResponse> BorrowForMemberAsync(int userId, MemberBorrowRequest request)
+        {
+            var user = await _userRepository.GetByIdWithRolesAsync(userId);
+            if (user is null)
+                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
+
+            var dueDate = request.DueDate ?? DateTime.UtcNow.AddDays(14);
+            if (dueDate <= DateTime.UtcNow)
+                throw new BusinessException("Hạn trả sách phải sau thời điểm hiện tại.");
+
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                BookCopy? copy = null;
+                if (request.BookCopyId.HasValue && request.BookCopyId.Value > 0)
+                {
+                    copy = await _context.BookCopies
+                        .Include(bc => bc.Book)
+                        .FirstOrDefaultAsync(bc => bc.Id == request.BookCopyId.Value && bc.BookId == request.BookId);
+
+                    if (copy is null)
+                        throw new NotFoundException($"Không tìm thấy bản sao sách với ID: {request.BookCopyId.Value}");
+
+                    if (copy.Status != BookCopyStatus.Available)
+                        throw new ConflictException($"Bản sao sách '{copy.Barcode}' không sẵn sàng để mượn (trạng thái: {copy.Status}).");
+                }
+                else
+                {
+                    copy = await _context.BookCopies
+                        .Include(bc => bc.Book)
+                        .Where(bc => bc.BookId == request.BookId && bc.Status == BookCopyStatus.Available)
+                        .OrderBy(bc => bc.Id)
+                        .FirstOrDefaultAsync();
+
+                    if (copy is null)
+                        throw new ConflictException("Đầu sách này hiện không còn bản sao nào có sẵn trên kệ để cho mượn.");
+                }
+
+                copy.Status = BookCopyStatus.Borrowed;
+
+                var record = new BorrowRecord
+                {
+                    UserId = userId,
+                    BorrowDate = DateTime.UtcNow,
+                    DueDate = dueDate,
+                    Status = BorrowRecordStatus.Borrowing,
+                    Note = string.IsNullOrWhiteSpace(request.Note) ? "Độc giả tự đăng ký mượn qua hệ thống" : request.Note.Trim(),
+                    BorrowDetails = new List<BorrowDetail>
+                    {
+                        new BorrowDetail
+                        {
+                            BookCopyId = copy.Id,
+                            Status = BorrowDetailStatus.Borrowing,
+                            ReturnDate = null
+                        }
+                    }
+                };
+
+                await _context.BorrowRecords.AddAsync(record);
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return await GetByIdAsync(record.Id);
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(int? userId = null, string? status = null, bool? overdue = null)
         {
             var records = await _borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue);

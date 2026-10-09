@@ -1,12 +1,14 @@
+using System.Security.Claims;
 using light_brary.Application.DTOs.BorrowRecords;
+using light_brary.Application.Exceptions;
 using light_brary.Application.Interfaces;
+using light_brary.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace light_brary.Controllers
 {
     [ApiController]
-    [Authorize(Policy = "LibrarianOrAdmin")]
     public class BorrowRecordsController : ControllerBase
     {
         private readonly IBorrowRecordService _borrowRecordService;
@@ -17,9 +19,28 @@ namespace light_brary.Controllers
         }
 
         /// <summary>
-        /// Tạo phiếu mượn sách mới (Librarian hoặc Admin)
+        /// Độc giả đăng nhập tự mượn sách trực tuyến (hệ thống tự chọn bản sao khả dụng trên kệ)
+        /// </summary>
+        [HttpPost("api/me/borrow")]
+        [HttpPost("api/borrow-records/borrow")]
+        [Authorize]
+        [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow([FromBody] MemberBorrowRequest request)
+        {
+            var userId = GetCurrentUserId();
+            var created = await _borrowRecordService.BorrowForMemberAsync(userId, request);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+
+        /// <summary>
+        /// Tạo phiếu mượn sách mới bởi thủ thư/quản trị viên (Librarian hoặc Admin)
         /// </summary>
         [HttpPost("api/borrow-records")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -34,6 +55,7 @@ namespace light_brary.Controllers
         /// Lấy danh sách phiếu mượn, hỗ trợ lọc theo userId, status, overdue (Librarian hoặc Admin)
         /// </summary>
         [HttpGet("api/borrow-records")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(IEnumerable<BorrowRecordSummaryResponse>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<BorrowRecordSummaryResponse>>> GetAll(
             [FromQuery] int? userId = null,
@@ -45,14 +67,22 @@ namespace light_brary.Controllers
         }
 
         /// <summary>
-        /// Xem chi tiết một phiếu mượn theo ID (Librarian hoặc Admin)
+        /// Xem chi tiết một phiếu mượn theo ID (Admin, Librarian hoặc chính độc giả sở hữu)
         /// </summary>
         [HttpGet("api/borrow-records/{id:int}")]
+        [Authorize]
         [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BorrowRecordResponse>> GetById(int id)
         {
             var record = await _borrowRecordService.GetByIdAsync(id);
+            var userId = GetCurrentUserId();
+            var isStaffOrAdmin = User.IsInRole(Role.ADMIN) || User.IsInRole(Role.LIBRARIAN);
+            if (!isStaffOrAdmin && record.User.Id != userId)
+            {
+                return Forbid();
+            }
             return Ok(record);
         }
 
@@ -60,6 +90,7 @@ namespace light_brary.Controllers
         /// Trả một cuốn sách theo ID chi tiết mượn (Librarian hoặc Admin)
         /// </summary>
         [HttpPost("api/borrow-details/{id:int}/return")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BorrowDetailActionResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -73,6 +104,7 @@ namespace light_brary.Controllers
         /// Trả nhiều cuốn sách trong một lượt (Librarian hoặc Admin)
         /// </summary>
         [HttpPost("api/returns")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(ReturnBooksResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,6 +119,7 @@ namespace light_brary.Controllers
         /// Báo mất một cuốn sách đang mượn theo ID chi tiết mượn (Librarian hoặc Admin)
         /// </summary>
         [HttpPost("api/borrow-details/{id:int}/mark-lost")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
         [ProducesResponseType(typeof(BorrowDetailActionResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -95,6 +128,16 @@ namespace light_brary.Controllers
             var result = await _borrowRecordService.MarkLostBookAsync(id);
             return Ok(result);
         }
+
+        private int GetCurrentUserId()
+        {
+            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub);
+
+            if (string.IsNullOrEmpty(raw) || !int.TryParse(raw, out var userId))
+                throw new UnauthorizedException("Không xác định được danh tính người dùng.");
+
+            return userId;
+        }
     }
 }
-
