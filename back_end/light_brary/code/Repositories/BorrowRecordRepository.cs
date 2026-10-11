@@ -8,12 +8,8 @@ using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class BorrowRecordRepository : GenericRepository<BorrowRecord>
+    public class BorrowRecordRepository(AppDbContext context) : GenericRepository<BorrowRecord>(context)
     {
-        public BorrowRecordRepository(AppDbContext context) : base(context)
-        {
-        }
-
         public async Task<IEnumerable<BorrowRecord>> GetByUserIdAsync(Guid userId)
         {
             return await _context.BorrowRecords

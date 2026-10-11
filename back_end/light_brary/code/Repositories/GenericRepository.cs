@@ -3,16 +3,10 @@ using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class GenericRepository<T> where T : class
+    public class GenericRepository<T>(AppDbContext context) where T : class
     {
-        protected readonly AppDbContext _context;
-        protected readonly DbSet<T> _dbSet;
-
-        public GenericRepository(AppDbContext context)
-        {
-            _context = context;
-            _dbSet = context.Set<T>();
-        }
+        protected readonly AppDbContext _context = context;
+        protected readonly DbSet<T> _dbSet = context.Set<T>();
 
         public virtual async Task<IEnumerable<T>> GetAllAsync()
         {

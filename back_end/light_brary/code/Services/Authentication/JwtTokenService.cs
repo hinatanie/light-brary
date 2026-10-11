@@ -6,21 +6,18 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace light_brary.Services.Authentication
 {
-    public class JwtTokenService
+    public class JwtTokenService(IConfiguration configuration)
     {
-        private readonly string _issuer;
-        private readonly string _audience;
-        private readonly string _secretKey;
-        private readonly int _expirationMinutes;
+        private readonly string _issuer = configuration.GetSection("Jwt")["Issuer"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình Jwt:Issuer");
+        private readonly string _audience = configuration.GetSection("Jwt")["Audience"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình Jwt:Audience");
+        private readonly string _secretKey = configuration.GetSection("Jwt")["SecretKey"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình Jwt:SecretKey");
+        private readonly int _expirationMinutes = ParseExpirationMinutes(configuration.GetSection("Jwt")["ExpirationMinutes"]);
 
-        public JwtTokenService(IConfiguration configuration)
-        {
-            var section = configuration.GetSection("Jwt");
-            _issuer = section["Issuer"] ?? throw new InvalidOperationException("Thiếu cấu hình Jwt:Issuer");
-            _audience = section["Audience"] ?? throw new InvalidOperationException("Thiếu cấu hình Jwt:Audience");
-            _secretKey = section["SecretKey"] ?? throw new InvalidOperationException("Thiếu cấu hình Jwt:SecretKey");
-            _expirationMinutes = int.TryParse(section["ExpirationMinutes"], out var minutes) ? minutes : 60;
-        }
+        private static int ParseExpirationMinutes(string? value)
+            => int.TryParse(value, out var minutes) ? minutes : 60;
 
         public int ExpiresInSeconds => _expirationMinutes * 60;
 

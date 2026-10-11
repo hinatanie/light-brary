@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.Exceptions
 {
-    public class NotFoundException : Exception
+    public class NotFoundException(string message = "Không tìm thấy dữ liệu") : Exception(message)
     {
-        public NotFoundException(string message = "Không tìm thấy dữ liệu") : base(message) { }
     }
 }

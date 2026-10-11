@@ -9,15 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace light_brary.Controllers
 {
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController(UserService userService) : ControllerBase
     {
-        private readonly UserService _userService;
-
-        public UsersController(UserService userService)
-        {
-            _userService = userService;
-        }
-
         #region Admin / Librarian User Management
 
         [HttpGet("api/users")]
@@ -26,7 +19,7 @@ namespace light_brary.Controllers
             [FromQuery] string? keyword = null,
             [FromQuery] string? role = null)
         {
-            var users = await _userService.GetAllAsync(keyword, role);
+            var users = await userService.GetAllAsync(keyword, role);
             return Ok(users);
         }
 
@@ -34,7 +27,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<UserResponse>> GetById(Guid id)
         {
-            var user = await _userService.GetByIdAsync(id);
+            var user = await userService.GetByIdAsync(id);
             return Ok(user);
         }
 
@@ -42,7 +35,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<UserResponse>> Create([FromBody] CreateUserRequest request)
         {
-            var created = await _userService.CreateAsync(request);
+            var created = await userService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -50,7 +43,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<UserResponse>> Update(Guid id, [FromBody] UpdateUserRequest request)
         {
-            var updated = await _userService.UpdateAsync(id, request);
+            var updated = await userService.UpdateAsync(id, request);
             return Ok(updated);
         }
 
@@ -58,7 +51,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _userService.DeleteAsync(id);
+            await userService.DeleteAsync(id);
             return NoContent();
         }
 
@@ -66,7 +59,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetUserBorrowRecords(Guid id)
         {
-            var records = await _userService.GetUserBorrowRecordsAsync(id);
+            var records = await userService.GetUserBorrowRecordsAsync(id);
             return Ok(records);
         }
 
@@ -74,7 +67,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<IEnumerable<BorrowedBookResponse>>> GetUserBorrowedBooks(Guid id)
         {
-            var books = await _userService.GetUserBorrowedBooksAsync(id);
+            var books = await userService.GetUserBorrowedBooksAsync(id);
             return Ok(books);
         }
 
@@ -83,7 +76,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<IActionResult> AdminUpdatePassword(Guid id, [FromBody] AdminUpdatePasswordRequest request)
         {
-            await _userService.AdminUpdatePasswordAsync(id, request);
+            await userService.AdminUpdatePasswordAsync(id, request);
             return Ok(new { message = "Cập nhật mật khẩu người dùng thành công." });
         }
 
@@ -96,7 +89,7 @@ namespace light_brary.Controllers
         public async Task<ActionResult<UserResponse>> GetMyProfile()
         {
             var userId = GetCurrentUserId();
-            var profile = await _userService.GetProfileAsync(userId);
+            var profile = await userService.GetProfileAsync(userId);
             return Ok(profile);
         }
 
@@ -105,7 +98,7 @@ namespace light_brary.Controllers
         public async Task<ActionResult<UserResponse>> UpdateMyProfile([FromBody] UpdateUserRequest request)
         {
             var userId = GetCurrentUserId();
-            var updated = await _userService.UpdateProfileAsync(userId, request);
+            var updated = await userService.UpdateProfileAsync(userId, request);
             return Ok(updated);
         }
 
@@ -115,7 +108,7 @@ namespace light_brary.Controllers
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             var userId = GetCurrentUserId();
-            await _userService.ChangePasswordAsync(userId, request);
+            await userService.ChangePasswordAsync(userId, request);
             return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
@@ -124,7 +117,7 @@ namespace light_brary.Controllers
         public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetMyBorrowRecords()
         {
             var userId = GetCurrentUserId();
-            var records = await _userService.GetUserBorrowRecordsAsync(userId);
+            var records = await userService.GetUserBorrowRecordsAsync(userId);
             return Ok(records);
         }
 
@@ -133,7 +126,7 @@ namespace light_brary.Controllers
         public async Task<ActionResult<IEnumerable<BorrowedBookResponse>>> GetMyBorrowedBooks()
         {
             var userId = GetCurrentUserId();
-            var books = await _userService.GetUserBorrowedBooksAsync(userId);
+            var books = await userService.GetUserBorrowedBooksAsync(userId);
             return Ok(books);
         }
 

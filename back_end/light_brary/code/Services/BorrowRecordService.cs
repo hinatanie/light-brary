@@ -13,25 +13,14 @@ using light_brary.Data;
 
 namespace light_brary.Services
 {
-    public class BorrowRecordService
+    public class BorrowRecordService(
+        AppDbContext context,
+        BorrowRecordRepository borrowRecordRepository,
+        UserRepository userRepository)
     {
-        private readonly AppDbContext _context;
-        private readonly BorrowRecordRepository _borrowRecordRepository;
-        private readonly UserRepository _userRepository;
-
-        public BorrowRecordService(
-            AppDbContext context,
-            BorrowRecordRepository borrowRecordRepository,
-            UserRepository userRepository)
-        {
-            _context = context;
-            _borrowRecordRepository = borrowRecordRepository;
-            _userRepository = userRepository;
-        }
-
         public async Task<BorrowRecordResponse> CreateAsync(CreateBorrowRecordRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(request.UserId);
+            var user = await userRepository.GetByIdAsync(request.UserId);
             if (user is null)
                 throw new NotFoundException($"Không tìm thấy người dùng với ID: {request.UserId}");
 
@@ -44,10 +33,10 @@ namespace light_brary.Services
             if (request.DueDate <= DateTime.UtcNow)
                 throw new BusinessException("Hạn trả sách phải sau thời điểm hiện tại.");
 
-            using var tx = await _context.Database.BeginTransactionAsync();
+            using var tx = await context.Database.BeginTransactionAsync();
             try
             {
-                var copies = await _context.BookCopies
+                var copies = await context.BookCopies
                     .Include(bc => bc.Book)
                     .Where(bc => request.BookCopyIds.Contains(bc.Id))
                     .ToListAsync();
@@ -84,8 +73,8 @@ namespace light_brary.Services
                     }).ToList()
                 };
 
-                await _context.BorrowRecords.AddAsync(record);
-                await _context.SaveChangesAsync();
+                await context.BorrowRecords.AddAsync(record);
+                await context.SaveChangesAsync();
                 await tx.CommitAsync();
 
                 return await GetByIdAsync(record.Id);
@@ -99,7 +88,7 @@ namespace light_brary.Services
 
         public async Task<BorrowRecordResponse> BorrowForMemberAsync(Guid userId, MemberBorrowRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if (user is null)
                 throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
 
@@ -107,13 +96,13 @@ namespace light_brary.Services
             if (dueDate <= DateTime.UtcNow)
                 throw new BusinessException("Hạn trả sách phải sau thời điểm hiện tại.");
 
-            using var tx = await _context.Database.BeginTransactionAsync();
+            using var tx = await context.Database.BeginTransactionAsync();
             try
             {
                 BookCopy? copy = null;
                 if (request.BookCopyId.HasValue && request.BookCopyId.Value != Guid.Empty)
                 {
-                    copy = await _context.BookCopies
+                    copy = await context.BookCopies
                         .Include(bc => bc.Book)
                         .FirstOrDefaultAsync(bc => bc.Id == request.BookCopyId.Value && bc.BookId == request.BookId);
 
@@ -125,7 +114,7 @@ namespace light_brary.Services
                 }
                 else
                 {
-                    copy = await _context.BookCopies
+                    copy = await context.BookCopies
                         .Include(bc => bc.Book)
                         .Where(bc => bc.BookId == request.BookId && bc.Status == BookCopyStatus.Available)
                         .OrderBy(bc => bc.Id)
@@ -155,8 +144,8 @@ namespace light_brary.Services
                     }
                 };
 
-                await _context.BorrowRecords.AddAsync(record);
-                await _context.SaveChangesAsync();
+                await context.BorrowRecords.AddAsync(record);
+                await context.SaveChangesAsync();
                 await tx.CommitAsync();
 
                 return await GetByIdAsync(record.Id);
@@ -170,28 +159,28 @@ namespace light_brary.Services
 
         public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
-            var records = (await _borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue)).ToList();
-            var roles = await _userRepository.GetRoleNamesByUserIdsAsync(records.Select(record => record.UserId));
+            var records = (await borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue)).ToList();
+            var roles = await userRepository.GetRoleNamesByUserIdsAsync(records.Select(record => record.UserId));
             return records.Select(record => MapToSummaryResponse(record,
                 roles.GetValueOrDefault(record.UserId, new List<string>()))).ToList();
         }
 
         public async Task<BorrowRecordResponse> GetByIdAsync(Guid id)
         {
-            var record = await _borrowRecordRepository.GetWithDetailsAsync(id);
+            var record = await borrowRecordRepository.GetWithDetailsAsync(id);
             if (record is null)
                 throw new NotFoundException($"Không tìm thấy phiếu mượn với ID: {id}");
 
-            var roles = await _userRepository.GetRoleNamesByUserIdsAsync(new[] { record.UserId });
+            var roles = await userRepository.GetRoleNamesByUserIdsAsync(new[] { record.UserId });
             return MapToResponse(record, roles.GetValueOrDefault(record.UserId, new List<string>()));
         }
 
         public async Task<BorrowDetailActionResponse> ReturnSingleBookAsync(Guid borrowDetailId)
         {
-            using var tx = await _context.Database.BeginTransactionAsync();
+            using var tx = await context.Database.BeginTransactionAsync();
             try
             {
-                var detail = await _context.BorrowDetails
+                var detail = await context.BorrowDetails
                     .Include(d => d.BookCopy)
                     .Include(d => d.BorrowRecord)
                         .ThenInclude(r => r.BorrowDetails)
@@ -209,7 +198,7 @@ namespace light_brary.Services
 
                 RecalculateRecordStatus(detail.BorrowRecord);
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 await tx.CommitAsync();
 
                 return new BorrowDetailActionResponse
@@ -238,10 +227,10 @@ namespace light_brary.Services
             if (request.BorrowDetailIds.Distinct().Count() != request.BorrowDetailIds.Count)
                 throw new BusinessException("Danh sách chi tiết mượn chứa ID bị trùng lặp.");
 
-            using var tx = await _context.Database.BeginTransactionAsync();
+            using var tx = await context.Database.BeginTransactionAsync();
             try
             {
-                var details = await _context.BorrowDetails
+                var details = await context.BorrowDetails
                     .Include(d => d.BookCopy)
                     .Include(d => d.BorrowRecord)
                         .ThenInclude(r => r.BorrowDetails)
@@ -274,7 +263,7 @@ namespace light_brary.Services
                     RecalculateRecordStatus(record);
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 await tx.CommitAsync();
 
                 return new ReturnBooksResponse
@@ -300,10 +289,10 @@ namespace light_brary.Services
 
         public async Task<BorrowDetailActionResponse> MarkLostBookAsync(Guid borrowDetailId)
         {
-            using var tx = await _context.Database.BeginTransactionAsync();
+            using var tx = await context.Database.BeginTransactionAsync();
             try
             {
-                var detail = await _context.BorrowDetails
+                var detail = await context.BorrowDetails
                     .Include(d => d.BookCopy)
                     .Include(d => d.BorrowRecord)
                         .ThenInclude(r => r.BorrowDetails)
@@ -321,7 +310,7 @@ namespace light_brary.Services
 
                 RecalculateRecordStatus(detail.BorrowRecord);
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 await tx.CommitAsync();
 
                 return new BorrowDetailActionResponse

@@ -11,20 +11,13 @@ using light_brary.Enums;
 
 namespace light_brary.Services
 {
-    public class BookService
+    public class BookService(
+        BookRepository bookRepository,
+        CategoryRepository categoryRepository)
     {
-        private readonly BookRepository _bookRepository;
-        private readonly CategoryRepository _categoryRepository;
-
-        public BookService(BookRepository bookRepository, CategoryRepository categoryRepository)
-        {
-            _bookRepository = bookRepository;
-            _categoryRepository = categoryRepository;
-        }
-
         public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null)
         {
-            var books = await _bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
+            var books = await bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
             var responses = books.Select(MapToResponse);
             if (onlyAvailable == true)
             {
@@ -35,7 +28,7 @@ namespace light_brary.Services
 
         public async Task<BookResponse> GetByIdAsync(Guid id)
         {
-            var book = await _bookRepository.GetWithDetailsAsync(id);
+            var book = await bookRepository.GetWithDetailsAsync(id);
             if (book is null)
                 throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
 
@@ -44,12 +37,12 @@ namespace light_brary.Services
 
         public async Task<BookResponse> CreateAsync(SaveBookRequest request)
         {
-            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
+            var category = await categoryRepository.GetByIdAsync(request.CategoryId);
             if (category is null)
                 throw new NotFoundException($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
-            var existingIsbn = await _bookRepository.GetByIsbnAsync(isbn);
+            var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
             if (existingIsbn is not null)
                 throw new ConflictException($"Mã ISBN '{isbn}' đã tồn tại.");
 
@@ -64,7 +57,7 @@ namespace light_brary.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _bookRepository.AddAsync(book);
+            await bookRepository.AddAsync(book);
 
             book.Category = category;
             return MapToResponse(book);
@@ -72,16 +65,16 @@ namespace light_brary.Services
 
         public async Task<BookResponse> UpdateAsync(Guid id, SaveBookRequest request)
         {
-            var book = await _bookRepository.GetWithDetailsAsync(id);
+            var book = await bookRepository.GetWithDetailsAsync(id);
             if (book is null)
                 throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
 
-            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
+            var category = await categoryRepository.GetByIdAsync(request.CategoryId);
             if (category is null)
                 throw new NotFoundException($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
-            var existingIsbn = await _bookRepository.GetByIsbnAsync(isbn);
+            var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
             if (existingIsbn is not null && existingIsbn.Id != id)
                 throw new ConflictException($"Mã ISBN '{isbn}' đã tồn tại.");
 
@@ -93,21 +86,21 @@ namespace light_brary.Services
             book.CategoryId = request.CategoryId;
             book.Category = category;
 
-            await _bookRepository.UpdateAsync(book);
+            await bookRepository.UpdateAsync(book);
 
             return MapToResponse(book);
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            var book = await _bookRepository.GetWithDetailsAsync(id);
+            var book = await bookRepository.GetWithDetailsAsync(id);
             if (book is null)
                 throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
 
             if (book.BookCopies != null && book.BookCopies.Any())
                 throw new ConflictException("Không thể xóa đầu sách đang có bản sao vật lý.");
 
-            await _bookRepository.DeleteAsync(book);
+            await bookRepository.DeleteAsync(book);
         }
 
         private static BookResponse MapToResponse(Book book)

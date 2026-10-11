@@ -7,12 +7,8 @@ using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class BookRepository : GenericRepository<Book>
+    public class BookRepository(AppDbContext context) : GenericRepository<Book>(context)
     {
-        public BookRepository(AppDbContext context) : base(context)
-        {
-        }
-
         public async Task<Book?> GetByIsbnAsync(string isbn)
         {
             return await _context.Books

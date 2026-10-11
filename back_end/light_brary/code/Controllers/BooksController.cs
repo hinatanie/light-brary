@@ -8,15 +8,8 @@ namespace light_brary.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class BooksController : ControllerBase
+    public class BooksController(BookService bookService) : ControllerBase
     {
-        private readonly BookService _bookService;
-
-        public BooksController(BookService bookService)
-        {
-            _bookService = bookService;
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll(
             [FromQuery] string? keyword = null,
@@ -24,14 +17,14 @@ namespace light_brary.Controllers
             [FromQuery] string? author = null,
             [FromQuery] bool? onlyAvailable = null)
         {
-            var books = await _bookService.GetAllAsync(keyword, categoryId, author, onlyAvailable);
+            var books = await bookService.GetAllAsync(keyword, categoryId, author, onlyAvailable);
             return Ok(books);
         }
 
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<BookResponse>> GetById(Guid id)
         {
-            var book = await _bookService.GetByIdAsync(id);
+            var book = await bookService.GetByIdAsync(id);
             return Ok(book);
         }
 
@@ -39,7 +32,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookResponse>> Create([FromBody] SaveBookRequest request)
         {
-            var created = await _bookService.CreateAsync(request);
+            var created = await bookService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -47,7 +40,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookResponse>> Update(Guid id, [FromBody] SaveBookRequest request)
         {
-            var updated = await _bookService.UpdateAsync(id, request);
+            var updated = await bookService.UpdateAsync(id, request);
             return Ok(updated);
         }
 
@@ -55,7 +48,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _bookService.DeleteAsync(id);
+            await bookService.DeleteAsync(id);
             return NoContent();
         }
     }

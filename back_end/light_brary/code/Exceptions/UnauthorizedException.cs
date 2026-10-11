@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.Exceptions
 {
-    public class UnauthorizedException : Exception
+    public class UnauthorizedException(string message = "Thông tin đăng nhập không chính xác") : Exception(message)
     {
-        public UnauthorizedException(string message = "Thông tin đăng nhập không chính xác") : base(message) { }
     }
 }
