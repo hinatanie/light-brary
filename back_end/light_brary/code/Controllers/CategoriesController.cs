@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace light_brary.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/categories")]
     public class CategoriesController(CategoryService categoryService) : ControllerBase
     {
         [HttpGet]

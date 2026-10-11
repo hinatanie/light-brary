@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace light_brary.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/books")]
     public class BooksController(BookService bookService) : ControllerBase
     {
         [HttpGet]
