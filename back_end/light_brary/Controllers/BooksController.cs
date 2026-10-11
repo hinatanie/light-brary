@@ -1,6 +1,6 @@
+using light_brary.Services;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
-using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,9 +10,9 @@ namespace light_brary.Controllers
     [Route("api/[controller]")]
     public class BooksController : ControllerBase
     {
-        private readonly IBookService _bookService;
+        private readonly BookService _bookService;
 
-        public BooksController(IBookService bookService)
+        public BooksController(BookService bookService)
         {
             _bookService = bookService;
         }

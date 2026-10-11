@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using light_brary.Repositories.Interfaces;
 using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public class GenericRepository<T> where T : class
     {
         protected readonly AppDbContext _context;
         protected readonly DbSet<T> _dbSet;

@@ -1,13 +1,12 @@
 using System.Security.Claims;
 using System.Text;
-using light_brary.Services.Interfaces;
 using light_brary.Entities;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 namespace light_brary.Services.Authentication
 {
-    public class JwtTokenService : IJwtTokenService
+    public class JwtTokenService
     {
         private readonly string _issuer;
         private readonly string _audience;

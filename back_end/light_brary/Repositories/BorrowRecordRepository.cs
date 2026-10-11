@@ -2,14 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 using light_brary.Enums;
 using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class BorrowRecordRepository : GenericRepository<BorrowRecord>, IBorrowRecordRepository
+    public class BorrowRecordRepository : GenericRepository<BorrowRecord>
     {
         public BorrowRecordRepository(AppDbContext context) : base(context)
         {

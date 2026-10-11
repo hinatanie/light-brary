@@ -1,3 +1,4 @@
+using light_brary.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,24 +7,22 @@ using Microsoft.EntityFrameworkCore;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 using light_brary.Enums;
 using light_brary.Data;
 
 namespace light_brary.Services
 {
-    public class BorrowRecordService : IBorrowRecordService
+    public class BorrowRecordService
     {
         private readonly AppDbContext _context;
-        private readonly IBorrowRecordRepository _borrowRecordRepository;
-        private readonly IUserRepository _userRepository;
+        private readonly BorrowRecordRepository _borrowRecordRepository;
+        private readonly UserRepository _userRepository;
 
         public BorrowRecordService(
             AppDbContext context,
-            IBorrowRecordRepository borrowRecordRepository,
-            IUserRepository userRepository)
+            BorrowRecordRepository borrowRecordRepository,
+            UserRepository userRepository)
         {
             _context = context;
             _borrowRecordRepository = borrowRecordRepository;

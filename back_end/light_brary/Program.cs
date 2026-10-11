@@ -1,6 +1,4 @@
 using System.Text;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Services;
 using light_brary.Services.Authentication;
 using light_brary.Data;
@@ -62,27 +60,27 @@ builder.Services.AddAuthorization(options =>
 });
 
 /* Đăng ký các Serivce */
-builder.Services.AddScoped<IBookCopyService, BookCopyService>();
-builder.Services.AddScoped<IBookService, BookService>();
-builder.Services.AddScoped<IBorrowDetailService, BorrowDetailService>();
-builder.Services.AddScoped<IBorrowRecordService, BorrowRecordService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<BookCopyService>();
+builder.Services.AddScoped<BookService>();
+builder.Services.AddScoped<BorrowDetailService>();
+builder.Services.AddScoped<BorrowRecordService>();
+builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<UserService>();
 
 /* Đăng ký các Repository */
-builder.Services.AddScoped<IBookCopyRepository, BookCopyRepository>();
-builder.Services.AddScoped<IBookRepository, BookRepository>();
-builder.Services.AddScoped<IBorrowRecordRepository, BorrowRecordRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+builder.Services.AddScoped<BookCopyRepository>();
+builder.Services.AddScoped<BookRepository>();
+builder.Services.AddScoped<BorrowRecordRepository>();
+builder.Services.AddScoped<CategoryRepository>();
+builder.Services.AddScoped<RoleRepository>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<UserRoleRepository>();
 
 /* Đăng ký các Authentication */
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<PasswordHasher>();
+builder.Services.AddScoped<JwtTokenService>();
 
 var app = builder.Build();
 
@@ -109,7 +107,7 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<AppDbContext>();
     await context.Database.MigrateAsync();
 
-    var passwordHasher = services.GetRequiredService<IPasswordHasher>();
+    var passwordHasher = services.GetRequiredService<PasswordHasher>();
     await DataSeeder.SeedAsync(context, passwordHasher);
 }
 

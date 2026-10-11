@@ -1,6 +1,6 @@
+using light_brary.Services;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
-using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,9 +11,9 @@ namespace light_brary.Controllers
     [Authorize(Policy = "AdminOnly")]
     public class RolesController : ControllerBase
     {
-        private readonly IRoleService _roleService;
+        private readonly RoleService _roleService;
 
-        public RolesController(IRoleService roleService)
+        public RolesController(RoleService roleService)
         {
             _roleService = roleService;
         }

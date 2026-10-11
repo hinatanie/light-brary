@@ -1,4 +1,3 @@
-using light_brary.Services.Interfaces;
 using light_brary.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -8,7 +7,7 @@ namespace light_brary.Services.Authentication
     /// Bọc PasswordHasher có sẵn của ASP.NET Core Identity (PBKDF2 + salt ngẫu nhiên),
     /// không cần cài thêm package.
     /// </summary>
-    public class PasswordHasher : IPasswordHasher
+    public class PasswordHasher
     {
         private readonly PasswordHasher<User> _hasher = new();
 

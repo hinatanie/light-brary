@@ -1,3 +1,5 @@
+using light_brary.Services.Authentication;
+using light_brary.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,27 +7,25 @@ using System.Threading.Tasks;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 using light_brary.Enums;
 
 namespace light_brary.Services
 {
-    public class UserService : IUserService
+    public class UserService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IRoleRepository _roleRepository;
-        private readonly IUserRoleRepository _userRoleRepository;
-        private readonly IBorrowRecordRepository _borrowRecordRepository;
-        private readonly IPasswordHasher _passwordHasher;
+        private readonly UserRepository _userRepository;
+        private readonly RoleRepository _roleRepository;
+        private readonly UserRoleRepository _userRoleRepository;
+        private readonly BorrowRecordRepository _borrowRecordRepository;
+        private readonly PasswordHasher _passwordHasher;
 
         public UserService(
-            IUserRepository userRepository,
-            IRoleRepository roleRepository,
-            IUserRoleRepository userRoleRepository,
-            IBorrowRecordRepository borrowRecordRepository,
-            IPasswordHasher passwordHasher)
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            UserRoleRepository userRoleRepository,
+            BorrowRecordRepository borrowRecordRepository,
+            PasswordHasher passwordHasher)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;

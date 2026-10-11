@@ -1,3 +1,4 @@
+using light_brary.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,19 +6,17 @@ using System.Threading.Tasks;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 using light_brary.Enums;
 
 namespace light_brary.Services
 {
-    public class BookCopyService : IBookCopyService
+    public class BookCopyService
     {
-        private readonly IBookCopyRepository _bookCopyRepository;
-        private readonly IBookRepository _bookRepository;
+        private readonly BookCopyRepository _bookCopyRepository;
+        private readonly BookRepository _bookRepository;
 
-        public BookCopyService(IBookCopyRepository bookCopyRepository, IBookRepository bookRepository)
+        public BookCopyService(BookCopyRepository bookCopyRepository, BookRepository bookRepository)
         {
             _bookCopyRepository = bookCopyRepository;
             _bookRepository = bookRepository;

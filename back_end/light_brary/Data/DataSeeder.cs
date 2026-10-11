@@ -1,12 +1,12 @@
+using light_brary.Services.Authentication;
 using Microsoft.EntityFrameworkCore;
-using light_brary.Services.Interfaces;
 using light_brary.Entities;
 
 namespace light_brary.Data
 {
     public static class DataSeeder
     {
-        public static async Task SeedAsync(AppDbContext context, IPasswordHasher passwordHasher)
+        public static async Task SeedAsync(AppDbContext context, PasswordHasher passwordHasher)
         {
             // 1. Khởi tạo các Role cơ bản nếu chưa có (Admin, Librarian, User)
             var defaultRoles = new[] { Role.ADMIN, Role.LIBRARIAN, Role.USER };
