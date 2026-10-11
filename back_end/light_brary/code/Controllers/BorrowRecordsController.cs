@@ -16,7 +16,7 @@ namespace light_brary.Controllers
         [HttpPost("api/me/borrow")]
         [HttpPost("api/borrow-records/borrow")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow([FromBody] MemberBorrowRequest request)
+        public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow(MemberBorrowRequest request)
         {
             var userId = GetCurrentUserId();
             var created = await borrowRecordService.BorrowForMemberAsync(userId, request);
@@ -25,7 +25,7 @@ namespace light_brary.Controllers
 
         [HttpPost("api/borrow-records")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BorrowRecordResponse>> Create([FromBody] CreateBorrowRecordRequest request)
+        public async Task<ActionResult<BorrowRecordResponse>> Create(CreateBorrowRecordRequest request)
         {
             var created = await borrowRecordService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -66,7 +66,7 @@ namespace light_brary.Controllers
 
         [HttpPost("api/returns")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks([FromBody] ReturnBooksRequest request)
+        public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks(ReturnBooksRequest request)
         {
             var result = await borrowRecordService.ReturnMultipleBooksAsync(request);
             return Ok(result);

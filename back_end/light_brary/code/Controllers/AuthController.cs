@@ -10,7 +10,7 @@ namespace light_brary.Controllers
     public class AuthController(AuthService authService) : ControllerBase
     {
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login(LoginRequest request)
         {
             // [ApiController] tự trả 400 nếu request vi phạm [Required]/[StringLength]
             try
@@ -25,7 +25,7 @@ namespace light_brary.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register(RegisterRequest request)
         {
             var response = await authService.RegisterAsync(request);
             return StatusCode(StatusCodes.Status201Created, response);

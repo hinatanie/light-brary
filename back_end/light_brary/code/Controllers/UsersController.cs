@@ -33,7 +33,7 @@ namespace light_brary.Controllers
 
         [HttpPost("api/users")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<ActionResult<UserResponse>> Create([FromBody] CreateUserRequest request)
+        public async Task<ActionResult<UserResponse>> Create(CreateUserRequest request)
         {
             var created = await userService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -41,7 +41,7 @@ namespace light_brary.Controllers
 
         [HttpPut("api/users/{id:guid}")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<ActionResult<UserResponse>> Update(Guid id, [FromBody] UpdateUserRequest request)
+        public async Task<ActionResult<UserResponse>> Update(Guid id, UpdateUserRequest request)
         {
             var updated = await userService.UpdateAsync(id, request);
             return Ok(updated);
@@ -74,7 +74,7 @@ namespace light_brary.Controllers
         [HttpPut("api/users/{id:guid}/password")]
         [HttpPost("api/users/{id:guid}/reset-password")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<IActionResult> AdminUpdatePassword(Guid id, [FromBody] AdminUpdatePasswordRequest request)
+        public async Task<IActionResult> AdminUpdatePassword(Guid id, AdminUpdatePasswordRequest request)
         {
             await userService.AdminUpdatePasswordAsync(id, request);
             return Ok(new { message = "Cập nhật mật khẩu người dùng thành công." });
@@ -95,7 +95,7 @@ namespace light_brary.Controllers
 
         [HttpPut("api/me")]
         [Authorize]
-        public async Task<ActionResult<UserResponse>> UpdateMyProfile([FromBody] UpdateUserRequest request)
+        public async Task<ActionResult<UserResponse>> UpdateMyProfile(UpdateUserRequest request)
         {
             var userId = GetCurrentUserId();
             var updated = await userService.UpdateProfileAsync(userId, request);
@@ -105,7 +105,7 @@ namespace light_brary.Controllers
         [HttpPut("api/me/password")]
         [HttpPost("api/me/change-password")]
         [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {
             var userId = GetCurrentUserId();
             await userService.ChangePasswordAsync(userId, request);

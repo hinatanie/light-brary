@@ -20,7 +20,7 @@ namespace light_brary.Controllers
 
         [HttpPost("books/{bookId:guid}/copies")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BookCopyResponse>> Create(Guid bookId, [FromBody] SaveBookCopyRequest request)
+        public async Task<ActionResult<BookCopyResponse>> Create(Guid bookId, SaveBookCopyRequest request)
         {
             var created = await bookCopyService.CreateAsync(bookId, request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -44,7 +44,7 @@ namespace light_brary.Controllers
 
         [HttpPut("book-copies/{id:guid}")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BookCopyResponse>> Update(Guid id, [FromBody] SaveBookCopyRequest request)
+        public async Task<ActionResult<BookCopyResponse>> Update(Guid id, SaveBookCopyRequest request)
         {
             var updated = await bookCopyService.UpdateAsync(id, request);
             return Ok(updated);
