@@ -6,6 +6,7 @@
 ---
 
 ## Mục lục
+
 1. [Luồng xử lý một Request](#1-luồng-xử-lý-một-request)
 2. [Middleware Pipeline và Thứ tự](#2-middleware-pipeline-và-thứ-tự)
 3. [Dependency Injection — Vòng đời Service](#3-dependency-injection--vòng-đời-service)
@@ -65,6 +66,7 @@ Client nhận JSON Response
 ```
 
 **Đoạn code trong `Program.cs` thể hiện thứ tự pipeline:**
+
 ```csharp
 app.UseExceptionHandlingMiddleware(); // [1] Bọc ngoài cùng để bắt mọi lỗi
 app.UseHttpsRedirection();            // [2]
@@ -81,6 +83,7 @@ app.MapControllers();                // [6] Định tuyến đến Controller
 ### Lý thuyết
 
 Middleware là một thành phần nằm trong pipeline HTTP, mỗi cái có thể:
+
 - Xử lý logic **trước** `await _next(context)` (đi vào)
 - Gọi middleware tiếp theo bằng `await _next(context)`
 - Xử lý logic **sau** `await _next(context)` (đi ra)
@@ -101,21 +104,24 @@ public async Task InvokeAsync(HttpContext context)
 ### Câu hỏi quan trọng: **Đảo thứ tự Authentication và Authorization thì sao?**
 
 Dự án đang đặt đúng thứ tự:
+
 ```csharp
 app.UseJwtAuthenticationMiddleware(); // [4] — Xác thực: "Bạn là ai?"
 app.UseAuthorization();              // [5] — Phân quyền: "Bạn có quyền làm điều này không?"
 ```
 
 **Nếu đảo ngược** (`UseAuthorization` lên trước `UseJwtAuthenticationMiddleware`):
+
 - `UseAuthorization` chạy trước nhưng `HttpContext.User` vẫn đang **rỗng** (chưa được nạp từ JWT).
 - `User.Identity.IsAuthenticated` = `false` → Authorization luôn từ chối request với `401 Unauthorized`.
 - **Hệ quả**: Mọi endpoint có `[Authorize]` đều sẽ bị chặn kể cả khi client gửi token hợp lệ.
 
 ### Middleware `ExceptionHandlingMiddleware` trong dự án
+
 File: `back_end/light_brary/Middlewares/ExceptionHandlingMiddleware.cs`
 
 ```csharp
-public async Task InvokeAsync(HttpContext context)
+public async Task InvokeAsync(HttpCo`ntext context)
 {
     try
     {
@@ -139,11 +145,11 @@ public async Task InvokeAsync(HttpContext context)
 
 ### Lý thuyết: 3 loại Lifetime
 
-| Lifetime | Đăng ký | Tạo instance khi nào | Bao nhiêu instance |
-| :--- | :--- | :--- | :--- |
-| **Singleton** | `AddSingleton<>()` | Lần đầu tiên được yêu cầu | **1 instance duy nhất** suốt vòng đời ứng dụng |
-| **Scoped** | `AddScoped<>()` | Mỗi HTTP Request | **1 instance / request**, chia sẻ trong cùng request |
-| **Transient** | `AddTransient<>()` | Mỗi lần được yêu cầu (inject) | **1 instance mới mỗi lần inject** |
+| Lifetime            | Đăng ký           | Tạo instance khi nào               | Bao nhiêu instance                                          |
+| :------------------ | :------------------- | :----------------------------------- | :----------------------------------------------------------- |
+| **Singleton** | `AddSingleton<>()` | Lần đầu tiên được yêu cầu   | **1 instance duy nhất** suốt vòng đời ứng dụng  |
+| **Scoped**    | `AddScoped<>()`    | Mỗi HTTP Request                    | **1 instance / request**, chia sẻ trong cùng request |
+| **Transient** | `AddTransient<>()` | Mỗi lần được yêu cầu (inject) | **1 instance mới mỗi lần inject**                   |
 
 ### Thực tế trong dự án (`Program.cs`)
 
@@ -155,6 +161,7 @@ builder.Services.AddDbContext<AppDbContext>(...); // DbContext cũng mặc đị
 ```
 
 **Tại sao chọn `Scoped` cho Service và Repository?**
+
 - `AppDbContext` của EF Core **bắt buộc phải là Scoped** (không phải Singleton) vì nó theo dõi thay đổi entity (Change Tracking). Nếu là Singleton, dữ liệu từ request trước có thể "rò rỉ" sang request sau.
 - Service và Repository được inject `AppDbContext` → chúng cũng phải là Scoped hoặc Transient để vòng đời không dài hơn `AppDbContext`.
 
@@ -166,15 +173,18 @@ builder.Services.AddSingleton<IMyService, MyService>(); // MyService inject AppD
 ```
 
 **Hậu quả:**
+
 1. Lần đầu tiên `IMyService` được inject, ASP.NET Core tạo một instance `MyService` và giữ mãi mãi.
 2. Instance `MyService` này đang giữ một `AppDbContext` từ request **đầu tiên** (đã bị disposed sau request đó).
 3. Từ request thứ 2 trở đi: `AppDbContext` đã chết → mọi truy vấn DB đều throw `ObjectDisposedException`.
 4. ASP.NET Core sẽ phát hiện và throw lỗi ngay lúc khởi động trong môi trường `Development`.
 
 ### DbContext sau mỗi Request
+
 > **Điều gì xảy ra với `DbContext` sau mỗi request?**
 
 Vì `AppDbContext` được đăng ký là `Scoped`, sau khi HTTP request kết thúc:
+
 1. DI Container **gọi `Dispose()`** trên `AppDbContext`.
 2. Toàn bộ dữ liệu đang được theo dõi (Change Tracking) bị xóa sạch.
 3. Kết nối Database được trả về **connection pool** (không đóng cứng).
@@ -203,14 +213,15 @@ public class BooksController : ControllerBase
 
 ### Các nguồn Model Binding
 
-| Attribute | Lấy dữ liệu từ đâu | Ví dụ thực tế trong dự án |
-| :--- | :--- | :--- |
-| `[FromRoute]` | Đường dẫn URL `/api/books/{id}` | `Guid id` trong `GetById(Guid id)` |
-| `[FromQuery]` | Query string `?keyword=abc` | `string? keyword` trong `GetAll(...)` |
-| `[FromBody]` | Body của request (JSON) | `SaveBookRequest request` trong `Create(...)` |
-| `[FromHeader]` | HTTP Header | Token JWT (`Authorization: Bearer ...`) |
+| Attribute        | Lấy dữ liệu từ đâu             | Ví dụ thực tế trong dự án                   |
+| :--------------- | :----------------------------------- | :------------------------------------------------ |
+| `[FromRoute]`  | Đường dẫn URL`/api/books/{id}` | `Guid id` trong `GetById(Guid id)`            |
+| `[FromQuery]`  | Query string`?keyword=abc`         | `string? keyword` trong `GetAll(...)`         |
+| `[FromBody]`   | Body của request (JSON)             | `SaveBookRequest request` trong `Create(...)` |
+| `[FromHeader]` | HTTP Header                          | Token JWT (`Authorization: Bearer ...`)         |
 
 **Ví dụ thực tế:**
+
 ```csharp
 // GET /api/books?keyword=harry&categoryId=xxx&onlyAvailable=true
 public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll(
@@ -225,6 +236,7 @@ public async Task<ActionResult<BookResponse>> Create([FromBody] SaveBookRequest 
 ```
 
 ### `[ApiController]` làm gì?
+
 - Tự động trả `400 Bad Request` nếu Model Validation thất bại (không cần kiểm tra `ModelState.IsValid` thủ công).
 - Tự động binding body từ JSON mà không cần ghi `[FromBody]`.
 - Tự động binding route param khi tên parameter khớp với `{id}` trong route template.
@@ -264,6 +276,7 @@ public async Task<Book?> GetWithDetailsAsync(Guid id)
 ```
 
 EF Core dịch đoạn trên thành SQL tương tự:
+
 ```sql
 SELECT b.*, c.*, bc.*
 FROM "Books" b
@@ -272,6 +285,7 @@ LEFT JOIN "BookCopies" bc ON bc."BookId" = b."Id"
 WHERE b."Id" = @id
 LIMIT 1;
 ```
+
 → Chỉ **1 câu SQL** — hiệu quả.
 
 ### Vấn đề N+1 Query — Cần biết nhận ra
@@ -279,6 +293,7 @@ LIMIT 1;
 **N+1 xảy ra khi**: load danh sách N bản ghi, sau đó **trong vòng lặp** lại query database thêm 1 lần cho mỗi bản ghi → tổng N+1 câu SQL.
 
 **Ví dụ bị N+1 (SAI):**
+
 ```csharp
 var books = await _context.Books.ToListAsync(); // 1 câu SQL lấy N sách
 foreach (var book in books)
@@ -289,6 +304,7 @@ foreach (var book in books)
 ```
 
 **Cách sửa — dùng `Include`:**
+
 ```csharp
 var books = await _context.Books
     .Include(b => b.Category) // Load Category cùng lúc — chỉ 1 câu SQL
@@ -316,6 +332,7 @@ dotnet ef database update
 ```
 
 Trong dự án này, migration được **tự động áp dụng** lúc khởi động app (`Program.cs`):
+
 ```csharp
 await context.Database.MigrateAsync(); // Chạy tất cả migration chưa được áp dụng
 ```
@@ -361,6 +378,7 @@ builder.Services.AddAuthorization(options =>
 ```
 
 **Áp dụng Policy tại Controller:**
+
 ```csharp
 [HttpPost]
 [Authorize(Policy = "LibrarianOrAdmin")] // Chỉ Librarian hoặc Admin mới POST được
@@ -380,18 +398,19 @@ public async Task<IActionResult> Delete(Guid id)
 
 ### Kết quả khi 2 vai trò truy cập cùng endpoint `DELETE /api/books/{id}`
 
-| Người dùng | Role | Kết quả |
-| :--- | :--- | :--- |
-| Không đăng nhập | — | `401 Unauthorized` |
-| Đăng nhập (User) | `User` | `403 Forbidden` |
-| Thủ thư (Librarian) | `Librarian` | `403 Forbidden` |
-| Quản trị (Admin) | `Admin` | `204 No Content` (xóa thành công) |
+| Người dùng         | Role          | Kết quả                              |
+| :-------------------- | :------------ | :------------------------------------- |
+| Không đăng nhập   | —            | `401 Unauthorized`                   |
+| Đăng nhập (User)   | `User`      | `403 Forbidden`                      |
+| Thủ thư (Librarian) | `Librarian` | `403 Forbidden`                      |
+| Quản trị (Admin)    | `Admin`     | `204 No Content` (xóa thành công) |
 
 ---
 
 ## 7. Xử lý lỗi nhất quán — Middleware Exception
 
 ### Vấn đề nếu không có middleware xử lý lỗi
+
 - Mỗi Controller phải tự `try/catch` → code trùng lặp.
 - Lỗi không được bắt trả về HTML trang lỗi mặc định của .NET (không phải JSON) → Frontend không xử lý được.
 
@@ -413,6 +432,7 @@ var (statusCode, code, message) = exception switch
 ```
 
 **Response JSON trả về (nhất quán):**
+
 ```json
 {
   "status": 404,
@@ -422,6 +442,7 @@ var (statusCode, code, message) = exception switch
 ```
 
 **Luồng hoạt động:**
+
 1. `BookService.GetByIdAsync()` throw `NotFoundException`.
 2. Exception bay qua Controller, Repository, Service — không ai bắt.
 3. `ExceptionHandlingMiddleware` (đặt đầu pipeline) bắt được.
@@ -448,6 +469,7 @@ Command-line Arguments
 ### Cấu hình thực tế trong dự án
 
 `appsettings.json` chứa cấu hình chung (không chứa secret):
+
 ```json
 {
   "Jwt": {
@@ -462,12 +484,14 @@ Command-line Arguments
 ```
 
 **Đọc cấu hình trong `Program.cs`:**
+
 ```csharp
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var secretKey = jwtSection["SecretKey"]; // Đọc từ môi trường hoặc User Secrets
 ```
 
 ### Nguyên tắc bảo mật
+
 - **KHÔNG** commit `appsettings.Development.json` chứa password, JWT Secret Key, Connection String thật vào Git.
 - Dùng `dotnet user-secrets` ở môi trường local development.
 - Dùng biến môi trường (`ENV`) trên server production.
@@ -484,23 +508,25 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=..."
 
 Đây là câu hỏi **hay bị hỏi** vì nhiều người nhầm lẫn:
 
-| Tiêu chí | Middleware | Filter (Action Filter, Exception Filter) |
-| :--- | :--- | :--- |
-| **Vị trí** | Nằm trong HTTP Pipeline (cấp ứng dụng) | Nằm trong MVC Pipeline (cấp Controller/Action) |
-| **Phạm vi** | Áp dụng cho **mọi request** (kể cả request đến file tĩnh, Swagger...) | Chỉ áp dụng cho request đến **Controller Action** |
-| **Truy cập** | `HttpContext` | `ActionContext`, `ActionArguments`, `ActionResult` |
-| **Thứ tự** | Trước khi vào MVC | Sau khi routing xác định được Controller/Action |
-| **Ví dụ trong dự án** | `ExceptionHandlingMiddleware`, `JwtAuthenticationMiddleware` | (Dự án chưa dùng Filter) |
-| **Dùng khi** | Logic cần áp dụng sớm nhất, trước MVC (auth, CORS, logging) | Logic cần biết thông tin về Action/Controller cụ thể |
+| Tiêu chí                      | Middleware                                                                         | Filter (Action Filter, Exception Filter)                    |
+| :------------------------------ | :--------------------------------------------------------------------------------- | :---------------------------------------------------------- |
+| **Vị trí**              | Nằm trong HTTP Pipeline (cấp ứng dụng)                                         | Nằm trong MVC Pipeline (cấp Controller/Action)            |
+| **Phạm vi**              | Áp dụng cho**mọi request** (kể cả request đến file tĩnh, Swagger...) | Chỉ áp dụng cho request đến**Controller Action** |
+| **Truy cập**             | `HttpContext`                                                                    | `ActionContext`, `ActionArguments`, `ActionResult`    |
+| **Thứ tự**              | Trước khi vào MVC                                                               | Sau khi routing xác định được Controller/Action       |
+| **Ví dụ trong dự án** | `ExceptionHandlingMiddleware`, `JwtAuthenticationMiddleware`                   | (Dự án chưa dùng Filter)                                |
+| **Dùng khi**             | Logic cần áp dụng sớm nhất, trước MVC (auth, CORS, logging)                 | Logic cần biết thông tin về Action/Controller cụ thể  |
 
 ### Khi nào dùng Filter thay vì Middleware?
 
 Dùng **Filter** khi cần:
+
 - Ghi log tên Controller và Action cụ thể bị gọi.
 - Kiểm tra input/output của Action (chỉ trong MVC).
 - Cần truy cập `ModelState`, `ActionArguments`.
 
 Dùng **Middleware** khi cần:
+
 - Logic áp dụng toàn cục trước MVC (Authentication, Exception Handling, CORS).
 - Xử lý các request **không đi qua Controller** (ví dụ: request đến file tĩnh).
 
@@ -512,6 +538,7 @@ Dùng **Middleware** khi cần:
 
 **Lời giải:**
 Trong `Program.cs`, thứ tự là:
+
 ```
 ExceptionHandling → HTTPS → CORS → JwtAuth → Authorization → Controllers
 ```
@@ -526,18 +553,19 @@ ExceptionHandling → HTTPS → CORS → JwtAuth → Authorization → Controlle
 
 **Lời giải:**
 
-| Service | Lifetime đúng | Lý do |
-| :--- | :--- | :--- |
-| `AppDbContext` | **Scoped** | Chứa dữ liệu trạng thái của 1 request; phải dispose sau request |
-| `IBookService`, `IBookRepository` | **Scoped** | Phụ thuộc `AppDbContext` (Scoped) → phải cùng lifetime |
-| `IPasswordHasher` | Scoped/Singleton đều được | Không có state, không phụ thuộc DbContext |
-| `IJwtTokenService` | Singleton được | Chỉ dùng config và thư viện, không có state |
+| Service                               | Lifetime đúng                | Lý do                                                                 |
+| :------------------------------------ | :----------------------------- | :--------------------------------------------------------------------- |
+| `AppDbContext`                      | **Scoped**               | Chứa dữ liệu trạng thái của 1 request; phải dispose sau request |
+| `IBookService`, `IBookRepository` | **Scoped**               | Phụ thuộc`AppDbContext` (Scoped) → phải cùng lifetime           |
+| `IPasswordHasher`                   | Scoped/Singleton đều được | Không có state, không phụ thuộc DbContext                         |
+| `IJwtTokenService`                  | Singleton được              | Chỉ dùng config và thư viện, không có state                     |
 
 ---
 
 ### ❓ Câu 3: Authorization của endpoint `DELETE /api/books/{id}` được quyết định ở đâu?
 
 **Lời giải:**
+
 1. **Định nghĩa policy**: Tại `builder.Services.AddAuthorization(...)` trong `Program.cs`.
 2. **Khai báo yêu cầu**: Attribute `[Authorize(Policy = "AdminOnly")]` trên method `Delete()` trong `BooksController`.
 3. **Quyết định thực thi**: Tại `AuthorizationMiddleware` (được kích hoạt bởi `app.UseAuthorization()`), middleware này đọc `context.User` và đối chiếu với policy.
@@ -561,19 +589,17 @@ ExceptionHandling → HTTPS → CORS → JwtAuth → Authorization → Controlle
 
 ## 11. So sánh ASP.NET Core với các Framework khác
 
-| Framework | Ngôn ngữ | Ưu điểm | Nhược điểm so với ASP.NET Core |
-| :--- | :--- | :--- | :--- |
-| **Spring Boot** | Java | Kiến trúc rất giống (DI, phân tầng), cộng đồng lớn | Khởi động chậm hơn, tốn RAM hơn |
-| **NestJS** | TypeScript | Cú pháp decorator giống Angular, quen với FE dev | Kiểu động hơn, hiệu năng thấp hơn |
-| **FastAPI** | Python | Viết cực nhanh, tự gen OpenAPI docs | Kiểu lỏng lẻo hơn, hiệu năng thấp hơn |
-| **Go (Gin)** | Go | Cực nhẹ, khởi động nhanh, ít bộ nhớ | Không có ORM, DI, Auth tích hợp sẵn |
+| Framework             | Ngôn ngữ | Ưu điểm                                                   | Nhược điểm so với ASP.NET Core           |
+| :-------------------- | :--------- | :----------------------------------------------------------- | :-------------------------------------------- |
+| **Spring Boot** | Java       | Kiến trúc rất giống (DI, phân tầng), cộng đồng lớn | Khởi động chậm hơn, tốn RAM hơn        |
+| **NestJS**      | TypeScript | Cú pháp decorator giống Angular, quen với FE dev         | Kiểu động hơn, hiệu năng thấp hơn     |
+| **FastAPI**     | Python     | Viết cực nhanh, tự gen OpenAPI docs                       | Kiểu lỏng lẻo hơn, hiệu năng thấp hơn |
+| **Go (Gin)**    | Go         | Cực nhẹ, khởi động nhanh, ít bộ nhớ                  | Không có ORM, DI, Auth tích hợp sẵn      |
 
 ### Khi KHÔNG nên dùng ASP.NET Core (dựa trên trải nghiệm dự án)
 
 1. **Nhóm chưa quen C# và .NET**: Thời gian học ngôn ngữ, công cụ, quy ước đặt tên, async/await... sẽ chiếm nhiều thời gian hơn là làm tính năng. Nên chọn FastAPI (Python) hoặc Express (JS) nếu nhóm quen.
-
 2. **Dịch vụ siêu nhỏ chỉ 2-3 endpoint đơn giản**: Cấu hình `Program.cs`, DI, middleware... vẫn nhiều boilerplate hơn so với FastAPI hay Express khi dự án quá nhỏ.
-
 3. **Môi trường không hỗ trợ .NET Runtime**: Một số cloud/hosting rẻ tiền không có sẵn .NET runtime → phải dùng Docker → tốn thêm dung lượng và chi phí setup. Go hoặc Node.js nhẹ hơn nhiều trong trường hợp này.
 
 ### Lý do chọn ASP.NET Core cho dự án light-brary
@@ -583,4 +609,3 @@ ExceptionHandling → HTTPS → CORS → JwtAuth → Authorization → Controlle
 - DI tích hợp sẵn, không cần thư viện bên ngoài.
 - Middleware pipeline mạnh mẽ, dễ thêm cross-cutting concerns (auth, logging, exception handling).
 - Hiệu năng cao (top các benchmark web framework).
-
