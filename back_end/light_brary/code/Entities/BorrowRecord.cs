@@ -10,14 +10,15 @@ using light_brary.Enums;
 
 namespace light_brary.Entities
 {
-    [Table("BorrowRecords")]
     public class BorrowRecord
     {
         [Key]
         public Guid Id {get; set;} = Guid.NewGuid();
 
         public DateTime BorrowDate {get; set;} = DateTime.UtcNow;
-        public DateTime DueDate {get; set;} = DateTime.UtcNow;
+
+        public DateTime DueDate {get; set;} = DateTime.UtcNow.AddDays(14);
+
         public BorrowRecordStatus Status {get; set;} = BorrowRecordStatus.Borrowing;
 
         [StringLength(255)]
@@ -32,5 +33,7 @@ namespace light_brary.Entities
 
         [InverseProperty(nameof(BorrowDetail.BorrowRecord))]
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
+
+        public Fine? Fine { get; set; }
     }
 }

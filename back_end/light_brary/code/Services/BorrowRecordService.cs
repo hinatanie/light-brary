@@ -345,13 +345,9 @@ namespace light_brary.Services
             {
                 record.Status = BorrowRecordStatus.Borrowing;
             }
-            else if (record.BorrowDetails.All(d => d.Status == BorrowDetailStatus.Returned))
-            {
-                record.Status = BorrowRecordStatus.Returned;
-            }
             else
             {
-                record.Status = BorrowRecordStatus.Lost;
+                record.Status = BorrowRecordStatus.Closed;
             }
         }
 
