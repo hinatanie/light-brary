@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace light_brary.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] // api/auth
+    [Route("api/auth")]
     public class AuthController(AuthService authService) : ControllerBase
     {
         [HttpPost("login")]
