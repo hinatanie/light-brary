@@ -1,8 +1,8 @@
+using light_brary.Services;
 using System.Security.Claims;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
 using light_brary.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,9 +12,9 @@ namespace light_brary.Controllers
     [ApiController]
     public class BorrowRecordsController : ControllerBase
     {
-        private readonly IBorrowRecordService _borrowRecordService;
+        private readonly BorrowRecordService _borrowRecordService;
 
-        public BorrowRecordsController(IBorrowRecordService borrowRecordService)
+        public BorrowRecordsController(BorrowRecordService borrowRecordService)
         {
             _borrowRecordService = borrowRecordService;
         }

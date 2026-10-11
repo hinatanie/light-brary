@@ -2,13 +2,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class BookRepository : GenericRepository<Book>, IBookRepository
+    public class BookRepository : GenericRepository<Book>
     {
         public BookRepository(AppDbContext context) : base(context)
         {

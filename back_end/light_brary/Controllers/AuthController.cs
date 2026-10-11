@@ -1,7 +1,7 @@
+using light_brary.Services;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace light_brary.Controllers
@@ -10,9 +10,9 @@ namespace light_brary.Controllers
     [Route("api/[controller]")] // api/auth
     public class AuthController : ControllerBase
     {
-        private readonly IAuthService _authService;
+        private readonly AuthService _authService;
 
-        public AuthController(IAuthService authService)
+        public AuthController(AuthService authService)
         {
             _authService = authService;
         }

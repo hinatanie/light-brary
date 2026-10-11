@@ -8,11 +8,9 @@ Backend dùng một project ASP.NET Core, chia thư mục theo trách nhiệm:
 back_end/light_brary/
 ├── Controllers/
 ├── Services/
-│   ├── Interfaces/
 │   └── Authentication/
 ├── Entities/
 ├── Repositories/
-│   └── Interfaces/
 ├── DTOs/
 │   ├── Requests/
 │   └── Responses/
@@ -32,8 +30,7 @@ back_end/light_brary/
 ```
 
 Luồng xử lý: Controller → Service → Repository → AppDbContext.
-Interface của service đặt trong `Services/Interfaces/`; interface của repository
-đặt trong `Repositories/Interfaces/`. Namespace khớp với thư mục tính từ project.
+Controller và Service inject trực tiếp class cụ thể; đăng ký bằng `AddScoped<T>()`. Backend không định nghĩa interface riêng cho Service, Repository hoặc Authentication. Namespace khớp với thư mục tính từ project.
 
 # 5. Quy định xử lý nghiệp vụ
 `Services/` chứa logic xử lý use case của hệ thống. DTO, exception và validator đặt trong các thư mục tương ứng của cùng project.

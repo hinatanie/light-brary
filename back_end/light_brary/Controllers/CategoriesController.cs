@@ -1,6 +1,6 @@
+using light_brary.Services;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
-using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,9 +10,9 @@ namespace light_brary.Controllers
     [Route("api/[controller]")]
     public class CategoriesController : ControllerBase
     {
-        private readonly ICategoryService _categoryService;
+        private readonly CategoryService _categoryService;
 
-        public CategoriesController(ICategoryService categoryService)
+        public CategoriesController(CategoryService categoryService)
         {
             _categoryService = categoryService;
         }

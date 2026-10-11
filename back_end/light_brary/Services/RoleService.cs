@@ -1,3 +1,4 @@
+using light_brary.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,24 +6,22 @@ using System.Threading.Tasks;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 
 namespace light_brary.Services
 {
-    public class RoleService : IRoleService
+    public class RoleService
     {
         private static readonly string[] SystemRoles = { Role.ADMIN, Role.LIBRARIAN, Role.USER };
 
-        private readonly IRoleRepository _roleRepository;
-        private readonly IUserRoleRepository _userRoleRepository;
-        private readonly IUserRepository _userRepository;
+        private readonly RoleRepository _roleRepository;
+        private readonly UserRoleRepository _userRoleRepository;
+        private readonly UserRepository _userRepository;
 
         public RoleService(
-            IRoleRepository roleRepository,
-            IUserRoleRepository userRoleRepository,
-            IUserRepository userRepository)
+            RoleRepository roleRepository,
+            UserRoleRepository userRoleRepository,
+            UserRepository userRepository)
         {
             _roleRepository = roleRepository;
             _userRoleRepository = userRoleRepository;

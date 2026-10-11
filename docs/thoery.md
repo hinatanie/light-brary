@@ -51,10 +51,10 @@ Client
 [6] BooksController.GetById()    ← Endpoint nhận request
   │
   ▼
-[7] IBookService → BookService   ← Xử lý nghiệp vụ
+[7] BookService   ← Xử lý nghiệp vụ
   │
   ▼
-[8] IBookRepository → BookRepository ← Truy vấn EF Core
+[8] BookRepository ← Truy vấn EF Core
   │
   ▼
 [9] AppDbContext → PostgreSQL     ← Câu lệnh SQL thực sự chạy
@@ -155,8 +155,8 @@ public async Task InvokeAsync(HttpCo`ntext context)
 
 ```csharp
 // Tất cả Service và Repository đều là Scoped — đúng cho Web API
-builder.Services.AddScoped<IBookService, BookService>();
-builder.Services.AddScoped<IBookRepository, BookRepository>();
+builder.Services.AddScoped<BookService>();
+builder.Services.AddScoped<BookRepository>();
 builder.Services.AddDbContext<AppDbContext>(...); // DbContext cũng mặc định là Scoped
 ```
 
@@ -556,9 +556,9 @@ ExceptionHandling → HTTPS → CORS → JwtAuth → Authorization → Controlle
 | Service                               | Lifetime đúng                | Lý do                                                                 |
 | :------------------------------------ | :----------------------------- | :--------------------------------------------------------------------- |
 | `AppDbContext`                      | **Scoped**               | Chứa dữ liệu trạng thái của 1 request; phải dispose sau request |
-| `IBookService`, `IBookRepository` | **Scoped**               | Phụ thuộc`AppDbContext` (Scoped) → phải cùng lifetime           |
-| `IPasswordHasher`                   | Scoped/Singleton đều được | Không có state, không phụ thuộc DbContext                         |
-| `IJwtTokenService`                  | Singleton được              | Chỉ dùng config và thư viện, không có state                     |
+| `BookService`, `BookRepository` | **Scoped**               | Phụ thuộc`AppDbContext` (Scoped) → phải cùng lifetime           |
+| `PasswordHasher`                   | Scoped/Singleton đều được | Không có state, không phụ thuộc DbContext                         |
+| `JwtTokenService`                  | Singleton được              | Chỉ dùng config và thư viện, không có state                     |
 
 ---
 

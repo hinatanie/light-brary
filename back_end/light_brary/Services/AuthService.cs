@@ -1,26 +1,26 @@
+using light_brary.Services.Authentication;
+using light_brary.Repositories;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 
 namespace light_brary.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IRoleRepository _roleRepository;
-        private readonly IUserRoleRepository _userRoleRepository;
-        private readonly IPasswordHasher _passwordHasher;
-        private readonly IJwtTokenService _jwtTokenService;
+        private readonly UserRepository _userRepository;
+        private readonly RoleRepository _roleRepository;
+        private readonly UserRoleRepository _userRoleRepository;
+        private readonly PasswordHasher _passwordHasher;
+        private readonly JwtTokenService _jwtTokenService;
 
         public AuthService(
-            IUserRepository userRepository,
-            IRoleRepository roleRepository,
-            IUserRoleRepository userRoleRepository,
-            IPasswordHasher passwordHasher,
-            IJwtTokenService jwtTokenService)
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            UserRoleRepository userRoleRepository,
+            PasswordHasher passwordHasher,
+            JwtTokenService jwtTokenService)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;

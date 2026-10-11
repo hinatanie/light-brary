@@ -1,20 +1,19 @@
+using light_brary.Repositories;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
-using light_brary.Services.Interfaces;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 
 namespace light_brary.Services
 {
-    public class CategoryService : ICategoryService
+    public class CategoryService
     {
-        private readonly ICategoryRepository _categoryRepository;
+        private readonly CategoryRepository _categoryRepository;
 
-        public CategoryService(ICategoryRepository categoryRepository)
+        public CategoryService(CategoryRepository categoryRepository)
         {
             _categoryRepository = categoryRepository;
         }

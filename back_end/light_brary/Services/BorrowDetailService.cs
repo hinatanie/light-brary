@@ -1,15 +1,14 @@
 using System;
 using System.Threading.Tasks;
 using light_brary.DTOs.Responses;
-using light_brary.Services.Interfaces;
 
 namespace light_brary.Services
 {
-    public class BorrowDetailService : IBorrowDetailService
+    public class BorrowDetailService
     {
-        private readonly IBorrowRecordService _borrowRecordService;
+        private readonly BorrowRecordService _borrowRecordService;
 
-        public BorrowDetailService(IBorrowRecordService borrowRecordService)
+        public BorrowDetailService(BorrowRecordService borrowRecordService)
         {
             _borrowRecordService = borrowRecordService;
         }

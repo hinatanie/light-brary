@@ -1,12 +1,11 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using light_brary.Repositories.Interfaces;
 using light_brary.Entities;
 using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class CategoryRepository : GenericRepository<Category>, ICategoryRepository
+    public class CategoryRepository : GenericRepository<Category>
     {
         public CategoryRepository(AppDbContext context) : base(context)
         {

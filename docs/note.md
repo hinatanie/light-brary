@@ -1375,7 +1375,7 @@ sequenceDiagram
 
 ##### Bước 2: Tra cứu Người Dùng và Eager Loading Roles
 
-* **File:** [IUserRepository.cs](../back_end/light_brary/Repositories/Interfaces/IUserRepository.cs) & [UserRepository.cs](../back_end/light_brary/Repositories/UserRepository.cs)
+* **File:** [UserRepository.cs](../back_end/light_brary/Repositories/UserRepository.cs)
 * **Cơ chế:**
   ```csharp
   return await _context.Users
