@@ -26,7 +26,7 @@ namespace light_brary.Controllers
 
         [HttpPost]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<CategoryResponse>> Create([FromBody] SaveCategoryRequest request)
+        public async Task<ActionResult<CategoryResponse>> Create(SaveCategoryRequest request)
         {
             var created = await categoryService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -34,7 +34,7 @@ namespace light_brary.Controllers
 
         [HttpPut("{id:guid}")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<CategoryResponse>> Update(Guid id, [FromBody] SaveCategoryRequest request)
+        public async Task<ActionResult<CategoryResponse>> Update(Guid id, SaveCategoryRequest request)
         {
             var updated = await categoryService.UpdateAsync(id, request);
             return Ok(updated);

@@ -26,14 +26,14 @@ namespace light_brary.Controllers
         }
 
         [HttpPost("roles")]
-        public async Task<ActionResult<RoleResponse>> Create([FromBody] SaveRoleRequest request)
+        public async Task<ActionResult<RoleResponse>> Create(SaveRoleRequest request)
         {
             var created = await roleService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("roles/{id:guid}")]
-        public async Task<ActionResult<RoleResponse>> Update(Guid id, [FromBody] SaveRoleRequest request)
+        public async Task<ActionResult<RoleResponse>> Update(Guid id, SaveRoleRequest request)
         {
             var updated = await roleService.UpdateAsync(id, request);
             return Ok(updated);
