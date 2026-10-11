@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.Exceptions
 {
-    public class ForbiddenException : Exception
+    public class ForbiddenException(string message = "Không có quyền truy cập chức năng này") : Exception(message)
     {
-        public ForbiddenException(string message = "Không có quyền truy cập chức năng này") : base(message) { }
     }
 }

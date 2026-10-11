@@ -8,20 +8,13 @@ namespace light_brary.Controllers
 {
     [ApiController]
     [Route("api")]
-    public class BookCopiesController : ControllerBase
+    public class BookCopiesController(BookCopyService bookCopyService) : ControllerBase
     {
-        private readonly BookCopyService _bookCopyService;
-
-        public BookCopiesController(BookCopyService bookCopyService)
-        {
-            _bookCopyService = bookCopyService;
-        }
-
         [HttpGet("books/{bookId:guid}/copies")]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<BookCopyResponse>>> GetByBookId(Guid bookId)
         {
-            var copies = await _bookCopyService.GetByBookIdAsync(bookId);
+            var copies = await bookCopyService.GetByBookIdAsync(bookId);
             return Ok(copies);
         }
 
@@ -29,7 +22,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookCopyResponse>> Create(Guid bookId, [FromBody] SaveBookCopyRequest request)
         {
-            var created = await _bookCopyService.CreateAsync(bookId, request);
+            var created = await bookCopyService.CreateAsync(bookId, request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -37,7 +30,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookCopyResponse>> GetById(Guid id)
         {
-            var copy = await _bookCopyService.GetByIdAsync(id);
+            var copy = await bookCopyService.GetByIdAsync(id);
             return Ok(copy);
         }
 
@@ -45,7 +38,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookCopyResponse>> GetByBarcode(string barcode)
         {
-            var copy = await _bookCopyService.GetByBarcodeAsync(barcode);
+            var copy = await bookCopyService.GetByBarcodeAsync(barcode);
             return Ok(copy);
         }
 
@@ -53,7 +46,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookCopyResponse>> Update(Guid id, [FromBody] SaveBookCopyRequest request)
         {
-            var updated = await _bookCopyService.UpdateAsync(id, request);
+            var updated = await bookCopyService.UpdateAsync(id, request);
             return Ok(updated);
         }
 
@@ -61,7 +54,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _bookCopyService.DeleteAsync(id);
+            await bookCopyService.DeleteAsync(id);
             return NoContent();
         }
 
@@ -69,7 +62,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookCopyResponse>> MarkAvailable(Guid id)
         {
-            var copy = await _bookCopyService.MarkAvailableAsync(id);
+            var copy = await bookCopyService.MarkAvailableAsync(id);
             return Ok(copy);
         }
 
@@ -77,7 +70,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BookCopyResponse>> MarkLost(Guid id)
         {
-            var copy = await _bookCopyService.MarkLostAsync(id);
+            var copy = await bookCopyService.MarkLostAsync(id);
             return Ok(copy);
         }
     }

@@ -8,26 +8,19 @@ namespace light_brary.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CategoriesController : ControllerBase
+    public class CategoriesController(CategoryService categoryService) : ControllerBase
     {
-        private readonly CategoryService _categoryService;
-
-        public CategoriesController(CategoryService categoryService)
-        {
-            _categoryService = categoryService;
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CategoryResponse>>> GetAll()
         {
-            var categories = await _categoryService.GetAllAsync();
+            var categories = await categoryService.GetAllAsync();
             return Ok(categories);
         }
 
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<CategoryResponse>> GetById(Guid id)
         {
-            var category = await _categoryService.GetByIdAsync(id);
+            var category = await categoryService.GetByIdAsync(id);
             return Ok(category);
         }
 
@@ -35,7 +28,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<CategoryResponse>> Create([FromBody] SaveCategoryRequest request)
         {
-            var created = await _categoryService.CreateAsync(request);
+            var created = await categoryService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -43,7 +36,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<CategoryResponse>> Update(Guid id, [FromBody] SaveCategoryRequest request)
         {
-            var updated = await _categoryService.UpdateAsync(id, request);
+            var updated = await categoryService.UpdateAsync(id, request);
             return Ok(updated);
         }
 
@@ -51,7 +44,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _categoryService.DeleteAsync(id);
+            await categoryService.DeleteAsync(id);
             return NoContent();
         }
     }

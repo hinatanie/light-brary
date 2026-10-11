@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.Exceptions
 {
-    public class ConflictException : Exception
+    public class ConflictException(string message = "Dữ liệu bị xung đột") : Exception(message)
     {
-        public ConflictException(string message = "Dữ liệu bị xung đột") : base(message) { }
     }
 }

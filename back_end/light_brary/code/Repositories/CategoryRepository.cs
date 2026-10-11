@@ -5,12 +5,8 @@ using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class CategoryRepository : GenericRepository<Category>
+    public class CategoryRepository(AppDbContext context) : GenericRepository<Category>(context)
     {
-        public CategoryRepository(AppDbContext context) : base(context)
-        {
-        }
-
         public async Task<Category?> GetByNameAsync(string name)
         {
             return await _context.Categories

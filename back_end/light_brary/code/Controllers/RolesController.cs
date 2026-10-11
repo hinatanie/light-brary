@@ -9,68 +9,61 @@ namespace light_brary.Controllers
     [ApiController]
     [Route("api")]
     [Authorize(Policy = "AdminOnly")]
-    public class RolesController : ControllerBase
+    public class RolesController(RoleService roleService) : ControllerBase
     {
-        private readonly RoleService _roleService;
-
-        public RolesController(RoleService roleService)
-        {
-            _roleService = roleService;
-        }
-
         [HttpGet("roles")]
         public async Task<ActionResult<IEnumerable<RoleResponse>>> GetAllRoles()
         {
-            var roles = await _roleService.GetAllAsync();
+            var roles = await roleService.GetAllAsync();
             return Ok(roles);
         }
 
         [HttpGet("roles/{id:guid}")]
         public async Task<ActionResult<RoleResponse>> GetById(Guid id)
         {
-            var role = await _roleService.GetByIdAsync(id);
+            var role = await roleService.GetByIdAsync(id);
             return Ok(role);
         }
 
         [HttpPost("roles")]
         public async Task<ActionResult<RoleResponse>> Create([FromBody] SaveRoleRequest request)
         {
-            var created = await _roleService.CreateAsync(request);
+            var created = await roleService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("roles/{id:guid}")]
         public async Task<ActionResult<RoleResponse>> Update(Guid id, [FromBody] SaveRoleRequest request)
         {
-            var updated = await _roleService.UpdateAsync(id, request);
+            var updated = await roleService.UpdateAsync(id, request);
             return Ok(updated);
         }
 
         [HttpDelete("roles/{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _roleService.DeleteAsync(id);
+            await roleService.DeleteAsync(id);
             return NoContent();
         }
 
         [HttpGet("users/{userId:guid}/roles")]
         public async Task<ActionResult<IEnumerable<RoleResponse>>> GetUserRoles(Guid userId)
         {
-            var roles = await _roleService.GetUserRolesAsync(userId);
+            var roles = await roleService.GetUserRolesAsync(userId);
             return Ok(roles);
         }
 
         [HttpPost("users/{userId:guid}/roles/{roleId:guid}")]
         public async Task<IActionResult> AssignRole(Guid userId, Guid roleId)
         {
-            await _roleService.AssignRoleToUserAsync(userId, roleId);
+            await roleService.AssignRoleToUserAsync(userId, roleId);
             return NoContent();
         }
 
         [HttpDelete("users/{userId:guid}/roles/{roleId:guid}")]
         public async Task<IActionResult> RemoveRole(Guid userId, Guid roleId)
         {
-            await _roleService.RemoveRoleFromUserAsync(userId, roleId);
+            await roleService.RemoveRoleFromUserAsync(userId, roleId);
             return NoContent();
         }
     }

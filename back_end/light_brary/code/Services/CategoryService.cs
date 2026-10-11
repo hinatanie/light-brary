@@ -9,18 +9,11 @@ using light_brary.Entities;
 
 namespace light_brary.Services
 {
-    public class CategoryService
+    public class CategoryService(CategoryRepository categoryRepository)
     {
-        private readonly CategoryRepository _categoryRepository;
-
-        public CategoryService(CategoryRepository categoryRepository)
-        {
-            _categoryRepository = categoryRepository;
-        }
-
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync()
         {
-            var categories = await _categoryRepository.GetAllAsync();
+            var categories = await categoryRepository.GetAllAsync();
             return categories.Select(c => new CategoryResponse
             {
                 Id = c.Id,
@@ -31,7 +24,7 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> GetByIdAsync(Guid id)
         {
-            var category = await _categoryRepository.GetByIdAsync(id);
+            var category = await categoryRepository.GetByIdAsync(id);
             if (category is null)
                 throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
 
@@ -46,7 +39,7 @@ namespace light_brary.Services
         public async Task<CategoryResponse> CreateAsync(SaveCategoryRequest request)
         {
             var name = request.Name.Trim();
-            var existing = await _categoryRepository.GetByNameAsync(name);
+            var existing = await categoryRepository.GetByNameAsync(name);
             if (existing is not null)
                 throw new ConflictException($"Thể loại '{name}' đã tồn tại.");
 
@@ -56,7 +49,7 @@ namespace light_brary.Services
                 Description = request.Description?.Trim()
             };
 
-            await _categoryRepository.AddAsync(category);
+            await categoryRepository.AddAsync(category);
 
             return new CategoryResponse
             {
@@ -68,19 +61,19 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
         {
-            var category = await _categoryRepository.GetByIdAsync(id);
+            var category = await categoryRepository.GetByIdAsync(id);
             if (category is null)
                 throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
 
             var name = request.Name.Trim();
-            var existing = await _categoryRepository.GetByNameAsync(name);
+            var existing = await categoryRepository.GetByNameAsync(name);
             if (existing is not null && existing.Id != id)
                 throw new ConflictException($"Thể loại '{name}' đã tồn tại.");
 
             category.Name = name;
             category.Description = request.Description?.Trim();
 
-            await _categoryRepository.UpdateAsync(category);
+            await categoryRepository.UpdateAsync(category);
 
             return new CategoryResponse
             {
@@ -92,14 +85,14 @@ namespace light_brary.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var category = await _categoryRepository.GetWithBooksAsync(id);
+            var category = await categoryRepository.GetWithBooksAsync(id);
             if (category is null)
                 throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
 
             if (category.Books != null && category.Books.Any())
                 throw new ConflictException("Không thể xóa thể loại đang chứa các đầu sách.");
 
-            await _categoryRepository.DeleteAsync(category);
+            await categoryRepository.DeleteAsync(category);
         }
     }
 }

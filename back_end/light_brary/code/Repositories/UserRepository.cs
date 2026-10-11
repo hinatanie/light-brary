@@ -4,12 +4,8 @@ using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class UserRepository : GenericRepository<User>
+    public class UserRepository(AppDbContext context) : GenericRepository<User>(context)
     {
-        public UserRepository(AppDbContext context) : base(context)
-        {
-        }
-
         public async Task<User?> GetByPhoneNumberAsync(string phoneNumber)
         {
             return await _context.Users.FirstOrDefaultAsync(user => user.PhoneNumber == phoneNumber);

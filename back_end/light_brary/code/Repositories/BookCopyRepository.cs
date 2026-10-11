@@ -7,12 +7,8 @@ using light_brary.Data;
 
 namespace light_brary.Repositories
 {
-    public class BookCopyRepository : GenericRepository<BookCopy>
+    public class BookCopyRepository(AppDbContext context) : GenericRepository<BookCopy>(context)
     {
-        public BookCopyRepository(AppDbContext context) : base(context)
-        {
-        }
-
         public async Task<BookCopy?> GetByBarcodeAsync(string barcode)
         {
             return await _context.BookCopies

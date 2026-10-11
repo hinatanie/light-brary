@@ -11,22 +11,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace light_brary.Controllers
 {
     [ApiController]
-    public class BorrowRecordsController : ControllerBase
+    public class BorrowRecordsController(BorrowRecordService borrowRecordService) : ControllerBase
     {
-        private readonly BorrowRecordService _borrowRecordService;
-
-        public BorrowRecordsController(BorrowRecordService borrowRecordService)
-        {
-            _borrowRecordService = borrowRecordService;
-        }
-
         [HttpPost("api/me/borrow")]
         [HttpPost("api/borrow-records/borrow")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow([FromBody] MemberBorrowRequest request)
         {
             var userId = GetCurrentUserId();
-            var created = await _borrowRecordService.BorrowForMemberAsync(userId, request);
+            var created = await borrowRecordService.BorrowForMemberAsync(userId, request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -34,7 +27,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowRecordResponse>> Create([FromBody] CreateBorrowRecordRequest request)
         {
-            var created = await _borrowRecordService.CreateAsync(request);
+            var created = await borrowRecordService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -45,7 +38,7 @@ namespace light_brary.Controllers
             [FromQuery] string? status = null,
             [FromQuery] bool? overdue = null)
         {
-            var records = await _borrowRecordService.GetAllAsync(userId, status, overdue);
+            var records = await borrowRecordService.GetAllAsync(userId, status, overdue);
             return Ok(records);
         }
 
@@ -53,7 +46,7 @@ namespace light_brary.Controllers
         [Authorize]
         public async Task<ActionResult<BorrowRecordResponse>> GetById(Guid id)
         {
-            var record = await _borrowRecordService.GetByIdAsync(id);
+            var record = await borrowRecordService.GetByIdAsync(id);
             var userId = GetCurrentUserId();
             var isStaffOrAdmin = User.IsInRole(RoleNames.ADMIN) || User.IsInRole(RoleNames.LIBRARIAN);
             if (!isStaffOrAdmin && record.User.Id != userId)
@@ -67,7 +60,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowDetailActionResponse>> ReturnSingleBook(Guid id)
         {
-            var result = await _borrowRecordService.ReturnSingleBookAsync(id);
+            var result = await borrowRecordService.ReturnSingleBookAsync(id);
             return Ok(result);
         }
 
@@ -75,7 +68,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks([FromBody] ReturnBooksRequest request)
         {
-            var result = await _borrowRecordService.ReturnMultipleBooksAsync(request);
+            var result = await borrowRecordService.ReturnMultipleBooksAsync(request);
             return Ok(result);
         }
 
@@ -83,7 +76,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowDetailActionResponse>> MarkLostBook(Guid id)
         {
-            var result = await _borrowRecordService.MarkLostBookAsync(id);
+            var result = await borrowRecordService.MarkLostBookAsync(id);
             return Ok(result);
         }
 
