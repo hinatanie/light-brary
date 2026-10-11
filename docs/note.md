@@ -1367,7 +1367,7 @@ sequenceDiagram
 
 ##### Bước 1: Tiếp nhận và Validate Request tại Controller
 
-* **File:** [AuthController.cs](../back_end/light_brary/Controllers/AuthController.cs) & [LoginRequest.cs](../back_end/light_brary/DTOs/Requests/LoginRequest.cs)
+* **File:** [AuthController.cs](../back_end/light_brary/code/Controllers/AuthController.cs) & [LoginRequest.cs](../back_end/light_brary/code/DTOs/Requests/LoginRequest.cs)
 * **Cơ chế:**
   * DTO `LoginRequest` ràng buộc `[Required]` và `[StringLength(10)]` cho số điện thoại.
   * Thuộc tính `[ApiController]` tự động chặn và trả `400 Bad Request` nếu client gửi dữ liệu sai định dạng trước khi code bên trong kịp chạy.
@@ -1375,7 +1375,7 @@ sequenceDiagram
 
 ##### Bước 2: Tra cứu Người Dùng và Eager Loading Roles
 
-* **File:** [UserRepository.cs](../back_end/light_brary/Repositories/UserRepository.cs)
+* **File:** [UserRepository.cs](../back_end/light_brary/code/Repositories/UserRepository.cs)
 * **Cơ chế:**
   ```csharp
   return await _context.Users
@@ -1388,7 +1388,7 @@ sequenceDiagram
 
 ##### Bước 3: Đối soát Mật Khẩu An Toàn (Anti-Enumeration)
 
-* **File:** [AuthService.cs](../back_end/light_brary/Services/AuthService.cs) & [PasswordHasher.cs](../back_end/light_brary/Services/Authentication/PasswordHasher.cs)
+* **File:** [AuthService.cs](../back_end/light_brary/code/Services/AuthService.cs) & [PasswordHasher.cs](../back_end/light_brary/code/Services/Authentication/PasswordHasher.cs)
 * **Cơ chế:**
 
   ```csharp
@@ -1407,7 +1407,7 @@ sequenceDiagram
 
 ##### Bước 4: Đóng gói Claims và Ký Chuỗi JWT
 
-* **File:** [JwtTokenService.cs](../back_end/light_brary/Services/Authentication/JwtTokenService.cs)
+* **File:** [JwtTokenService.cs](../back_end/light_brary/code/Services/Authentication/JwtTokenService.cs)
 * **Cơ chế:**
   1. **Đưa các thông tin định danh vào Payload (Claims):**
      * `ClaimTypes.NameIdentifier`: ID người dùng (dùng để truy vấn cá nhân sau này).
@@ -1421,7 +1421,7 @@ sequenceDiagram
 
 ##### Bước 5: Đóng gói DTO phản hồi (AuthResponse)
 
-* **File:** [AuthResponse.cs](../back_end/light_brary/DTOs/Responses/AuthResponse.cs)
+* **File:** [AuthResponse.cs](../back_end/light_brary/code/DTOs/Responses/AuthResponse.cs)
 * **Cơ chế:**
   * Trả về `AccessToken`: Chuỗi JWT dùng cho các request tiếp theo.
   * `TokenType`: Mặc định là `"Bearer"`.

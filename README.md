@@ -1,6 +1,6 @@
 # LightBrary — Hệ Thống Quản Lý Thư Viện Trực Tuyến
 
-Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở Backend và **React 19 + TypeScript + Vite** ở Frontend. Backend được tổ chức theo các lớp Controllers, Services, Repositories và Entities trong một project; DTO được tách thành Requests và Responses. Xem cấu trúc và quy tắc tại [CONTRIBUTING.md](docs/CONTRIBUTING.md).
+Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở Backend và **React 19 + TypeScript + Vite** ở Frontend. Backend được tổ chức theo các lớp Controllers, Services, Repositories và Entities trong thư mục `back_end/light_brary/code/` của một project; DTO được tách thành Requests và Responses. `Program.cs`, cấu hình và `Properties/` nằm ở thư mục project. Xem cấu trúc và quy tắc tại [CONTRIBUTING.md](docs/CONTRIBUTING.md).
 
 ---
 
