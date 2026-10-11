@@ -10010,3 +10010,4 @@
 {"id": "extra-2026-09-27-10", "bookId": 10, "readerId": 110, "status": "Borrowed", "source": "synthetic-test"}
 {"id": "extra-2026-10-11-1", "bookId": 1, "readerId": 101, "status": "Borrowed", "source": "synthetic-test"}
 {"id": "extra-2026-10-11-2", "bookId": 2, "readerId": 102, "status": "Borrowed", "source": "synthetic-test"}
+{"id": "extra-2026-10-11-3", "bookId": 3, "readerId": 103, "status": "Borrowed", "source": "synthetic-test"}
