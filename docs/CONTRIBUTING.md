@@ -6,31 +6,32 @@ Backend dùng một project ASP.NET Core, chia thư mục theo trách nhiệm:
 
 ```text
 back_end/light_brary/
-├── Controllers/
-├── Services/
-│   └── Authentication/
-├── Entities/
-├── Repositories/
-├── DTOs/
-│   ├── Requests/
-│   └── Responses/
-├── Middleware/
-├── Data/
-│   ├── AppDbContext.cs
-│   ├── DataSeeder.cs
-│   └── Migrations/
-├── Enums/
-├── Exceptions/
-├── Constants/
-├── Validators/
+├── code/
+│   ├── Controllers/
+│   ├── Services/
+│   │   └── Authentication/
+│   ├── Entities/
+│   ├── Repositories/
+│   ├── DTOs/
+│   │   ├── Requests/
+│   │   └── Responses/
+│   ├── Middleware/
+│   ├── Data/
+│   │   ├── AppDbContext.cs
+│   │   ├── DataSeeder.cs
+│   │   └── Migrations/
+│   ├── Enums/
+│   └── Exceptions/
 ├── Properties/
 ├── Program.cs
 ├── appsettings.json
-└── appsettings.Development.json
+├── appsettings.Development.json
+├── light_brary.csproj
+└── light_brary.http
 ```
 
 Luồng xử lý: Controller → Service → Repository → AppDbContext.
-Controller và Service inject trực tiếp class cụ thể; đăng ký bằng `AddScoped<T>()`. Backend không định nghĩa interface riêng cho Service, Repository hoặc Authentication. Namespace khớp với thư mục tính từ project.
+Controller và Service inject trực tiếp class cụ thể; đăng ký bằng `AddScoped<T>()`. Backend không định nghĩa interface riêng cho Service, Repository hoặc Authentication. `code/` là thư mục gốc của source nghiệp vụ. Namespace vẫn bắt đầu bằng `light_brary` và khớp với đường dẫn bên trong `code/`, ví dụ `code/Services/BookService.cs` dùng `light_brary.Services`. Các đường dẫn thư mục nghiệp vụ bên dưới được tính từ `code/`.
 
 # 5. Quy định xử lý nghiệp vụ
 `Services/` chứa logic xử lý use case của hệ thống. DTO, exception và validator đặt trong các thư mục tương ứng của cùng project.
@@ -44,7 +45,7 @@ Xử lý yêu cầu mượn
 
 # 6. Quy định DTO
 DTO được đặt tại:
-back_end/light_brary/DTOs/
+back_end/light_brary/code/DTOs/
 Request DTO đặt trong `DTOs/Requests/`, response DTO đặt trong `DTOs/Responses/`. DTO dùng để truyền dữ liệu giữa Controller và Service.
 
 # 7. Quy định Services
@@ -52,7 +53,7 @@ Service chịu trách nhiệm thực hiện use case và business logic.
 
 # 8. Quy định Validators
 Validation đặt tại:
-`back_end/light_brary/Validators/`
+`back_end/light_brary/code/Validators/`
 
 Validator kiểm tra dữ liệu đầu vào trước khi thực hiện nghiệp vụ.
 Ví dụ:
@@ -68,7 +69,7 @@ Số lượng sách phải lớn hơn 0
 Không đưa tất cả validation vào Controller.
 # 9. Quy định Exceptions
 Exception nghiệp vụ đặt tại:
-back_end/light_brary/Exceptions/
+back_end/light_brary/code/Exceptions/
 Ví dụ:
 NotFoundException.cs
 ValidationException.cs
@@ -90,7 +91,7 @@ JWT
 Password hashing
 # 11. Quy định Data
 Database code đặt tại:
-back_end/light_brary/Data/
+back_end/light_brary/code/Data/
 Ví dụ:
 Data/
 ├── AppDbContext.cs
@@ -109,7 +110,7 @@ BorrowRequestConfiguration.cs
 
 # 13. Quy định Migration
 Migration phải nằm tại:
-back_end/light_brary/Data/Migrations/
+back_end/light_brary/code/Data/Migrations/
 Ví dụ:
 20260926120000_InitialCreate.cs
 20260927100000_AddBooksTable.cs
@@ -122,7 +123,7 @@ Không chỉnh sửa migration cũ tùy tiện sau khi migration đó đã đư�
 
 # 14. Quy định Repositories
 Repository implementation đặt tại:
-back_end/light_brary/Repositories/
+back_end/light_brary/code/Repositories/
 Ví dụ:
 BookRepository.cs
 UserRepository.cs
@@ -132,7 +133,7 @@ Repository chịu trách nhiệm truy cập dữ liệu.
 
 # 15. Quy định Authentication
 Các implementation liên quan đến authentication đặt tại:
-back_end/light_brary/Services/Authentication/
+back_end/light_brary/code/Services/Authentication/
 Ví dụ:
 JwtTokenService.cs
 PasswordHasher.cs
@@ -147,8 +148,9 @@ PasswordHasher chịu trách nhiệm:
 # 16. Quy định API
 `Program.cs` là entry point của project `back_end/light_brary`.
 back_end/light_brary/
-├── Controllers/
-├── Middleware/
+├── code/
+│   ├── Controllers/
+│   └── Middleware/
 ├── Program.cs
 ├── appsettings.json
 └── Properties/
@@ -162,7 +164,7 @@ Api chịu trách nhiệm:
 	Dependency Injection configuration
 
 # 17. Quy định Controllers
-Controller đặt trong: `back_end/light_brary/Controllers/`
+Controller đặt trong: `back_end/light_brary/code/Controllers/`
 Tên: `<Entity/Resource>Controller.cs`
 Ví dụ:
 	AuthController.cs
@@ -239,7 +241,7 @@ nếu thực tế phải là:
 404 Not Found
 
 # 21. Quy định Middleware
-Middleware đặt tại: `back_end/light_brary/Middleware/`
+Middleware đặt tại: `back_end/light_brary/code/Middleware/`
 Ví dụ:
 ExceptionHandlingMiddleware.cs
 RequestLoggingMiddleware.cs
@@ -636,7 +638,8 @@ Ví dụ:
 dotnet ef migrations add AddBookCopyTable \
 --project back_end/light_brary \
 --startup-project back_end/light_brary \
---output-dir Data/Migrations
+--output-dir code/Data/Migrations \
+--namespace light_brary.Data.Migrations
 ```
 Sau đó:
 ```
