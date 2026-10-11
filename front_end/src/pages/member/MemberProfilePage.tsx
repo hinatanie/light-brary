@@ -74,6 +74,11 @@ export const MemberProfilePage: React.FC = () => {
     e.preventDefault();
     if (!user) return;
 
+    if (!address.trim()) {
+      showToast('Địa chỉ không được để trống.', 'error');
+      return;
+    }
+
     const cleanPhone = phoneNumber.trim();
     if (!cleanPhone) {
       showToast('Số điện thoại là bắt buộc!', 'error');
@@ -90,7 +95,7 @@ export const MemberProfilePage: React.FC = () => {
       const updated = await usersApi.update(user.userId, {
         fullName: fullName.trim(),
         phoneNumber: cleanPhone,
-        address: address.trim() || undefined,
+        address: address.trim(),
       });
 
       updateUserSession({
@@ -249,6 +254,7 @@ export const MemberProfilePage: React.FC = () => {
               <input
                 type="text"
                 required
+                maxLength={50}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
@@ -270,10 +276,12 @@ export const MemberProfilePage: React.FC = () => {
 
             <div className="form-group" style={{ marginBottom: '24px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-                <MapPin size={14} /> Địa chỉ liên hệ
+                <MapPin size={14} /> Địa chỉ liên hệ *
               </label>
               <input
                 type="text"
+                required
+                maxLength={255}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Số nhà, đường, quận/huyện..."

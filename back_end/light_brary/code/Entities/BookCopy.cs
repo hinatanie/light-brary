@@ -10,7 +10,6 @@ using light_brary.Enums;
 
 namespace light_brary.Entities
 {
-    [Table("BookCopies")]
     [Index(nameof(Barcode), IsUnique = true)]
     public class BookCopy
     {
@@ -28,12 +27,9 @@ namespace light_brary.Entities
 
         public Guid BookId {get; set;}
  
-        [ForeignKey(nameof(BookId))]
-        [InverseProperty(nameof(Book.BookCopies))]
         [DeleteBehavior(DeleteBehavior.Restrict)]
         public Book Book {get; set;} = null!;
 
-        [InverseProperty(nameof(BorrowDetail.BookCopy))]
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
     }
 }

@@ -32,7 +32,7 @@ namespace light_brary.Services.Authentication
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Name, user.FullName),
-                new(ClaimTypes.MobilePhone, user.PhoneNumber),
+                new(ClaimTypes.MobilePhone, user.PhoneNumber!),
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

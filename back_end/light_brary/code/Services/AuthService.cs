@@ -1,114 +1,64 @@
 using light_brary.Services.Authentication;
-using light_brary.Repositories;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace light_brary.Services
 {
     public class AuthService
     {
-        private readonly UserRepository _userRepository;
-        private readonly RoleRepository _roleRepository;
-        private readonly UserRoleRepository _userRoleRepository;
-        private readonly PasswordHasher _passwordHasher;
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
+        private readonly UserService _userService;
         private readonly JwtTokenService _jwtTokenService;
 
-        public AuthService(
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository,
-            PasswordHasher passwordHasher,
-            JwtTokenService jwtTokenService)
+        public AuthService(UserManager<User> userManager, SignInManager<User> signInManager,
+            UserService userService, JwtTokenService jwtTokenService)
         {
-            _userRepository = userRepository;
-            _roleRepository = roleRepository;
-            _userRoleRepository = userRoleRepository;
-            _passwordHasher = passwordHasher;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _userService = userService;
             _jwtTokenService = jwtTokenService;
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            // 1. Tìm user theo số điện thoại (kèm roles)
-            var user = await _userRepository.GetByPhoneNumberWithRolesAsync(request.PhoneNumber.Trim());
-
-            // 2. Kiểm tra mật khẩu
-            // Dùng chung 1 thông báo cho cả 2 trường hợp để không lộ việc SĐT có tồn tại hay không
-            if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
-            {
+            var user = await _userManager.FindByNameAsync(request.PhoneNumber.Trim());
+            if (user is null)
                 throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
-            }
 
-            // 3. Sinh JWT
-            var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
-            var token = _jwtTokenService.GenerateToken(user, roles);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+            if (!result.Succeeded)
+                throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
 
-            // 4. Trả response
-            return new AuthResponse
-            {
-                AccessToken = token,
-                TokenType = "Bearer",
-                ExpiresIn = _jwtTokenService.ExpiresInSeconds,
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    FullName = user.FullName,
-                    PhoneNumber = user.PhoneNumber,
-                    Address = user.Address,
-                    Roles = roles,
-                    CreatedAt = user.CreatedAt,
-                },
-            };
+            var response = await _userService.GetByIdAsync(user.Id);
+            return CreateAuthResponse(user, response);
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            var phone = request.PhoneNumber.Trim();
-            if (await _userRepository.ExistsByPhoneNumberAsync(phone))
+            var response = await _userService.CreateAsync(new CreateUserRequest
             {
-                throw new ConflictException("Số điện thoại này đã được đăng ký.");
-            }
+                FullName = request.FullName,
+                PhoneNumber = request.PhoneNumber,
+                Address = request.Address,
+                Password = request.Password
+            });
+            var user = await _userManager.FindByIdAsync(response.Id.ToString())
+                ?? throw new NotFoundException("Không tìm thấy tài khoản vừa tạo.");
+            return CreateAuthResponse(user, response);
+        }
 
-            var user = new User
-            {
-                FullName = request.FullName.Trim(),
-                PhoneNumber = phone,
-                Address = request.Address?.Trim(),
-                PasswordHash = _passwordHasher.Hash(request.Password),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _userRepository.AddAsync(user);
-
-            var defaultRole = await _roleRepository.GetByNameAsync(Role.USER);
-            if (defaultRole is not null)
-            {
-                await _userRoleRepository.AddAsync(new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = defaultRole.Id
-                });
-            }
-
-            var roles = defaultRole != null ? new List<string> { defaultRole.Name } : new List<string>();
-            var token = _jwtTokenService.GenerateToken(user, roles);
-
+        private AuthResponse CreateAuthResponse(User user, UserResponse response)
+        {
             return new AuthResponse
             {
-                AccessToken = token,
+                AccessToken = _jwtTokenService.GenerateToken(user, response.Roles),
                 TokenType = "Bearer",
                 ExpiresIn = _jwtTokenService.ExpiresInSeconds,
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    FullName = user.FullName,
-                    PhoneNumber = user.PhoneNumber,
-                    Address = user.Address,
-                    Roles = roles,
-                    CreatedAt = user.CreatedAt,
-                }
+                User = response
             };
         }
     }

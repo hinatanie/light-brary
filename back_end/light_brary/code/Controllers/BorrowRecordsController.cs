@@ -1,3 +1,4 @@
+using light_brary.Constants;
 using light_brary.Services;
 using System.Security.Claims;
 using light_brary.DTOs.Requests;
@@ -54,7 +55,7 @@ namespace light_brary.Controllers
         {
             var record = await _borrowRecordService.GetByIdAsync(id);
             var userId = GetCurrentUserId();
-            var isStaffOrAdmin = User.IsInRole(Role.ADMIN) || User.IsInRole(Role.LIBRARIAN);
+            var isStaffOrAdmin = User.IsInRole(RoleNames.ADMIN) || User.IsInRole(RoleNames.LIBRARIAN);
             if (!isStaffOrAdmin && record.User.Id != userId)
             {
                 return Forbid();

@@ -1,156 +1,120 @@
-using light_brary.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using light_brary.Constants;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using light_brary.Services.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace light_brary.Services
 {
     public class RoleService
     {
-        private static readonly string[] SystemRoles = { Role.ADMIN, Role.LIBRARIAN, Role.USER };
+        private static readonly string[] SystemRoles = { RoleNames.ADMIN, RoleNames.LIBRARIAN, RoleNames.USER };
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
+        private readonly UserManager<User> _userManager;
 
-        private readonly RoleRepository _roleRepository;
-        private readonly UserRoleRepository _userRoleRepository;
-        private readonly UserRepository _userRepository;
-
-        public RoleService(
-            RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository,
-            UserRepository userRepository)
+        public RoleService(RoleManager<IdentityRole<Guid>> roleManager, UserManager<User> userManager)
         {
-            _roleRepository = roleRepository;
-            _userRoleRepository = userRoleRepository;
-            _userRepository = userRepository;
+            _roleManager = roleManager;
+            _userManager = userManager;
         }
 
         public async Task<IEnumerable<RoleResponse>> GetAllAsync()
         {
-            var roles = await _roleRepository.GetAllAsync();
-            return roles.Select(r => new RoleResponse { Id = r.Id, Name = r.Name }).ToList();
+            return await _roleManager.Roles.Select(role => new RoleResponse
+            {
+                Id = role.Id,
+                Name = role.Name!
+            }).ToListAsync();
         }
 
         public async Task<RoleResponse> GetByIdAsync(Guid id)
         {
-            var role = await _roleRepository.GetByIdAsync(id);
-            if (role is null)
-                throw new NotFoundException($"Không tìm thấy vai trò với ID: {id}");
-
-            return new RoleResponse { Id = role.Id, Name = role.Name };
+            var role = await FindRoleAsync(id);
+            return new RoleResponse { Id = role.Id, Name = role.Name! };
         }
 
         public async Task<RoleResponse> CreateAsync(SaveRoleRequest request)
         {
             var name = request.Name.Trim();
-            var existing = await _roleRepository.GetByNameAsync(name);
-            if (existing is not null)
+            if (await _roleManager.RoleExistsAsync(name))
                 throw new ConflictException($"Vai trò '{name}' đã tồn tại.");
 
-            var role = new Role { Name = name };
-            await _roleRepository.AddAsync(role);
-
-            return new RoleResponse { Id = role.Id, Name = role.Name };
+            var role = new IdentityRole<Guid> { Id = Guid.NewGuid(), Name = name };
+            (await _roleManager.CreateAsync(role)).EnsureSucceeded();
+            return new RoleResponse { Id = role.Id, Name = role.Name! };
         }
 
         public async Task<RoleResponse> UpdateAsync(Guid id, SaveRoleRequest request)
         {
-            var role = await _roleRepository.GetByIdAsync(id);
-            if (role is null)
-                throw new NotFoundException($"Không tìm thấy vai trò với ID: {id}");
-
-            if (SystemRoles.Any(sr => sr.Equals(role.Name, StringComparison.OrdinalIgnoreCase)))
+            var role = await FindRoleAsync(id);
+            if (SystemRoles.Any(name => name.Equals(role.Name, StringComparison.OrdinalIgnoreCase)))
                 throw new BusinessException("Không được phép chỉnh sửa tên các vai trò mặc định của hệ thống.");
 
             var name = request.Name.Trim();
-            var existing = await _roleRepository.GetByNameAsync(name);
+            var existing = await _roleManager.FindByNameAsync(name);
             if (existing is not null && existing.Id != id)
                 throw new ConflictException($"Vai trò '{name}' đã tồn tại.");
 
             role.Name = name;
-            await _roleRepository.UpdateAsync(role);
-
-            return new RoleResponse { Id = role.Id, Name = role.Name };
+            (await _roleManager.UpdateAsync(role)).EnsureSucceeded();
+            return new RoleResponse { Id = role.Id, Name = role.Name! };
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            var role = await _roleRepository.GetByIdAsync(id);
-            if (role is null)
-                throw new NotFoundException($"Không tìm thấy vai trò với ID: {id}");
-
-            if (SystemRoles.Any(sr => sr.Equals(role.Name, StringComparison.OrdinalIgnoreCase)))
+            var role = await FindRoleAsync(id);
+            if (SystemRoles.Any(name => name.Equals(role.Name, StringComparison.OrdinalIgnoreCase)))
                 throw new BusinessException("Không được phép xóa các vai trò mặc định của hệ thống.");
 
-            var userRoles = await _userRoleRepository.GetByRoleIdAsync(id);
-            if (userRoles.Any())
+            if ((await _userManager.GetUsersInRoleAsync(role.Name!)).Any())
                 throw new ConflictException("Vai trò đang được gán cho người dùng, không thể xóa.");
 
-            await _roleRepository.DeleteAsync(role);
+            (await _roleManager.DeleteAsync(role)).EnsureSucceeded();
         }
 
         public async Task<IEnumerable<RoleResponse>> GetUserRolesAsync(Guid userId)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
-
-            var userRoles = await _userRoleRepository.GetByUserIdAsync(userId);
-            return userRoles
-                .Where(ur => ur.Role != null)
-                .Select(ur => new RoleResponse { Id = ur.Role.Id, Name = ur.Role.Name })
-                .ToList();
+            var user = await FindUserAsync(userId);
+            var names = (await _userManager.GetRolesAsync(user)).ToArray();
+            return await _roleManager.Roles.Where(role => names.Contains(role.Name!))
+                .Select(role => new RoleResponse { Id = role.Id, Name = role.Name! }).ToListAsync();
         }
 
         public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
+            var user = await FindUserAsync(userId);
+            var role = await FindRoleAsync(roleId);
+            if (await _userManager.IsInRoleAsync(user, role.Name!)) return;
 
-            var role = await _roleRepository.GetByIdAsync(roleId);
-            if (role is null)
-                throw new NotFoundException($"Không tìm thấy vai trò với ID: {roleId}");
-
-            var exists = await _userRoleRepository.ExistsAsync(userId, roleId);
-            if (exists)
-                return; // Idempotent: đã gán rồi thì không cần báo lỗi
-
-            await _userRoleRepository.AddAsync(new UserRole
-            {
-                UserId = userId,
-                RoleId = roleId
-            });
+            (await _userManager.AddToRoleAsync(user, role.Name!)).EnsureSucceeded();
         }
 
         public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
+            var user = await FindUserAsync(userId);
+            var role = await FindRoleAsync(roleId);
+            if (!await _userManager.IsInRoleAsync(user, role.Name!)) return;
 
-            var role = await _roleRepository.GetByIdAsync(roleId);
-            if (role is null)
-                throw new NotFoundException($"Không tìm thấy vai trò với ID: {roleId}");
+            if (role.Name!.Equals(RoleNames.ADMIN, StringComparison.OrdinalIgnoreCase) &&
+                (await _userManager.GetUsersInRoleAsync(RoleNames.ADMIN)).Count <= 1)
+                throw new BusinessException("Không thể gỡ vai trò Admin khỏi quản trị viên cuối cùng trong hệ thống.");
 
-            // Chặn gỡ role Admin nếu là Admin cuối cùng
-            if (role.Name.Equals(Role.ADMIN, StringComparison.OrdinalIgnoreCase))
-            {
-                var adminUsers = await _userRoleRepository.GetByRoleIdAsync(roleId);
-                if (adminUsers.Count() <= 1 && adminUsers.Any(ur => ur.UserId == userId))
-                {
-                    throw new BusinessException("Không thể gỡ vai trò Admin khỏi quản trị viên cuối cùng trong hệ thống.");
-                }
-            }
+            (await _userManager.RemoveFromRoleAsync(user, role.Name!)).EnsureSucceeded();
+        }
 
-            var userRole = await _userRoleRepository.GetByUserAndRoleIdAsync(userId, roleId);
-            if (userRole is not null)
-            {
-                await _userRoleRepository.DeleteAsync(userRole);
-            }
+        private async Task<User> FindUserAsync(Guid id)
+        {
+            return await _userManager.FindByIdAsync(id.ToString())
+                ?? throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
+        }
+
+        private async Task<IdentityRole<Guid>> FindRoleAsync(Guid id)
+        {
+            return await _roleManager.FindByIdAsync(id.ToString())
+                ?? throw new NotFoundException($"Không tìm thấy vai trò với ID: {id}");
         }
     }
 }

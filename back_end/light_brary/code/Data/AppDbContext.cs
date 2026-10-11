@@ -1,17 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using light_brary.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace light_brary.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
 
-        public DbSet<User> Users => Set<User>();
-        public DbSet<Role> Roles => Set<Role>();
-        public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<Book> Books => Set<Book>();
         public DbSet<BookCopy> BookCopies => Set<BookCopy>();
         public DbSet<Category> Categories => Set<Category>();
@@ -19,6 +18,15 @@ namespace light_brary.Data
         public DbSet<BorrowDetail> BorrowDetails => Set<BorrowDetail>();
         public DbSet<Fine> Fines => Set<Fine>();
         public DbSet<FineDetail> FineDetails => Set<FineDetail>();
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<User>().Property(user => user.PhoneNumber)
+                .IsRequired()
+                .HasMaxLength(10);
+        }
 
     }
 }

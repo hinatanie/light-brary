@@ -28,8 +28,6 @@ namespace light_brary.Repositories
         {
             return await _context.BorrowRecords
                 .Include(br => br.User)
-                    .ThenInclude(u => u.UserRoles)
-                        .ThenInclude(ur => ur.Role)
                 .Include(br => br.BorrowDetails)
                     .ThenInclude(bd => bd.BookCopy)
                         .ThenInclude(bc => bc!.Book)
@@ -40,8 +38,6 @@ namespace light_brary.Repositories
         {
             var query = _context.BorrowRecords
                 .Include(br => br.User)
-                    .ThenInclude(u => u.UserRoles)
-                        .ThenInclude(ur => ur.Role)
                 .Include(br => br.BorrowDetails)
                     .ThenInclude(bd => bd.BookCopy)
                         .ThenInclude(bc => bc!.Book)

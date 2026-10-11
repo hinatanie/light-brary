@@ -20,7 +20,7 @@ namespace light_brary.Entities
 
         public ReasonForFine Reason { get; set; }
 
-        [Precision(18, 2)]
+        [Precision(18, 0)]
         public decimal Amount { get; set; }
     }
 }
