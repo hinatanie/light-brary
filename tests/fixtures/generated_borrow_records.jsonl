@@ -10016,3 +10016,4 @@
 {"id": "extra-2026-10-11-6", "bookId": 6, "readerId": 106, "status": "Borrowed", "source": "synthetic-test"}
 {"id": "extra-2026-10-11-7", "bookId": 7, "readerId": 107, "status": "Borrowed", "source": "synthetic-test"}
 {"id": "extra-2026-10-11-8", "bookId": 8, "readerId": 108, "status": "Borrowed", "source": "synthetic-test"}
+{"id": "extra-2026-10-11-9", "bookId": 9, "readerId": 109, "status": "Borrowed", "source": "synthetic-test"}
