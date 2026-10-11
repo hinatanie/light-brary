@@ -1,10 +1,11 @@
 using System.Text;
-using light_brary.Application.Interfaces;
-using light_brary.Application.Services;
-using light_brary.Infrastructure.Authentication;
-using light_brary.Infrastructure.Persistence;
-using light_brary.Infrastructure.Repositories;
-using light_brary.Middlewares;
+using light_brary.Services.Interfaces;
+using light_brary.Repositories.Interfaces;
+using light_brary.Services;
+using light_brary.Services.Authentication;
+using light_brary.Data;
+using light_brary.Repositories;
+using light_brary.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -55,9 +56,9 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", p => p.RequireRole(light_brary.Domain.Entities.Role.ADMIN));
-    options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(light_brary.Domain.Entities.Role.ADMIN, light_brary.Domain.Entities.Role.LIBRARIAN));
-    options.AddPolicy("UserOrAbove", p => p.RequireRole(light_brary.Domain.Entities.Role.ADMIN, light_brary.Domain.Entities.Role.LIBRARIAN, light_brary.Domain.Entities.Role.USER));
+    options.AddPolicy("AdminOnly", p => p.RequireRole(light_brary.Entities.Role.ADMIN));
+    options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(light_brary.Entities.Role.ADMIN, light_brary.Entities.Role.LIBRARIAN));
+    options.AddPolicy("UserOrAbove", p => p.RequireRole(light_brary.Entities.Role.ADMIN, light_brary.Entities.Role.LIBRARIAN, light_brary.Entities.Role.USER));
 });
 
 /* Đăng ký các Serivce */

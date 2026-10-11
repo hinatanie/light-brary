@@ -1,6 +1,7 @@
-using light_brary.Application.DTOs.Auth;
-using light_brary.Application.Exceptions;
-using light_brary.Application.Interfaces;
+using light_brary.DTOs.Requests;
+using light_brary.DTOs.Responses;
+using light_brary.Exceptions;
+using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace light_brary.Controllers

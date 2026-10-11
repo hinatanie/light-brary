@@ -1367,7 +1367,7 @@ sequenceDiagram
 
 ##### Bước 1: Tiếp nhận và Validate Request tại Controller
 
-* **File:** [AuthController.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Controllers/AuthController.cs) & [LoginRequest.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Application/DTOs/Auth/LoginRequest.cs)
+* **File:** [AuthController.cs](../back_end/light_brary/Controllers/AuthController.cs) & [LoginRequest.cs](../back_end/light_brary/DTOs/Requests/LoginRequest.cs)
 * **Cơ chế:**
   * DTO `LoginRequest` ràng buộc `[Required]` và `[StringLength(10)]` cho số điện thoại.
   * Thuộc tính `[ApiController]` tự động chặn và trả `400 Bad Request` nếu client gửi dữ liệu sai định dạng trước khi code bên trong kịp chạy.
@@ -1375,7 +1375,7 @@ sequenceDiagram
 
 ##### Bước 2: Tra cứu Người Dùng và Eager Loading Roles
 
-* **File:** [IUserRepository.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Application/Interfaces/IRepositories/IUserRepository.cs) & [UserRepository.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Infrastructure/Repositories/UserRepository.cs)
+* **File:** [IUserRepository.cs](../back_end/light_brary/Repositories/Interfaces/IUserRepository.cs) & [UserRepository.cs](../back_end/light_brary/Repositories/UserRepository.cs)
 * **Cơ chế:**
   ```csharp
   return await _context.Users
@@ -1388,7 +1388,7 @@ sequenceDiagram
 
 ##### Bước 3: Đối soát Mật Khẩu An Toàn (Anti-Enumeration)
 
-* **File:** [AuthService.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Application/Services/AuthService.cs) & [PasswordHasher.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Infrastructure/Authentication/PasswordHasher.cs)
+* **File:** [AuthService.cs](../back_end/light_brary/Services/AuthService.cs) & [PasswordHasher.cs](../back_end/light_brary/Services/Authentication/PasswordHasher.cs)
 * **Cơ chế:**
 
   ```csharp
@@ -1407,7 +1407,7 @@ sequenceDiagram
 
 ##### Bước 4: Đóng gói Claims và Ký Chuỗi JWT
 
-* **File:** [JwtTokenService.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Infrastructure/Authentication/JwtTokenService.cs)
+* **File:** [JwtTokenService.cs](../back_end/light_brary/Services/Authentication/JwtTokenService.cs)
 * **Cơ chế:**
   1. **Đưa các thông tin định danh vào Payload (Claims):**
      * `ClaimTypes.NameIdentifier`: ID người dùng (dùng để truy vấn cá nhân sau này).
@@ -1416,12 +1416,12 @@ sequenceDiagram
      * `ClaimTypes.Role`: Danh sách các quyền (`Admin`, `Librarian`, `User`). Một user có thể có nhiều claim Role.
      * `JwtRegisteredClaimNames.Jti`: GUID ngẫu nhiên định danh riêng cho từng token (chống tấn công phát lại - Replay attack).
   2. **Ký số bằng thuật toán HMAC-SHA256:**
-     * Sử dụng `SymmetricSecurityKey` nạp từ `Jwt:SecretKey` trong [appsettings.Development.json](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/appsettings.Development.json).
+     * Sử dụng `SymmetricSecurityKey` nạp từ `Jwt:SecretKey` trong [appsettings.Development.json](../back_end/light_brary/appsettings.Development.json).
   3. **Tạo token bằng `JsonWebTokenHandler`:** Thư viện hiện đại và tối ưu hiệu năng của .NET để sinh chuỗi Base64Url gồm 3 phần (`Header.Payload.Signature`).
 
 ##### Bước 5: Đóng gói DTO phản hồi (AuthResponse)
 
-* **File:** [AuthResponse.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Application/DTOs/Auth/AuthResponse.cs)
+* **File:** [AuthResponse.cs](../back_end/light_brary/DTOs/Responses/AuthResponse.cs)
 * **Cơ chế:**
   * Trả về `AccessToken`: Chuỗi JWT dùng cho các request tiếp theo.
   * `TokenType`: Mặc định là `"Bearer"`.
@@ -1488,7 +1488,7 @@ GET /api/books
 Authorization: Bearer <dán chuỗi accessToken vào đây>
 ```
 
-Middleware `app.UseAuthentication()` trong [Program.cs](file:///home/dww/Personal/Code/Csharp/light-brary/back_end/light_brary/Program.cs) sẽ tự động giải mã token, kiểm tra hạn dùng và trích xuất danh tính người dùng vào `HttpContext.User` cho toàn bộ hệ thống.
+Middleware `app.UseAuthentication()` trong [Program.cs](../back_end/light_brary/Program.cs) sẽ tự động giải mã token, kiểm tra hạn dùng và trích xuất danh tính người dùng vào `HttpContext.User` cho toàn bộ hệ thống.
 
 ---
 

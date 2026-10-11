@@ -202,14 +202,14 @@ Phân hệ cốt lõi phục vụ quy trình độc giả mượn sách, hẹn n
 ```bash
 # 1. Tạo migration mới khi có thay đổi Entity:
 dotnet ef migrations add <TenMigration> \
-  --project src/Library.Infrastructure/ \
-  --startup-project src/Library.Api/ \
-  --output-dir Persistence/Migrations
+  --project back_end/light_brary/ \
+  --startup-project back_end/light_brary/ \
+  --output-dir Data/Migrations
 
 # 2. Cập nhật các thay đổi vào cơ sở dữ liệu PostgreSQL:
 dotnet ef database update \
-  --project src/Library.Infrastructure/ \
-  --startup-project src/Library.Api/
+  --project back_end/light_brary/ \
+  --startup-project back_end/light_brary/
 ```
 
 
