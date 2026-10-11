@@ -26,8 +26,7 @@ back_end/light_brary/
 ├── Program.cs
 ├── appsettings.json
 ├── appsettings.Development.json
-├── light_brary.csproj
-└── light_brary.http
+└── light_brary.csproj
 ```
 
 Luồng xử lý: Controller → Service → Repository → AppDbContext.
