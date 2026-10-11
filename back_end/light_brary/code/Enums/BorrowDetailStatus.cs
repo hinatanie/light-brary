@@ -4,6 +4,7 @@ namespace light_brary.Enums
     {
         Borrowing,
         Returned,
-        Lost
+        Lost,
+        Damaged
     }
 }
