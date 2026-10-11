@@ -62,7 +62,6 @@ builder.Services.AddAuthorization(options =>
 /* Đăng ký các Serivce */
 builder.Services.AddScoped<BookCopyService>();
 builder.Services.AddScoped<BookService>();
-builder.Services.AddScoped<BorrowDetailService>();
 builder.Services.AddScoped<BorrowRecordService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<RoleService>();
