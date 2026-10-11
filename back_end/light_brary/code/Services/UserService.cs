@@ -1,52 +1,43 @@
 using light_brary.Services.Authentication;
 using light_brary.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
 using light_brary.Enums;
+using light_brary.Constants;
+using light_brary.Data;
+using Microsoft.AspNetCore.Identity;
 
 namespace light_brary.Services
 {
     public class UserService
     {
         private readonly UserRepository _userRepository;
-        private readonly RoleRepository _roleRepository;
-        private readonly UserRoleRepository _userRoleRepository;
         private readonly BorrowRecordRepository _borrowRecordRepository;
-        private readonly PasswordHasher _passwordHasher;
+        private readonly UserManager<User> _userManager;
+        private readonly AppDbContext _context;
 
-        public UserService(
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository,
-            BorrowRecordRepository borrowRecordRepository,
-            PasswordHasher passwordHasher)
+        public UserService(UserRepository userRepository, BorrowRecordRepository borrowRecordRepository,
+            UserManager<User> userManager, AppDbContext context)
         {
             _userRepository = userRepository;
-            _roleRepository = roleRepository;
-            _userRoleRepository = userRoleRepository;
             _borrowRecordRepository = borrowRecordRepository;
-            _passwordHasher = passwordHasher;
+            _userManager = userManager;
+            _context = context;
         }
 
         public async Task<IEnumerable<UserResponse>> GetAllAsync(string? keyword = null, string? role = null)
         {
-            var users = await _userRepository.GetAllWithRolesAsync(keyword, role);
-            return users.Select(MapToResponse).ToList();
+            var users = (await _userRepository.GetAllFilteredAsync(keyword, role)).ToList();
+            var roles = await _userRepository.GetRoleNamesByUserIdsAsync(users.Select(user => user.Id));
+            return users.Select(user => MapToResponse(user, roles.GetValueOrDefault(user.Id, new List<string>()))).ToList();
         }
 
         public async Task<UserResponse> GetByIdAsync(Guid id)
         {
-            var user = await _userRepository.GetByIdWithRolesAsync(id);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
-
-            return MapToResponse(user);
+            var user = await FindUserAsync(id);
+            return MapToResponse(user, await _userManager.GetRolesAsync(user));
         }
 
         public async Task<UserResponse> CreateAsync(CreateUserRequest request)
@@ -57,89 +48,62 @@ namespace light_brary.Services
 
             var user = new User
             {
-                FullName = request.FullName.Trim(),
+                Id = Guid.NewGuid(),
+                UserName = phone,
                 PhoneNumber = phone,
-                Address = request.Address?.Trim(),
-                PasswordHash = _passwordHasher.Hash(request.Password),
+                FullName = request.FullName.Trim(),
+                Address = request.Address.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _userRepository.AddAsync(user);
-
-            var defaultRole = await _roleRepository.GetByNameAsync(Role.USER);
-            if (defaultRole is not null)
-            {
-                await _userRoleRepository.AddAsync(new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = defaultRole.Id
-                });
-            }
-
-            var loadedUser = await _userRepository.GetByIdWithRolesAsync(user.Id);
-            return MapToResponse(loadedUser ?? user);
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            (await _userManager.CreateAsync(user, request.Password)).EnsureSucceeded();
+            (await _userManager.AddToRoleAsync(user, RoleNames.USER)).EnsureSucceeded();
+            await transaction.CommitAsync();
+            return MapToResponse(user, await _userManager.GetRolesAsync(user));
         }
 
         public async Task<UserResponse> UpdateAsync(Guid id, UpdateUserRequest request)
         {
-            var user = await _userRepository.GetByIdWithRolesAsync(id);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
-
+            var user = await FindUserAsync(id);
             var phone = request.PhoneNumber.Trim();
             var existing = await _userRepository.GetByPhoneNumberAsync(phone);
             if (existing is not null && existing.Id != id)
                 throw new ConflictException("Số điện thoại này đã được sử dụng.");
 
+            if (user.PhoneNumber != phone) user.PhoneNumberConfirmed = false;
             user.FullName = request.FullName.Trim();
             user.PhoneNumber = phone;
-            user.Address = request.Address?.Trim();
-
-            await _userRepository.UpdateAsync(user);
-
-            return MapToResponse(user);
+            user.UserName = phone;
+            user.Address = request.Address.Trim();
+            (await _userManager.UpdateAsync(user)).EnsureSucceeded();
+            return MapToResponse(user, await _userManager.GetRolesAsync(user));
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            var user = await _userRepository.GetByIdWithRolesAsync(id);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
-
+            var user = await FindUserAsync(id);
             if (await _userRepository.HasBorrowHistoryAsync(id))
                 throw new ConflictException("Người dùng đã có lịch sử mượn sách, không thể xóa.");
 
-            var adminRole = await _roleRepository.GetByNameAsync(Role.ADMIN);
-            if (adminRole is not null && user.UserRoles.Any(ur => ur.RoleId == adminRole.Id))
-            {
-                var adminUsers = await _userRoleRepository.GetByRoleIdAsync(adminRole.Id);
-                if (adminUsers.Count() <= 1)
-                    throw new BusinessException("Không thể xóa tài khoản Admin cuối cùng trong hệ thống.");
-            }
+            if (await _userManager.IsInRoleAsync(user, RoleNames.ADMIN) &&
+                (await _userManager.GetUsersInRoleAsync(RoleNames.ADMIN)).Count <= 1)
+                throw new BusinessException("Không thể xóa tài khoản Admin cuối cùng trong hệ thống.");
 
-            await _userRepository.DeleteAsync(user);
+            (await _userManager.DeleteAsync(user)).EnsureSucceeded();
         }
 
-        public async Task<UserResponse> GetProfileAsync(Guid userId)
-        {
-            return await GetByIdAsync(userId);
-        }
+        public Task<UserResponse> GetProfileAsync(Guid userId) => GetByIdAsync(userId);
 
-        public async Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateUserRequest request)
-        {
-            return await UpdateAsync(userId, request);
-        }
+        public Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateUserRequest request)
+            => UpdateAsync(userId, request);
 
         public async Task<IEnumerable<BorrowRecordResponse>> GetUserBorrowRecordsAsync(Guid userId)
         {
-            var user = await _userRepository.GetByIdWithRolesAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
-
+            var user = await FindUserAsync(userId);
             var records = await _borrowRecordRepository.GetByUserIdAsync(userId);
-            var userResponse = MapToResponse(user);
-
-            return records.Select(r => MapToBorrowRecordResponse(r, userResponse)).ToList();
+            var userResponse = MapToResponse(user, await _userManager.GetRolesAsync(user));
+            return records.Select(record => MapToBorrowRecordResponse(record, userResponse)).ToList();
         }
 
         public async Task<IEnumerable<BorrowedBookResponse>> GetUserBorrowedBooksAsync(Guid userId)
@@ -175,39 +139,35 @@ namespace light_brary.Services
 
         public async Task AdminUpdatePasswordAsync(Guid id, AdminUpdatePasswordRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
-
-            user.PasswordHash = _passwordHasher.Hash(request.NewPassword.Trim());
-            await _userRepository.UpdateAsync(user);
+            var user = await FindUserAsync(id);
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            (await _userManager.ResetPasswordAsync(user, token, request.NewPassword)).EnsureSucceeded();
         }
 
         public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
-
-            if (!_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash))
-                throw new UnauthorizedException("Mật khẩu hiện tại không chính xác.");
-
-            if (request.NewPassword.Trim() == request.CurrentPassword)
+            var user = await FindUserAsync(userId);
+            if (request.NewPassword == request.CurrentPassword)
                 throw new BusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
 
-            user.PasswordHash = _passwordHasher.Hash(request.NewPassword.Trim());
-            await _userRepository.UpdateAsync(user);
+            (await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)).EnsureSucceeded();
         }
 
-        private static UserResponse MapToResponse(User user)
+        private async Task<User> FindUserAsync(Guid id)
+        {
+            return await _userManager.FindByIdAsync(id.ToString())
+                ?? throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
+        }
+
+        private static UserResponse MapToResponse(User user, IEnumerable<string> roles)
         {
             return new UserResponse
             {
                 Id = user.Id,
                 FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber,
+                PhoneNumber = user.PhoneNumber!,
                 Address = user.Address,
-                Roles = user.UserRoles?.Where(ur => ur.Role != null).Select(ur => ur.Role.Name).ToList() ?? new List<string>(),
+                Roles = roles.ToList(),
                 CreatedAt = user.CreatedAt
             };
         }

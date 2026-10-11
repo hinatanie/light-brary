@@ -21,6 +21,11 @@ export const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    if (!address.trim()) {
+      setError('Địa chỉ không được để trống.');
+      return;
+    }
+
     const cleanPhone = phoneNumber.trim();
     if (!cleanPhone) {
       setError('Số điện thoại là bắt buộc!');
@@ -66,7 +71,7 @@ export const RegisterPage: React.FC = () => {
         email: email.trim(),
         password,
         phoneNumber: cleanPhone,
-        address: address.trim() || undefined,
+        address: address.trim(),
       });
 
       login(res);
@@ -104,6 +109,7 @@ export const RegisterPage: React.FC = () => {
           <input
             type="text"
             required
+            maxLength={50}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Nguyễn Văn A"
@@ -141,10 +147,12 @@ export const RegisterPage: React.FC = () => {
 
         <div className="form-group" style={{ marginBottom: '14px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-            <MapPin size={14} /> Địa chỉ
+            <MapPin size={14} /> Địa chỉ *
           </label>
           <input
             type="text"
+            required
+            maxLength={255}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Số nhà, đường, quận/huyện..."

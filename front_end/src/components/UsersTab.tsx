@@ -124,6 +124,11 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
       return;
     }
 
+    if (!address) {
+      onNotify('Vui lòng nhập địa chỉ!', 'error');
+      return;
+    }
+
     if (!phoneNumber) {
       onNotify('Vui lòng nhập số điện thoại!', 'error');
       return;
@@ -150,7 +155,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
         fullName,
         phoneNumber,
         password,
-        address: address || undefined,
+        address,
         roles: createRoles,
       });
 
@@ -461,7 +466,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                   <input
                     type="text"
                     required
-                    maxLength={150}
+                    maxLength={50}
                     placeholder="Ví dụ: Nguyễn Văn An"
                     value={createFullName}
                     onChange={(e) => setCreateFullName(e.target.value)}
@@ -529,17 +534,18 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
 
                 <div className="form-group">
                   <label>
-                    <MapPin size={15} /> Địa chỉ liên hệ
+                    <MapPin size={15} /> Địa chỉ liên hệ *
                   </label>
                   <input
                     type="text"
                     maxLength={255}
                     placeholder="Ví dụ: 123 Lê Lợi, Phường Bến Nghé, Quận 1"
+                    required
                     value={createAddress}
                     onChange={(e) => setCreateAddress(e.target.value)}
                   />
                   <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Địa chỉ cư trú hoặc nơi làm việc của người dùng (tùy chọn).
+                    Địa chỉ cư trú hoặc nơi làm việc của người dùng.
                   </span>
                 </div>
               </div>

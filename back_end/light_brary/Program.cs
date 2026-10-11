@@ -4,7 +4,10 @@ using light_brary.Services.Authentication;
 using light_brary.Data;
 using light_brary.Repositories;
 using light_brary.Middleware;
+using light_brary.Constants;
+using light_brary.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -54,9 +57,9 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", p => p.RequireRole(light_brary.Entities.Role.ADMIN));
-    options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(light_brary.Entities.Role.ADMIN, light_brary.Entities.Role.LIBRARIAN));
-    options.AddPolicy("UserOrAbove", p => p.RequireRole(light_brary.Entities.Role.ADMIN, light_brary.Entities.Role.LIBRARIAN, light_brary.Entities.Role.USER));
+    options.AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.ADMIN));
+    options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN));
+    options.AddPolicy("UserOrAbove", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN, RoleNames.USER));
 });
 
 /* Đăng ký các Serivce */
@@ -72,13 +75,24 @@ builder.Services.AddScoped<BookCopyRepository>();
 builder.Services.AddScoped<BookRepository>();
 builder.Services.AddScoped<BorrowRecordRepository>();
 builder.Services.AddScoped<CategoryRepository>();
-builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<UserRoleRepository>();
+
+// Đăng ký Identity
+builder.Services.AddIdentityCore<User>(options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+    })
+    .AddRoles<IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 /* Đăng ký các Authentication */
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<JwtTokenService>();
 
 var app = builder.Build();
@@ -93,8 +107,7 @@ app.UseExceptionHandlingMiddleware();
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
-// Custom Middleware: Tự bóc tách Bearer token và nạp User vào HttpContext.User
-app.UseJwtAuthenticationMiddleware();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -106,8 +119,9 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<AppDbContext>();
     await context.Database.MigrateAsync();
 
-    var passwordHasher = services.GetRequiredService<PasswordHasher>();
-    await DataSeeder.SeedAsync(context, passwordHasher);
+    var userManager = services.GetRequiredService<UserManager<User>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    await DataSeeder.SeedAsync(userManager, roleManager, builder.Configuration);
 }
 
 app.Run();

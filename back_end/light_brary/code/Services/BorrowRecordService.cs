@@ -31,7 +31,7 @@ namespace light_brary.Services
 
         public async Task<BorrowRecordResponse> CreateAsync(CreateBorrowRecordRequest request)
         {
-            var user = await _userRepository.GetByIdWithRolesAsync(request.UserId);
+            var user = await _userRepository.GetByIdAsync(request.UserId);
             if (user is null)
                 throw new NotFoundException($"Không tìm thấy người dùng với ID: {request.UserId}");
 
@@ -99,7 +99,7 @@ namespace light_brary.Services
 
         public async Task<BorrowRecordResponse> BorrowForMemberAsync(Guid userId, MemberBorrowRequest request)
         {
-            var user = await _userRepository.GetByIdWithRolesAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
                 throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
 
@@ -170,8 +170,10 @@ namespace light_brary.Services
 
         public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
-            var records = await _borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue);
-            return records.Select(MapToSummaryResponse).ToList();
+            var records = (await _borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue)).ToList();
+            var roles = await _userRepository.GetRoleNamesByUserIdsAsync(records.Select(record => record.UserId));
+            return records.Select(record => MapToSummaryResponse(record,
+                roles.GetValueOrDefault(record.UserId, new List<string>()))).ToList();
         }
 
         public async Task<BorrowRecordResponse> GetByIdAsync(Guid id)
@@ -180,7 +182,8 @@ namespace light_brary.Services
             if (record is null)
                 throw new NotFoundException($"Không tìm thấy phiếu mượn với ID: {id}");
 
-            return MapToResponse(record);
+            var roles = await _userRepository.GetRoleNamesByUserIdsAsync(new[] { record.UserId });
+            return MapToResponse(record, roles.GetValueOrDefault(record.UserId, new List<string>()));
         }
 
         public async Task<BorrowDetailActionResponse> ReturnSingleBookAsync(Guid borrowDetailId)
@@ -351,14 +354,14 @@ namespace light_brary.Services
             }
         }
 
-        private static BorrowRecordSummaryResponse MapToSummaryResponse(BorrowRecord record)
+        private static BorrowRecordSummaryResponse MapToSummaryResponse(BorrowRecord record, List<string> roles)
         {
             var isOverdue = record.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && DateTime.UtcNow > record.DueDate;
 
             return new BorrowRecordSummaryResponse
             {
                 Id = record.Id,
-                User = MapUserResponse(record.User),
+                User = MapUserResponse(record.User, roles),
                 BorrowDate = record.BorrowDate,
                 DueDate = record.DueDate,
                 Status = record.Status.ToString(),
@@ -380,14 +383,14 @@ namespace light_brary.Services
             };
         }
 
-        private static BorrowRecordResponse MapToResponse(BorrowRecord record)
+        private static BorrowRecordResponse MapToResponse(BorrowRecord record, List<string> roles)
         {
             var isOverdue = record.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && DateTime.UtcNow > record.DueDate;
 
             return new BorrowRecordResponse
             {
                 Id = record.Id,
-                User = MapUserResponse(record.User),
+                User = MapUserResponse(record.User, roles),
                 BorrowDate = record.BorrowDate,
                 DueDate = record.DueDate,
                 Status = record.Status.ToString(),
@@ -406,7 +409,7 @@ namespace light_brary.Services
             };
         }
 
-        private static UserResponse MapUserResponse(User? user)
+        private static UserResponse MapUserResponse(User? user, List<string> roles)
         {
             if (user == null) return new UserResponse();
 
@@ -414,9 +417,9 @@ namespace light_brary.Services
             {
                 Id = user.Id,
                 FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber,
+                PhoneNumber = user.PhoneNumber!,
                 Address = user.Address,
-                Roles = user.UserRoles?.Where(ur => ur.Role != null).Select(ur => ur.Role.Name).ToList() ?? new List<string>(),
+                Roles = roles,
                 CreatedAt = user.CreatedAt
             };
         }
