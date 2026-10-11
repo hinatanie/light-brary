@@ -1,5 +1,6 @@
-using light_brary.Application.DTOs.Categories;
-using light_brary.Application.Interfaces;
+using light_brary.DTOs.Requests;
+using light_brary.DTOs.Responses;
+using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

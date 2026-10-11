@@ -1,6 +1,6 @@
 # LightBrary — Hệ Thống Quản Lý Thư Viện Trực Tuyến
 
-Hệ thống quản lý thư viện hiện đại được xây dựng theo kiến trúc Clean Architecture với **ASP.NET Core (.NET 10)** ở Backend và **React 19 + TypeScript + Vite** ở Frontend.
+Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở Backend và **React 19 + TypeScript + Vite** ở Frontend. Backend được tổ chức theo các lớp Controllers, Services, Repositories và Entities trong một project; DTO được tách thành Requests và Responses. Xem cấu trúc và quy tắc tại [CONTRIBUTING.md](docs/CONTRIBUTING.md).
 
 ---
 
@@ -65,7 +65,7 @@ Chạy các lệnh từ thư mục gốc của solution. `--project` trỏ tới
 **Bước 1: khởi tạo (chỉ làm nếu `.csproj` của project API chưa có `<UserSecretsId>`)**
 
 ```powershell
-dotnet user-secrets init
+dotnet user-secrets init --project back_end/light_brary
 ```
 
 Nếu `.csproj` đã có dòng `<UserSecretsId>`, bỏ qua bước này. Dòng đó được commit và không phải bí mật.
@@ -77,13 +77,13 @@ $bytes = New-Object byte[] 48
 [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
 $key = [Convert]::ToBase64String($bytes)
 
-dotnet user-secrets set "Jwt:SecretKey" $key
+dotnet user-secrets set "Jwt:SecretKey" $key --project back_end/light_brary
 ```
 
 ### 3. Kiểm tra
 
 ```powershell
-dotnet user-secrets list
+dotnet user-secrets list --project back_end/light_brary
 ```
 
 Kết quả mong đợi có dòng:
@@ -97,8 +97,8 @@ Jwt:SecretKey = <chuỗi ngẫu nhiên>
 Các lệnh hữu ích khác:
 
 ```powershell
-dotnet user-secrets remove "Jwt:SecretKey" --project src/Library.Api   # xóa một khóa
-dotnet user-secrets clear --project src/Library.Api                    # xóa tất cả
+dotnet user-secrets remove "Jwt:SecretKey" --project back_end/light_brary   # xóa một khóa
+dotnet user-secrets clear --project back_end/light_brary                    # xóa tất cả
 ```
 
 ---
@@ -126,7 +126,7 @@ Cơ sở dữ liệu mặc định sẽ lắng nghe tại `localhost:5432` với
 ### 2. Khởi chạy Backend (.NET 10 Web API)
 
 ```bash
-dotnet run --project src/Library.Api
+dotnet run --project back_end/light_brary
 ```
 
 - API sẽ tự động áp dụng migration và bootstrap tài khoản Admin nếu CSDL chưa có dữ liệu.
@@ -162,15 +162,10 @@ Khi hệ thống khởi chạy lần đầu tiên trên môi trường Developme
 
 ## 🧪 Kiểm Thử Tự Động (Automated Tests)
 
-Chạy toàn bộ Unit Tests & Integration Tests:
+Solution hiện chứa một project backend, chưa có project Unit Tests hoặc Integration Tests. Kiểm tra compile từ thư mục gốc:
 
 ```bash
-dotnet test Library.slnx
+dotnet build Library.slnx
 ```
 
-Hệ thống bao gồm:
-
-- **43 Unit Tests**: Kiểm tra chi tiết `PasswordPolicy`, `PhoneNumberNormalizer`, `IsbnNormalizer`, `BorrowStatusCalculator`, `AuthService`, `BorrowRecordService`, v.v.
-- **Integration Tests**: Kiểm tra trực tiếp trên CSDL PostgreSQL thực tế, bao gồm:
-  - Test kiểm tra tính duy nhất của Email và Số điện thoại (HTTP 409 Conflict).
-  - Test kiểm tra Race Condition mượn sách: Chạy **10 requests đồng thời** cùng tranh chấp mượn 1 cuốn sách -> Kết quả chỉ duy nhất 1 request thành công, 9 requests còn lại bị chặn an toàn.
+Các endpoint cần được kiểm tra trên môi trường development với PostgreSQL đã cấu hình.

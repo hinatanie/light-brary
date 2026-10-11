@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using light_brary.Application.DTOs.BorrowRecords;
-using light_brary.Application.DTOs.Users;
-using light_brary.Application.Exceptions;
-using light_brary.Application.Interfaces;
+using light_brary.DTOs.Requests;
+using light_brary.DTOs.Responses;
+using light_brary.Exceptions;
+using light_brary.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

@@ -2,38 +2,41 @@
 ## Library Management API
 ## 1. Cấu trúc source code
 
-src/
-├── Library.Api/
-│   ├── Controllers/
-│   ├── Middleware/
-│   ├── Properties/
-│   ├── Program.cs
-│   ├── appsettings.json
-│   └── appsettings.Development.json
-│
-├── Library.Application/
-│   ├── DTOs/
-│   ├── Exceptions/
-│   ├── Services/
-│   └── Validators/
-│
-├── Library.Domain/
-│   ├── Entities/
-│   └── Enums/
-│
-└── Library.Infrastructure/
-    ├── Authentication/
-    ├── Persistence/
-    │   ├── Configurations/
-    │   └── Migrations/
-    └── Repositories/
-# 5. Quy định Library.Application
-Library.Application chứa logic xử lý use case của hệ thống.
-Library.Application/
-├── DTOs/
-├── Exceptions/
+Backend dùng một project ASP.NET Core, chia thư mục theo trách nhiệm:
+
+```text
+back_end/light_brary/
+├── Controllers/
 ├── Services/
-└── Validators/
+│   ├── Interfaces/
+│   └── Authentication/
+├── Entities/
+├── Repositories/
+│   └── Interfaces/
+├── DTOs/
+│   ├── Requests/
+│   └── Responses/
+├── Middleware/
+├── Data/
+│   ├── AppDbContext.cs
+│   ├── DataSeeder.cs
+│   └── Migrations/
+├── Enums/
+├── Exceptions/
+├── Constants/
+├── Validators/
+├── Properties/
+├── Program.cs
+├── appsettings.json
+└── appsettings.Development.json
+```
+
+Luồng xử lý: Controller → Service → Repository → AppDbContext.
+Interface của service đặt trong `Services/Interfaces/`; interface của repository
+đặt trong `Repositories/Interfaces/`. Namespace khớp với thư mục tính từ project.
+
+# 5. Quy định xử lý nghiệp vụ
+`Services/` chứa logic xử lý use case của hệ thống. DTO, exception và validator đặt trong các thư mục tương ứng của cùng project.
 Ví dụ các use case:
 Đăng ký tài khoản
 Đăng nhập
@@ -44,14 +47,15 @@ Xử lý yêu cầu mượn
 
 # 6. Quy định DTO
 DTO được đặt tại:
-Library.Application/DTOs/
-DTO dùng để truyền dữ liệu giữa API và Application.
+back_end/light_brary/DTOs/
+Request DTO đặt trong `DTOs/Requests/`, response DTO đặt trong `DTOs/Responses/`. DTO dùng để truyền dữ liệu giữa Controller và Service.
 
 # 7. Quy định Services
 Service chịu trách nhiệm thực hiện use case và business logic.
 
 # 8. Quy định Validators
 Validation đặt tại:
+`back_end/light_brary/Validators/`
 
 Validator kiểm tra dữ liệu đầu vào trước khi thực hiện nghiệp vụ.
 Ví dụ:
@@ -67,7 +71,7 @@ Số lượng sách phải lớn hơn 0
 Không đưa tất cả validation vào Controller.
 # 9. Quy định Exceptions
 Exception nghiệp vụ đặt tại:
-Library.Application/Exceptions/
+back_end/light_brary/Exceptions/
 Ví dụ:
 NotFoundException.cs
 ValidationException.cs
@@ -78,12 +82,8 @@ ConflictException.cs
 Service có thể:
 throw new NotFoundException("Book not found");
 Controller không cần try/catch ở từng endpoint ,Middleware xử lý lỗi tập trung.
-# 10. Quy định Library.Infrastructure
-Infrastructure chứa những phần liên quan đến công nghệ bên ngoài và triển khai kỹ thuật.
-Library.Infrastructure/
-├── Authentication/
-├── Persistence/
-└── Repositories/
+# 10. Quy định truy cập dữ liệu và xác thực
+`Data/` chứa DbContext và migration; `Repositories/` chứa truy vấn dữ liệu; `Services/Authentication/` chứa JWT và password hashing.
 Ví dụ:
 Database
 Entity Framework Core
@@ -91,19 +91,19 @@ MySQL
 Repository
 JWT
 Password hashing
-# 11. Quy định Persistence
+# 11. Quy định Data
 Database code đặt tại:
-Library.Infrastructure/Persistence/
+back_end/light_brary/Data/
 Ví dụ:
-Persistence/
-├── LibraryDbContext.cs
+Data/
+├── AppDbContext.cs
 ├── Configurations/
 └── Migrations/
-LibraryDbContext.cs chịu trách nhiệm kết nối Entities với database.
+AppDbContext.cs chịu trách nhiệm kết nối Entities với database.
 
 # 12. Quy định Entity Configurations
 Entity Framework configuration đặt tại:
-Persistence/Configurations/
+Data/Configurations/
 Ví dụ:
 BookConfiguration.cs
 UserConfiguration.cs
@@ -112,7 +112,7 @@ BorrowRequestConfiguration.cs
 
 # 13. Quy định Migration
 Migration phải nằm tại:
-Library.Infrastructure/Persistence/Migrations/
+back_end/light_brary/Data/Migrations/
 Ví dụ:
 20260926120000_InitialCreate.cs
 20260927100000_AddBooksTable.cs
@@ -125,7 +125,7 @@ Không chỉnh sửa migration cũ tùy tiện sau khi migration đó đã đư�
 
 # 14. Quy định Repositories
 Repository implementation đặt tại:
-Library.Infrastructure/Repositories/
+back_end/light_brary/Repositories/
 Ví dụ:
 BookRepository.cs
 UserRepository.cs
@@ -135,7 +135,7 @@ Repository chịu trách nhiệm truy cập dữ liệu.
 
 # 15. Quy định Authentication
 Các implementation liên quan đến authentication đặt tại:
-Library.Infrastructure/Authentication/
+back_end/light_brary/Services/Authentication/
 Ví dụ:
 JwtTokenService.cs
 PasswordHasher.cs
@@ -147,9 +147,9 @@ JwtTokenService chịu trách nhiệm:
 PasswordHasher chịu trách nhiệm:
 	Hash password
 	Verify password
-# 16. Quy định Library.Api
-Library.Api là entry point của hệ thống.
-Library.Api/
+# 16. Quy định API
+`Program.cs` là entry point của project `back_end/light_brary`.
+back_end/light_brary/
 ├── Controllers/
 ├── Middleware/
 ├── Program.cs
@@ -159,13 +159,13 @@ Api chịu trách nhiệm:
 	Nhận HTTP request
 	Routing
 	Authentication/Authorization
-	Gọi Application Service
+	Gọi Service
 	Trả HTTP response
 	Middleware
 	Dependency Injection configuration
 
 # 17. Quy định Controllers
-Controller đặt trong: `Library.Api/Controllers/`
+Controller đặt trong: `back_end/light_brary/Controllers/`
 Tên: `<Entity/Resource>Controller.cs`
 Ví dụ:
 	AuthController.cs
@@ -242,7 +242,7 @@ nếu thực tế phải là:
 404 Not Found
 
 # 21. Quy định Middleware
-Middleware đặt tại: `Library.Api/Middleware/`
+Middleware đặt tại: `back_end/light_brary/Middleware/`
 Ví dụ:
 ExceptionHandlingMiddleware.cs
 RequestLoggingMiddleware.cs
@@ -374,12 +374,13 @@ nếu method thực sự trả:
 Namespace phải khớp với project/folder.
 Ví dụ:
 ```
-namespace Library.Domain.Entities;
-namespace Library.Application.DTOs.Books;
-namespace Library.Application.Services;
-namespace Library.Infrastructure.Repositories;
-namespace Library.Infrastructure.Persistence;
-namespace Library.Api.Controllers;
+namespace light_brary.Entities;
+namespace light_brary.DTOs.Requests;
+namespace light_brary.DTOs.Responses;
+namespace light_brary.Services;
+namespace light_brary.Repositories;
+namespace light_brary.Data;
+namespace light_brary.Controllers;
 ```
 Không sử dụng namespace cũ như:
 namespace server;
@@ -414,22 +415,22 @@ Ví dụ nhóm cần thêm chức năng:
 Độc giả gửi yêu cầu mượn sách.
 Không bắt đầu bằng cách viết tất cả vào Controller.
 Luồng phát triển:
-1. Domain
+1. Entities / Enums
    ↓
 Kiểm tra Entity/Enum cần thiết
-2. Application/DTOs
+2. DTOs/Requests và DTOs/Responses
    ↓
 Tạo request/response model
-3. Application/Validators
+3. Validators
    ↓
 Tạo validation
-4. Application/Services
+4. Services
    ↓
 Viết business logic
-5. Infrastructure/Repositories
+5. Repositories
    ↓
 Viết truy vấn database
-6. Api/Controllers
+6. Controllers
    ↓
 Expose HTTP endpoint
 7. Test API
@@ -540,7 +541,7 @@ Trước khi push/PR phải đảm bảo:
 	Build phải:
 	Build succeeded.
 API liên quan phải được chạy thử:
-	dotnet run --project src/Library.Api
+	dotnet run --project back_end/light_brary
 Không tạo PR khi project không compile.
 
 # 34. Quy tắc xử lý conflict
@@ -619,7 +620,7 @@ Commit JWT secret
 Commit database password
 ```
 
-Authentication và authorization phải được xử lý tại API/Application/Infrastructure đúng trách nhiệm.
+Authentication và authorization được xử lý tại Controllers, Middleware và Services/Authentication đúng trách nhiệm.
 # 40. Quy tắc thay đổi Database
 Khi thay đổi Entity có ảnh hưởng database:
 Thay đổi Entity
@@ -636,15 +637,15 @@ Commit Migration cùng feature
 Ví dụ:
 ```
 dotnet ef migrations add AddBookCopyTable \
---project src/Library.Infrastructure \
---startup-project src/Library.Api \
---output-dir Persistence/Migrations
+--project back_end/light_brary \
+--startup-project back_end/light_brary \
+--output-dir Data/Migrations
 ```
 Sau đó:
 ```
 dotnet ef database update \
---project src/Library.Infrastructure \
---startup-project src/Library.Api
+--project back_end/light_brary \
+--startup-project back_end/light_brary
 ```
 
 # Quy trình chuẩn khi một thành viên nhận một task
@@ -656,14 +657,14 @@ git pull origin main
         ↓
 git checkout -b feat/borrow-request
         ↓
-Domain
+Entities / Enums
 BorrowRequest / Enum cần thiết
         ↓
-Application
+Services
 DTO → Validator → Service
         ↓
-Infrastructure
-Repository / Persistence
+Repositories / Data
+Repository / DbContext
         ↓
 Api
 Controller / Endpoint

@@ -118,7 +118,7 @@ app.UseAuthorization();              // [5] — Phân quyền: "Bạn có quyề
 
 ### Middleware `ExceptionHandlingMiddleware` trong dự án
 
-File: `back_end/light_brary/Middlewares/ExceptionHandlingMiddleware.cs`
+File: `back_end/light_brary/Middleware/ExceptionHandlingMiddleware.cs`
 
 ```csharp
 public async Task InvokeAsync(HttpCo`ntext context)
@@ -247,7 +247,7 @@ public async Task<ActionResult<BookResponse>> Create([FromBody] SaveBookRequest 
 
 ### DbSet và AppDbContext trong dự án
 
-File: `back_end/light_brary/Infrastructure/Persistence/AppDbContext.cs`
+File: `back_end/light_brary/Data/AppDbContext.cs`
 
 ```csharp
 public class AppDbContext : DbContext
@@ -263,7 +263,7 @@ public class AppDbContext : DbContext
 
 ### Include — Eager Loading (Tải dữ liệu liên kết ngay)
 
-File: `back_end/light_brary/Infrastructure/Repositories/BookRepository.cs`
+File: `back_end/light_brary/Repositories/BookRepository.cs`
 
 ```csharp
 public async Task<Book?> GetWithDetailsAsync(Guid id)
@@ -416,7 +416,7 @@ public async Task<IActionResult> Delete(Guid id)
 
 ### Giải pháp trong dự án: `ExceptionHandlingMiddleware`
 
-File: `back_end/light_brary/Middlewares/ExceptionHandlingMiddleware.cs`
+File: `back_end/light_brary/Middleware/ExceptionHandlingMiddleware.cs`
 
 ```csharp
 var (statusCode, code, message) = exception switch

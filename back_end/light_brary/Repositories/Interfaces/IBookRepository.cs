@@ -1,0 +1,14 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using light_brary.Entities;
+
+namespace light_brary.Repositories.Interfaces
+{
+    public interface IBookRepository : IGenericRepository<Book>
+    {
+        Task<Book?> GetByIsbnAsync(string isbn);
+        Task<IEnumerable<Book>> GetByCategoryIdAsync(Guid categoryId);
+        Task<Book?> GetWithDetailsAsync(Guid id);
+        Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, Guid? categoryId = null, string? author = null);
+    }
+}
