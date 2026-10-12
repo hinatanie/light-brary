@@ -7,7 +7,7 @@
 
 ## Mục lục
 
-1. [Luồng xử lý một Request](#1-luồng-xử-lý-một-request)
+1. [Luồng xử lý một Request](#1-luồng-xử-lý-một-request)q
 2. [Middleware Pipeline và Thứ tự](#2-middleware-pipeline-và-thứ-tự)
 3. [Dependency Injection — Vòng đời Service](#3-dependency-injection--vòng-đời-service)
 4. [Routing và Model Binding](#4-routing-và-model-binding)
@@ -553,12 +553,12 @@ ExceptionHandling → HTTPS → CORS → JwtAuth → Authorization → Controlle
 
 **Lời giải:**
 
-| Service                               | Lifetime đúng                | Lý do                                                                 |
-| :------------------------------------ | :----------------------------- | :--------------------------------------------------------------------- |
-| `AppDbContext`                      | **Scoped**               | Chứa dữ liệu trạng thái của 1 request; phải dispose sau request |
+| Service                             | Lifetime đúng                | Lý do                                                                 |
+| :---------------------------------- | :----------------------------- | :--------------------------------------------------------------------- |
+| `AppDbContext`                    | **Scoped**               | Chứa dữ liệu trạng thái của 1 request; phải dispose sau request |
 | `BookService`, `BookRepository` | **Scoped**               | Phụ thuộc`AppDbContext` (Scoped) → phải cùng lifetime           |
-| `PasswordHasher`                   | Scoped/Singleton đều được | Không có state, không phụ thuộc DbContext                         |
-| `JwtTokenService`                  | Singleton được              | Chỉ dùng config và thư viện, không có state                     |
+| `PasswordHasher`                  | Scoped/Singleton đều được | Không có state, không phụ thuộc DbContext                         |
+| `JwtTokenService`                 | Singleton được              | Chỉ dùng config và thư viện, không có state                     |
 
 ---
 
