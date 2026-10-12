@@ -8,9 +8,9 @@ BEGIN;
 INSERT INTO "Categories" ("Id", "Name", "Description")
 VALUES
     (gen_random_uuid(), 'Công nghệ thông tin', 'Sách về lập trình, kiến trúc hệ thống, AI và công nghệ phần mềm.'),
-    (gen_random_uuid(), 'Kỹ năng sống & Phát triển bản thân', 'Sách rèn luyện tư duy, giao tiếp, tâm lý và phát triển năng lực cá nhân.'),
-    (gen_random_uuid(), 'Văn học & Tiểu thuyết', 'Các tác phẩm văn học kinh điển, tiểu thuyết nổi tiếng thế giới và Việt Nam.'),
-    (gen_random_uuid(), 'Kinh tế & Khởi nghiệp', 'Kiến thức quản trị kinh doanh, tài chính, đầu tư và khởi nghiệp đổi mới sáng tạo.'),
+    (gen_random_uuid(), 'Kỹ năng sống', 'Sách rèn luyện tư duy, giao tiếp, tâm lý và phát triển năng lực cá nhân.'),
+    (gen_random_uuid(), 'Văn học', 'Các tác phẩm văn học kinh điển, tiểu thuyết nổi tiếng thế giới và Việt Nam.'),
+    (gen_random_uuid(), 'Kinh tế', 'Kiến thức quản trị kinh doanh, tài chính, đầu tư và khởi nghiệp đổi mới sáng tạo.'),
     (gen_random_uuid(), 'Lịch sử & Triết học', 'Lịch sử văn minh nhân loại, tư tưởng triết học và văn hóa các dân tộc.')
 ON CONFLICT ("Name") DO NOTHING;
 
@@ -33,9 +33,9 @@ DECLARE
     b_dme UUID := gen_random_uuid();
 BEGIN
     SELECT "Id" INTO cat_it FROM "Categories" WHERE "Name" = 'Công nghệ thông tin' LIMIT 1;
-    SELECT "Id" INTO cat_selfhelp FROM "Categories" WHERE "Name" = 'Kỹ năng sống & Phát triển bản thân' LIMIT 1;
-    SELECT "Id" INTO cat_lit FROM "Categories" WHERE "Name" = 'Văn học & Tiểu thuyết' LIMIT 1;
-    SELECT "Id" INTO cat_biz FROM "Categories" WHERE "Name" = 'Kinh tế & Khởi nghiệp' LIMIT 1;
+    SELECT "Id" INTO cat_selfhelp FROM "Categories" WHERE "Name" = 'Kỹ năng sống' LIMIT 1;
+    SELECT "Id" INTO cat_lit FROM "Categories" WHERE "Name" = 'Văn học' LIMIT 1;
+    SELECT "Id" INTO cat_biz FROM "Categories" WHERE "Name" = 'Kinh tế' LIMIT 1;
     SELECT "Id" INTO cat_hist FROM "Categories" WHERE "Name" = 'Lịch sử & Triết học' LIMIT 1;
 
     -- Cuốn 1: Đắc Nhân Tâm (Kỹ năng sống)
@@ -65,7 +65,7 @@ BEGIN
     -- Cuốn 3: Clean Code (CNTT)
     IF NOT EXISTS (SELECT 1 FROM "Books" WHERE "ISBN" = '978-013-235-088-4') THEN
         INSERT INTO "Books" ("Id", "Title", "Author", "ISBN", "ImageUrl", "PublishYear", "CategoryId", "CreatedAt")
-        VALUES (b_cln, 'Clean Code: A Handbook of Agile Software Craftsmanship', 'Robert C. Martin', '978-013-235-088-4', 'https://images.unsplash.com/photo-1532012164546-f432f2e3777a?auto=format&fit=crop&w=600&q=80', 2008, cat_it, NOW());
+        VALUES (b_cln, 'Clean Code', 'Robert C. Martin', '978-013-235-088-4', 'https://images.unsplash.com/photo-1532012164546-f432f2e3777a?auto=format&fit=crop&w=600&q=80', 2008, cat_it, NOW());
 
         INSERT INTO "BookCopies" ("Id", "Barcode", "Status", "ConditionNote", "BookId")
         VALUES

@@ -8,7 +8,7 @@ using light_brary.Data;
 
 #nullable disable
 
-namespace light_brary.Data.Migrations
+namespace light_brary.code.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
