@@ -14,7 +14,6 @@ namespace light_brary.Controllers
     public class BorrowRecordsController(BorrowRecordService borrowRecordService) : ControllerBase
     {
         [HttpPost("api/me/borrow")]
-        [HttpPost("api/borrow-records/borrow")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow(MemberBorrowRequest request)
         {
@@ -54,14 +53,6 @@ namespace light_brary.Controllers
                 return Forbid();
             }
             return Ok(record);
-        }
-
-        [HttpPost("api/borrow-details/{id:guid}/return")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BorrowDetailActionResponse>> ReturnSingleBook(Guid id)
-        {
-            var result = await borrowRecordService.ReturnSingleBookAsync(id);
-            return Ok(result);
         }
 
         [HttpPost("api/returns")]

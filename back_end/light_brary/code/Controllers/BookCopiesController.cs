@@ -57,22 +57,6 @@ namespace light_brary.Controllers
             await bookCopyService.DeleteAsync(id);
             return NoContent();
         }
-
-        [HttpPost("book-copies/{id:guid}/mark-available")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BookCopyResponse>> MarkAvailable(Guid id)
-        {
-            var copy = await bookCopyService.MarkAvailableAsync(id);
-            return Ok(copy);
-        }
-
-        [HttpPost("book-copies/{id:guid}/mark-lost")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BookCopyResponse>> MarkLost(Guid id)
-        {
-            var copy = await bookCopyService.MarkLostAsync(id);
-            return Ok(copy);
-        }
     }
 }
 

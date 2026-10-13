@@ -63,16 +63,7 @@ namespace light_brary.Controllers
             return Ok(records);
         }
 
-        [HttpGet("api/users/{id:guid}/borrowed-books")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<IEnumerable<BorrowedBookResponse>>> GetUserBorrowedBooks(Guid id)
-        {
-            var books = await userService.GetUserBorrowedBooksAsync(id);
-            return Ok(books);
-        }
-
         [HttpPut("api/users/{id:guid}/password")]
-        [HttpPost("api/users/{id:guid}/reset-password")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<IActionResult> AdminUpdatePassword(Guid id, AdminUpdatePasswordRequest request)
         {
@@ -103,7 +94,6 @@ namespace light_brary.Controllers
         }
 
         [HttpPut("api/me/password")]
-        [HttpPost("api/me/change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {
@@ -119,15 +109,6 @@ namespace light_brary.Controllers
             var userId = GetCurrentUserId();
             var records = await userService.GetUserBorrowRecordsAsync(userId);
             return Ok(records);
-        }
-
-        [HttpGet("api/me/borrowed-books")]
-        [Authorize]
-        public async Task<ActionResult<IEnumerable<BorrowedBookResponse>>> GetMyBorrowedBooks()
-        {
-            var userId = GetCurrentUserId();
-            var books = await userService.GetUserBorrowedBooksAsync(userId);
-            return Ok(books);
         }
 
         #endregion
