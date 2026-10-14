@@ -34,7 +34,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
+  if (token && !headers['Authorization']) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -68,6 +68,24 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   return data as T;
 }
 
+async function loadAuthResponse(raw: any): Promise<AuthResponse> {
+  const user = await request<User>('/me', {
+    headers: { Authorization: `Bearer ${raw.accessToken}` },
+  });
+
+  return {
+    ...raw,
+    token: raw.accessToken,
+    userId: String(user.id),
+    fullName: user.fullName,
+    phoneNumber: user.phoneNumber,
+    email: user.email || '',
+    roles: user.roles,
+    mustChangePassword: Boolean(user.mustChangePassword),
+    user,
+  };
+}
+
 // ─── 1. Auth API ─────────────────────────────────────────────────────────────
 export const authApi = {
   login: async (data: { userName: string; password: string }): Promise<AuthResponse> => {
@@ -75,29 +93,7 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    const token = raw.accessToken || raw.token;
-    const user = raw.user || raw;
-    const roles = Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : ['Member'];
-
-    return {
-      ...raw,
-      token,
-      accessToken: token,
-      userId: String(user.id ?? user.userId ?? ''),
-      fullName: user.fullName || '',
-      phoneNumber: user.phoneNumber || '',
-      email: user.email || '',
-      roles,
-      mustChangePassword: Boolean(user.mustChangePassword),
-      user: {
-        id: user.id ?? user.userId ?? '',
-        fullName: user.fullName || '',
-        phoneNumber: user.phoneNumber || '',
-        address: user.address || null,
-        roles,
-        createdAt: user.createdAt || new Date().toISOString(),
-      },
-    };
+    return loadAuthResponse(raw);
   },
 
   register: async (data: {
@@ -116,29 +112,7 @@ export const authApi = {
         address: data.address,
       }),
     });
-    const token = raw.accessToken || raw.token;
-    const user = raw.user || raw;
-    const roles = Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : ['Member'];
-
-    return {
-      ...raw,
-      token,
-      accessToken: token,
-      userId: String(user.id ?? user.userId ?? ''),
-      fullName: user.fullName || '',
-      phoneNumber: user.phoneNumber || '',
-      email: user.email || '',
-      roles,
-      mustChangePassword: Boolean(user.mustChangePassword),
-      user: {
-        id: user.id ?? user.userId ?? '',
-        fullName: user.fullName || '',
-        phoneNumber: user.phoneNumber || '',
-        address: user.address || null,
-        roles,
-        createdAt: user.createdAt || new Date().toISOString(),
-      },
-    };
+    return loadAuthResponse(raw);
   },
 
   logout: () => {

@@ -1,15 +1,11 @@
-using System.Text;
 using light_brary.Services;
-using light_brary.Services.Authentication;
 using light_brary.Data;
 using light_brary.Repositories;
 using light_brary.Middleware;
 using light_brary.Constants;
 using light_brary.Entities;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,27 +30,6 @@ builder.Services.AddSwaggerGen();
 /* Cấu hình Database */
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-/* Cấu hình JWT Authentication */
-var jwtSection = builder.Configuration.GetSection("Jwt");
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSection["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtSection["Audience"],
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero,
-        };
-    });
-
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.ADMIN));
@@ -78,7 +53,7 @@ builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<UserRepository>();
 
 // Đăng ký Identity
-builder.Services.AddIdentityCore<User>(options =>
+builder.Services.AddIdentityApiEndpoints<User>(options =>
     {
         options.Password.RequiredLength = 8;
         options.Password.RequireDigit = false;
@@ -87,13 +62,10 @@ builder.Services.AddIdentityCore<User>(options =>
         options.Password.RequireNonAlphanumeric = false;
     })
     .AddRoles<IdentityRole<Guid>>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
+    .AddEntityFrameworkStores<AppDbContext>();
 
 /* Đăng ký các Authentication */
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<JwtTokenService>();
 
 var app = builder.Build();
 

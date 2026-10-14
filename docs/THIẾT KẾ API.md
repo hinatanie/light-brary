@@ -105,21 +105,7 @@ Request — `RegisterRequest`:
 |`password`|Bắt buộc, đáp ứng chính sách mật khẩu của ứng dụng|
 Không nhận `role`, `roleIds`, `passwordHash` hoặc `createdAt` từ client.
 `confirmPassword` có thể kiểm tra ở giao diện, không cần đưa vào hợp đồng API.
-Response — `201 Created`, sử dụng lại `UserResponse`:
-```
-{
-  "id": 12,
-  "fullName": "Nguyễn Văn An",
-  "phoneNumber": "0901234567",
-  "address": "Quận 11, TP.HCM",
-  "roles": ["USER"],
-  "createdAt": "2026-10-03T14:55:00Z"
-}
-```
-Header:
-```
-Location: /api/me
-```
+Response — `200 OK`: tạo tài khoản, gán vai trò mặc định rồi đăng nhập bằng Identity. Response token có cùng cấu trúc với `/api/auth/login` bên dưới. Client dùng access token để gọi `/api/me` lấy `UserResponse`.
 
 Quy tắc xử lý:
 - Băm mật khẩu.
@@ -146,31 +132,27 @@ Request — `LoginRequest`:
 
 |Trường|Quy định|
 |---|---|
-|`userName`|Bắt buộc, tối đa 256 ký tự; bỏ khoảng trắng đầu/cuối. Tài khoản hiện tại dùng số điện thoại làm tên đăng nhập|
+|`userName`|Bắt buộc, tối đa 10 ký tự; bỏ khoảng trắng đầu/cuối. Tài khoản hiện tại dùng số điện thoại làm tên đăng nhập|
 |`password`|Bắt buộc; giữ nguyên giá trị, không tự trim hoặc đổi chữ hoa/chữ thường|
-Response — `200 OK`, `LoginResponse`:
-```
+Response — `200 OK`, `AccessTokenResponse` có sẵn của ASP.NET Core Identity:
+```json
 {
-  "accessToken": "<jwt-access-token>",
   "tokenType": "Bearer",
-  "expiresIn": 900,
-  "user": {
-    "id": 12,
-    "fullName": "Nguyễn Văn An",
-    "phoneNumber": "0901234567",
-    "address": "Quận 11, TP.HCM",
-    "roles": ["USER"],
-    "createdAt": "2026-10-03T14:55:00Z"
-  }
+  "accessToken": "<identity-access-token>",
+  "expiresIn": 3600,
+  "refreshToken": "<identity-refresh-token>"
 }
 ```
 
 |Trường|Ý nghĩa|
 |---|---|
-|`accessToken`|JWT dùng để xác thực những request tiếp theo|
+|`accessToken`|Token được bảo vệ bằng ASP.NET Core Data Protection, không phải JWT|
 |`tokenType`|Loại token, giá trị `Bearer`|
-|`expiresIn`|Thời gian sống của token, tính bằng giây; `900` là ví dụ 15 phút|
-|`user`|Thông tin tài khoản, dùng lại `UserResponse`|
+|`expiresIn`|Thời gian sống của token, tính bằng giây; mặc định 3600 giây|
+|`refreshToken`|Token làm mới do Identity phát; project hiện chưa cung cấp endpoint refresh|
+
+Response không chứa hồ sơ người dùng. Frontend gọi `GET /api/me` với access token mới để lấy thông tin và vai trò trước khi lưu phiên đăng nhập. Khi chuyển từ JWT, client cần đăng nhập lại để lấy token Identity.
+
 Client gửi token khi gọi API được bảo vệ:
 ```
 GET /api/me

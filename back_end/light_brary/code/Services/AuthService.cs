@@ -1,6 +1,4 @@
-using light_brary.Services.Authentication;
 using light_brary.DTOs.Requests;
-using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -8,48 +6,39 @@ using Microsoft.AspNetCore.Identity;
 namespace light_brary.Services
 {
     public class AuthService(
-        UserManager<User> userManager,
         SignInManager<User> signInManager,
-        UserService userService,
-        JwtTokenService jwtTokenService)
+        UserService userService)
     {
-        public async Task<AuthResponse> LoginAsync(LoginRequest request)
+        public async Task LoginAsync(LoginRequest request)
         {
-            var user = await userManager.FindByNameAsync(request.UserName.Trim())
-                ?? throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không chính xác.");
+            signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
+            var result = await signInManager.PasswordSignInAsync(
+                request.UserName.Trim(),
+                request.Password,
+                isPersistent: false,
+                lockoutOnFailure: true);
 
-            var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+            if (result.IsLockedOut)
+                throw new UnauthorizedException("Tài khoản của bạn đã bị khóa, liên hệ quản thư để được hỗ trợ.");
+
             if (!result.Succeeded)
                 throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không chính xác.");
-
-            var response = await userService.GetByIdAsync(user.Id);
-
-            return CreateAuthResponse(user, response);
         }
 
-        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+        public async Task RegisterAsync(RegisterRequest request)
         {
-            var response = await userService.CreateAsync(new CreateUserRequest
+            var user = await userService.CreateAsync(new CreateUserRequest
             {
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber,
                 Address = request.Address,
                 Password = request.Password
             });
-            var user = await userManager.FindByIdAsync(response.Id.ToString())
-                ?? throw new NotFoundException("Không tìm thấy tài khoản vừa tạo.");
-            return CreateAuthResponse(user, response);
-        }
-
-        private AuthResponse CreateAuthResponse(User user, UserResponse response)
-        {
-            return new AuthResponse
+            await LoginAsync(new LoginRequest
             {
-                AccessToken = jwtTokenService.GenerateToken(user, response.Roles),
-                TokenType = "Bearer",
-                ExpiresIn = jwtTokenService.ExpiresInSeconds,
-                User = response
-            };
+                UserName = user.PhoneNumber,
+                Password = request.Password
+            });
         }
     }
 }

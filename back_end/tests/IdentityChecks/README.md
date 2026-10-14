@@ -2,7 +2,7 @@
 
 Uses the project's existing .NET / EF Core / Npgsql libraries without adding test dependencies.
 The checks migrate a legacy account, then run the real API to exercise registration, login,
-JWT authorization, password changes/reset, phone changes, role management, user filtering,
+Identity bearer-token authorization, password changes/reset, phone changes, role management, user filtering,
 and protection of borrow history and the last administrator. They also check that a migration
 rejects an existing name longer than the new limit instead of truncating it.
 

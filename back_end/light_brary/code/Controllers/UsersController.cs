@@ -115,8 +115,7 @@ namespace light_brary.Controllers
 
         private Guid GetCurrentUserId()
         {
-            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                      ?? User.FindFirstValue(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub);
+            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(raw) || !Guid.TryParse(raw, out var userId))
                 throw new UnauthorizedException("Không xác định được danh tính người dùng.");

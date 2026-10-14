@@ -87,9 +87,6 @@ var url = $"http://127.0.0.1:{port}";
 processInfo.Environment["ASPNETCORE_URLS"] = url;
 processInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
 processInfo.Environment["ConnectionStrings__DefaultConnection"] = connectionString;
-processInfo.Environment["Jwt__SecretKey"] = $"{Guid.NewGuid():N}{Guid.NewGuid():N}";
-processInfo.Environment["Jwt__Issuer"] = "IdentityChecks";
-processInfo.Environment["Jwt__Audience"] = "IdentityChecks";
 var output = new List<string>();
 using var app = Process.Start(processInfo)!;
 app.OutputDataReceived += (_, args) => { if (args.Data != null) lock (output) output.Add(args.Data); };
@@ -125,7 +122,8 @@ try
     var adminLogin = await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.OK,
         new { userName = "0999999999", password = legacyPassword });
     var adminToken = adminLogin.GetProperty("accessToken").GetString()!;
-    Check(adminLogin.GetProperty("user").GetProperty("id").GetGuid() == adminId, "Legacy login changed user ID.");
+    var adminProfile = await Request(HttpMethod.Get, "/api/me", HttpStatusCode.OK, token: adminToken);
+    Check(adminProfile.GetProperty("id").GetGuid() == adminId, "Legacy login changed user ID.");
     var roles = await Request(HttpMethod.Get, "/api/roles", HttpStatusCode.OK, token: adminToken);
     var memberRoleId = roles.EnumerateArray().Single(role => role.GetProperty("name").GetString() == "User").GetProperty("id").GetGuid();
     await Request(HttpMethod.Delete, $"/api/users/{adminId}", HttpStatusCode.Conflict, token: adminToken);
@@ -138,10 +136,12 @@ try
         new { fullName = "Invalid Member", phoneNumber = phone, password });
     await Request(HttpMethod.Post, "/api/auth/register", HttpStatusCode.BadRequest,
         new { fullName = new string('A', 51), phoneNumber = phone, address = "Test address", password });
-    var member = await Request(HttpMethod.Post, "/api/auth/register", HttpStatusCode.Created, registration);
-    var memberId = member.GetProperty("user").GetProperty("id").GetGuid();
+    var member = await Request(HttpMethod.Post, "/api/auth/register", HttpStatusCode.OK, registration);
     var memberToken = member.GetProperty("accessToken").GetString()!;
-    Check(memberId != Guid.Empty && member.GetProperty("user").GetProperty("roles").EnumerateArray()
+    Check(member.GetProperty("refreshToken").GetString() is { Length: > 0 }, "Identity refresh token missing.");
+    var memberProfile = await Request(HttpMethod.Get, "/api/me", HttpStatusCode.OK, token: memberToken);
+    var memberId = memberProfile.GetProperty("id").GetGuid();
+    Check(memberId != Guid.Empty && memberProfile.GetProperty("roles").EnumerateArray()
         .Any(role => role.GetString() == "User"), "Registration missing ID or default role.");
     await Request(HttpMethod.Post, "/api/auth/register", HttpStatusCode.Conflict, registration);
     await Request(HttpMethod.Get, "/api/me", HttpStatusCode.OK, token: memberToken);
@@ -197,7 +197,7 @@ try
     await Request(HttpMethod.Delete, $"/api/users/{adminId}", HttpStatusCode.BadRequest, token: adminToken);
     await Request(HttpMethod.Delete, $"/api/users/{memberId}/roles/{memberRoleId}", HttpStatusCode.NoContent, token: adminToken);
     await Request(HttpMethod.Delete, $"/api/users/{memberId}", HttpStatusCode.NoContent, token: adminToken);
-    Console.WriteLine("PASS: migration preserves old accounts/hashes/roles/history; registration, JWT 401/403, password changes/reset, phone changes, roles, filtering and admin safeguards.");
+    Console.WriteLine("PASS: migration preserves old accounts/hashes/roles/history; registration, Identity token 401/403, password changes/reset, phone changes, roles, filtering and admin safeguards.");
 }
 finally
 {
