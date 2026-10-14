@@ -9,11 +9,11 @@ using light_brary.Data;
 
 #nullable disable
 
-namespace light_brary.Data.Migrations
+namespace light_brary.code.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261011220228_SyncEntityConstraints")]
-    partial class SyncEntityConstraints
+    [Migration("20261012040329_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

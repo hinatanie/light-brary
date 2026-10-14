@@ -141,11 +141,6 @@ export const authApi = {
     };
   },
 
-  refresh: () =>
-    request<AuthResponse>('/auth/refresh', {
-      method: 'POST',
-    }),
-
   logout: () => {
     localStorage.removeItem('lightbrary_token');
     localStorage.removeItem('lightbrary_user');
@@ -313,14 +308,6 @@ export const bookCopiesApi = {
     request<void>(`/book-copies/${id}`, {
       method: 'DELETE',
     }),
-  markAvailable: (id: string | number) =>
-    request<BookCopy>(`/book-copies/${id}/mark-available`, {
-      method: 'POST',
-    }),
-  markLost: (id: string | number) =>
-    request<BookCopy>(`/book-copies/${id}/mark-lost`, {
-      method: 'POST',
-    }),
 };
 
 const isRoleMatch = (r1: string, r2: string): boolean => {
@@ -414,8 +401,6 @@ export const usersApi = {
   },
   getUserBorrowRecords: (userId: string | number) =>
     request<BorrowRecord[]>(`/users/${userId}/borrow-records`),
-  getUserBorrowedBooks: (userId: string | number) =>
-    request<any[]>(`/users/${userId}/borrowed-books`),
   updatePassword: (id: string | number, newPassword: string) =>
     request<{ message: string }>(`/users/${id}/password`, {
       method: 'PUT',
@@ -490,10 +475,6 @@ export const borrowRecordsApi = {
       body: JSON.stringify({
         borrowDetailIds: data.items.map((i) => i.borrowDetailId),
       }),
-    }),
-  returnSingleBook: (detailId: string | number) =>
-    request<any>(`/borrow-details/${detailId}/return`, {
-      method: 'POST',
     }),
   markLost: (
     _borrowRecordId: string | number,
