@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json;
 using light_brary.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,8 +23,6 @@ namespace light_brary.Middleware
 
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            context.Response.ContentType = "application/json";
-
             var (statusCode, code, message) = exception switch
             {
                 NotFoundException notFound     => (HttpStatusCode.NotFound, "NOT_FOUND", notFound.Message),
@@ -47,12 +44,7 @@ namespace light_brary.Middleware
                 message
             };
 
-            var json = JsonSerializer.Serialize(responseObj, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            return context.Response.WriteAsync(json);
+            return context.Response.WriteAsJsonAsync(responseObj, options: null, contentType: "application/json");
         }
     }
 
