@@ -6,7 +6,7 @@ using light_brary.Entities;
 
 namespace light_brary.DTOs.Responses
 {
-    public class BookResponse
+    public record BookResponse
     {
         public Guid Id { get; set; }
         public string Title { get; set; } = null!;

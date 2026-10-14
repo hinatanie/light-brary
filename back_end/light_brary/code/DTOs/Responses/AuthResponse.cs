@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Responses
 {
-    public class AuthResponse
+    public record AuthResponse
     {
         public string AccessToken { get; set; } = null!;
         public string TokenType { get; set; } = "Bearer";

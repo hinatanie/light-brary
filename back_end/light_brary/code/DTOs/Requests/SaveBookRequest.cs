@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Requests
 {
-    public class SaveBookRequest
+    public record SaveBookRequest
     {
         [Required(ErrorMessage = "Tựa đề không được để trống")]
         [StringLength(250, MinimumLength = 1)]

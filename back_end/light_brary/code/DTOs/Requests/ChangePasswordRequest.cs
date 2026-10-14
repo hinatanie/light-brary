@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace light_brary.DTOs.Requests
 {
-    public class ChangePasswordRequest
+    public record ChangePasswordRequest
     {
         [Required(ErrorMessage = "Mật khẩu hiện tại không được để trống.")]
         public string CurrentPassword { get; set; } = null!;

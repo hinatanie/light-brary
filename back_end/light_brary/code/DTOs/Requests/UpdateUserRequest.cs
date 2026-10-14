@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Requests
 {
-    public class UpdateUserRequest
+    public record UpdateUserRequest
     {
         [Required(ErrorMessage = "Họ tên không được để trống.")]
         [StringLength(50, MinimumLength = 1)]

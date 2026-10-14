@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Responses
 {
-    public class BorrowDetailResponse
+    public record BorrowDetailResponse
     {
         public Guid Id { get; set; }
         public Guid BookCopyId { get; set; }

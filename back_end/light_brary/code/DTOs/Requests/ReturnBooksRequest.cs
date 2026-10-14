@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Requests
 {
-    public class ReturnBooksRequest
+    public record ReturnBooksRequest
     {
         [Required(ErrorMessage = "Danh sách chi tiết không được để trống.")]
         [MinLength(1, ErrorMessage = "Danh sách chi tiết không được để trống.")]

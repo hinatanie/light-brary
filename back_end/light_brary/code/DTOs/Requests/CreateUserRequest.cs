@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace light_brary.DTOs.Requests
 {
-    public class CreateUserRequest
+    public record CreateUserRequest
     {
         [Required(ErrorMessage = "Họ tên không được để trống.")]
         [StringLength(50, MinimumLength = 1)]

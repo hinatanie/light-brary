@@ -2,7 +2,7 @@ using System;
 
 namespace light_brary.DTOs.Responses
 {
-    public class BorrowRecordSummaryResponse
+    public record BorrowRecordSummaryResponse
     {
         public Guid Id { get; set; }
         public UserResponse User { get; set; } = null!;

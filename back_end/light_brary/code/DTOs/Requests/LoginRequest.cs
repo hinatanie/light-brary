@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Requests
 {
-    public class LoginRequest
+    public record LoginRequest
     {
         [Required(ErrorMessage = "Số điện thoại không được để trống.")]
         [StringLength(10)]

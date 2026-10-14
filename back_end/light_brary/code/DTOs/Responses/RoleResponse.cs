@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Responses
 {
-    public class RoleResponse
+    public record RoleResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;

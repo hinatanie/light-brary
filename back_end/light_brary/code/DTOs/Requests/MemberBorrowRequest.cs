@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace light_brary.DTOs.Requests
 {
-    public class MemberBorrowRequest
+    public record MemberBorrowRequest
     {
         [Required(ErrorMessage = "Mã đầu sách không được để trống.")]
         public Guid BookId { get; set; }

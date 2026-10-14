@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Requests
 {
-    public class SaveCategoryRequest
+    public record SaveCategoryRequest
     {
         [Required(ErrorMessage = "Tên thể loại không được để trống.")]
         [StringLength(150, MinimumLength = 1)]
