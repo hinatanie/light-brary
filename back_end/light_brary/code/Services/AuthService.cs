@@ -13,7 +13,7 @@ namespace light_brary.Services
         {
             signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
             var result = await signInManager.PasswordSignInAsync(
-                request.UserName.Trim(),
+                request.UserName,
                 request.Password,
                 isPersistent: false,
                 lockoutOnFailure: true);
