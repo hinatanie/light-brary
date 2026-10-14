@@ -14,12 +14,7 @@ namespace light_brary.Services
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync()
         {
             var categories = await categoryRepository.GetAllAsync();
-            return categories.Select(c => new CategoryResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description
-            }).ToList();
+            return categories.Select(MapToResponse).ToList();
         }
 
         public async Task<CategoryResponse> GetByIdAsync(Guid id)
@@ -28,12 +23,7 @@ namespace light_brary.Services
             if (category is null)
                 throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
 
-            return new CategoryResponse
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description
-            };
+            return MapToResponse(category);
         }
 
         public async Task<CategoryResponse> CreateAsync(SaveCategoryRequest request)
@@ -51,12 +41,7 @@ namespace light_brary.Services
 
             await categoryRepository.AddAsync(category);
 
-            return new CategoryResponse
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description
-            };
+            return MapToResponse(category);
         }
 
         public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
@@ -75,12 +60,7 @@ namespace light_brary.Services
 
             await categoryRepository.UpdateAsync(category);
 
-            return new CategoryResponse
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description
-            };
+            return MapToResponse(category);
         }
 
         public async Task DeleteAsync(Guid id)
@@ -94,5 +74,12 @@ namespace light_brary.Services
 
             await categoryRepository.DeleteAsync(category);
         }
+
+        private static CategoryResponse MapToResponse(Category category) => new()
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description
+        };
     }
 }

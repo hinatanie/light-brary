@@ -156,7 +156,8 @@ namespace light_brary.Services
                 throw new NotFoundException($"Không tìm thấy phiếu mượn với ID: {id}");
 
             var roles = await userRepository.GetRoleNamesByUserIdsAsync(new[] { record.UserId });
-            return MapToResponse(record, roles.GetValueOrDefault(record.UserId, new List<string>()));
+            return BorrowRecordResponse.FromEntity(record,
+                UserResponse.FromEntity(record.User, roles.GetValueOrDefault(record.UserId, new List<string>())));
         }
 
         public async Task<ReturnBooksResponse> ReturnMultipleBooksAsync(ReturnBooksRequest request)
@@ -274,7 +275,7 @@ namespace light_brary.Services
             return new BorrowRecordSummaryResponse
             {
                 Id = record.Id,
-                User = MapUserResponse(record.User, roles),
+                User = UserResponse.FromEntity(record.User, roles),
                 BorrowDate = record.BorrowDate,
                 DueDate = record.DueDate,
                 Status = record.Status.ToString(),
@@ -283,58 +284,9 @@ namespace light_brary.Services
                 ReturnedCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Returned),
                 LostCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Lost),
                 IsOverdue = isOverdue,
-                Details = record.BorrowDetails.Select(d => new BorrowDetailResponse
-                {
-                    Id = d.Id,
-                    BookCopyId = d.BookCopyId,
-                    Barcode = d.BookCopy?.Barcode ?? string.Empty,
-                    BookId = d.BookCopy?.BookId ?? Guid.Empty,
-                    BookTitle = d.BookCopy?.Book?.Title ?? string.Empty,
-                    Status = d.Status.ToString(),
-                    ReturnDate = d.ReturnDate
-                }).ToList()
+                Details = record.BorrowDetails.Select(BorrowDetailResponse.FromEntity).ToList()
             };
         }
 
-        private static BorrowRecordResponse MapToResponse(BorrowRecord record, List<string> roles)
-        {
-            var isOverdue = record.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && DateTime.UtcNow > record.DueDate;
-
-            return new BorrowRecordResponse
-            {
-                Id = record.Id,
-                User = MapUserResponse(record.User, roles),
-                BorrowDate = record.BorrowDate,
-                DueDate = record.DueDate,
-                Status = record.Status.ToString(),
-                Note = record.Note,
-                IsOverdue = isOverdue,
-                Details = record.BorrowDetails.Select(d => new BorrowDetailResponse
-                {
-                    Id = d.Id,
-                    BookCopyId = d.BookCopyId,
-                    Barcode = d.BookCopy?.Barcode ?? string.Empty,
-                    BookId = d.BookCopy?.BookId ?? Guid.Empty,
-                    BookTitle = d.BookCopy?.Book?.Title ?? string.Empty,
-                    Status = d.Status.ToString(),
-                    ReturnDate = d.ReturnDate
-                }).ToList()
-            };
-        }
-
-        private static UserResponse MapUserResponse(User? user, List<string> roles)
-        {
-            if (user == null) return new UserResponse();
-
-            return new UserResponse
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber!,
-                Address = user.Address,
-                Roles = roles,
-                CreatedAt = user.CreatedAt
-            };
-        }
     }
 }

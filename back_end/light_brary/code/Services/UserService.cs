@@ -4,7 +4,6 @@ using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
-using light_brary.Enums;
 using light_brary.Constants;
 using light_brary.Data;
 using Microsoft.AspNetCore.Identity;
@@ -21,13 +20,13 @@ namespace light_brary.Services
         {
             var users = (await userRepository.GetAllFilteredAsync(keyword, role)).ToList();
             var roles = await userRepository.GetRoleNamesByUserIdsAsync(users.Select(user => user.Id));
-            return users.Select(user => MapToResponse(user, roles.GetValueOrDefault(user.Id, new List<string>()))).ToList();
+            return users.Select(user => UserResponse.FromEntity(user, roles.GetValueOrDefault(user.Id, new List<string>()))).ToList();
         }
 
         public async Task<UserResponse> GetByIdAsync(Guid id)
         {
             var user = await FindUserAsync(id);
-            return MapToResponse(user, await userManager.GetRolesAsync(user));
+            return UserResponse.FromEntity(user, await userManager.GetRolesAsync(user));
         }
 
         public async Task<UserResponse> CreateAsync(CreateUserRequest request)
@@ -50,7 +49,7 @@ namespace light_brary.Services
             (await userManager.CreateAsync(user, request.Password)).EnsureSucceeded();
             (await userManager.AddToRoleAsync(user, RoleNames.USER)).EnsureSucceeded();
             await transaction.CommitAsync();
-            return MapToResponse(user, await userManager.GetRolesAsync(user));
+            return UserResponse.FromEntity(user, await userManager.GetRolesAsync(user));
         }
 
         public async Task<UserResponse> UpdateAsync(Guid id, UpdateUserRequest request)
@@ -67,7 +66,7 @@ namespace light_brary.Services
             user.UserName = phone;
             user.Address = request.Address.Trim();
             (await userManager.UpdateAsync(user)).EnsureSucceeded();
-            return MapToResponse(user, await userManager.GetRolesAsync(user));
+            return UserResponse.FromEntity(user, await userManager.GetRolesAsync(user));
         }
 
         public async Task DeleteAsync(Guid id)
@@ -92,8 +91,8 @@ namespace light_brary.Services
         {
             var user = await FindUserAsync(userId);
             var records = await borrowRecordRepository.GetByUserIdAsync(userId);
-            var userResponse = MapToResponse(user, await userManager.GetRolesAsync(user));
-            return records.Select(record => MapToBorrowRecordResponse(record, userResponse)).ToList();
+            var userResponse = UserResponse.FromEntity(user, await userManager.GetRolesAsync(user));
+            return records.Select(record => BorrowRecordResponse.FromEntity(record, userResponse)).ToList();
         }
 
         public async Task AdminUpdatePasswordAsync(Guid id, AdminUpdatePasswordRequest request)
@@ -118,43 +117,5 @@ namespace light_brary.Services
                 ?? throw new NotFoundException($"Không tìm thấy người dùng với ID: {id}");
         }
 
-        private static UserResponse MapToResponse(User user, IEnumerable<string> roles)
-        {
-            return new UserResponse
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber!,
-                Address = user.Address,
-                Roles = roles.ToList(),
-                CreatedAt = user.CreatedAt
-            };
-        }
-
-        private static BorrowRecordResponse MapToBorrowRecordResponse(BorrowRecord record, UserResponse user)
-        {
-            var isOverdue = record.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && DateTime.UtcNow > record.DueDate;
-
-            return new BorrowRecordResponse
-            {
-                Id = record.Id,
-                User = user,
-                BorrowDate = record.BorrowDate,
-                DueDate = record.DueDate,
-                Status = record.Status.ToString(),
-                Note = record.Note,
-                IsOverdue = isOverdue,
-                Details = record.BorrowDetails.Select(d => new BorrowDetailResponse
-                {
-                    Id = d.Id,
-                    BookCopyId = d.BookCopyId,
-                    Barcode = d.BookCopy?.Barcode ?? string.Empty,
-                    BookId = d.BookCopy?.BookId ?? Guid.Empty,
-                    BookTitle = d.BookCopy?.Book?.Title ?? string.Empty,
-                    Status = d.Status.ToString(),
-                    ReturnDate = d.ReturnDate
-                }).ToList()
-            };
-        }
     }
 }
