@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace light_brary.Data
 {
-    public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options)
+    public class AppDbContext(DbContextOptions<AppDbContext> options)
+        : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options)
     {
         public DbSet<Book> Books => Set<Book>();
         public DbSet<BookCopy> BookCopies => Set<BookCopy>();

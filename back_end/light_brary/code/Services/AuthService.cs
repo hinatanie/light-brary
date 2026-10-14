@@ -15,15 +15,15 @@ namespace light_brary.Services
     {
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            var user = await userManager.FindByNameAsync(request.PhoneNumber.Trim());
-            if (user is null)
-                throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
+            var user = await userManager.FindByNameAsync(request.PhoneNumber.Trim())
+                ?? throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
 
             var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
             if (!result.Succeeded)
                 throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
 
             var response = await userService.GetByIdAsync(user.Id);
+
             return CreateAuthResponse(user, response);
         }
 
