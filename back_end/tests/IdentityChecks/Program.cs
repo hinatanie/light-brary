@@ -123,7 +123,7 @@ try
     await Request(HttpMethod.Get, "/api/me", HttpStatusCode.Unauthorized, token: "invalid-token");
 
     var adminLogin = await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.OK,
-        new { phoneNumber = "0999999999", password = legacyPassword });
+        new { userName = "0999999999", password = legacyPassword });
     var adminToken = adminLogin.GetProperty("accessToken").GetString()!;
     Check(adminLogin.GetProperty("user").GetProperty("id").GetGuid() == adminId, "Legacy login changed user ID.");
     var roles = await Request(HttpMethod.Get, "/api/roles", HttpStatusCode.OK, token: adminToken);
@@ -147,7 +147,7 @@ try
     await Request(HttpMethod.Get, "/api/me", HttpStatusCode.OK, token: memberToken);
     await Request(HttpMethod.Get, "/api/roles", HttpStatusCode.Forbidden, token: memberToken);
     await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.Unauthorized,
-        new { phoneNumber = phone, password = "incorrect" });
+        new { userName = phone, password = "incorrect" });
 
     var changedPassword = $"Changed-{Guid.NewGuid()}!";
     await Request(HttpMethod.Put, "/api/me/password", HttpStatusCode.Unauthorized,
@@ -155,23 +155,23 @@ try
     await Request(HttpMethod.Put, "/api/me/password", HttpStatusCode.OK,
         new { currentPassword = password, newPassword = changedPassword }, memberToken);
     await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.Unauthorized,
-        new { phoneNumber = phone, password });
+        new { userName = phone, password });
     await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.OK,
-        new { phoneNumber = phone, password = changedPassword });
+        new { userName = phone, password = changedPassword });
 
     phone = "0912345679";
     await Request(HttpMethod.Put, "/api/me", HttpStatusCode.OK,
         new { fullName = "Updated Member", phoneNumber = phone, address = "Updated address" }, memberToken);
     await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.Unauthorized,
-        new { phoneNumber = "0912345678", password = changedPassword });
+        new { userName = "0912345678", password = changedPassword });
     await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.OK,
-        new { phoneNumber = phone, password = changedPassword });
+        new { userName = phone, password = changedPassword });
 
     var resetPassword = $"Reset-{Guid.NewGuid()}!";
     await Request(HttpMethod.Put, $"/api/users/{memberId}/password", HttpStatusCode.OK,
         new { newPassword = resetPassword }, adminToken);
     await Request(HttpMethod.Post, "/api/auth/login", HttpStatusCode.OK,
-        new { phoneNumber = phone, password = resetPassword });
+        new { userName = phone, password = resetPassword });
 
     var customRole = await Request(HttpMethod.Post, "/api/roles", HttpStatusCode.Created,
         new { name = "TestReader" }, adminToken);

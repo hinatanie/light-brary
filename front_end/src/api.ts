@@ -70,7 +70,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // ─── 1. Auth API ─────────────────────────────────────────────────────────────
 export const authApi = {
-  login: async (data: { phoneNumber: string; password: string }): Promise<AuthResponse> => {
+  login: async (data: { userName: string; password: string }): Promise<AuthResponse> => {
     const raw = await request<any>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),

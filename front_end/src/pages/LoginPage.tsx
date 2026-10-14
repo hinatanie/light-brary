@@ -89,7 +89,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
 
     try {
       const res = await authApi.login({
-        phoneNumber: phoneNumber.trim(),
+        userName: phoneNumber.trim(),
         password,
       });
 

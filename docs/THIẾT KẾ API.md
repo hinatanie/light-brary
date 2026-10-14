@@ -139,14 +139,14 @@ Content-Type: application/json
 Request — `LoginRequest`:
 ```
 {
-  "phoneNumber": "0901234567",
+  "userName": "0901234567",
   "password": "Example@12345"
 }
 ```
 
 |Trường|Quy định|
 |---|---|
-|`phoneNumber`|Bắt buộc, chuẩn hóa giống lúc đăng ký|
+|`userName`|Bắt buộc, tối đa 256 ký tự; bỏ khoảng trắng đầu/cuối. Tài khoản hiện tại dùng số điện thoại làm tên đăng nhập|
 |`password`|Bắt buộc; giữ nguyên giá trị, không tự trim hoặc đổi chữ hoa/chữ thường|
 Response — `200 OK`, `LoginResponse`:
 ```
