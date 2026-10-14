@@ -15,13 +15,6 @@ namespace light_brary.Repositories
                 .FirstOrDefaultAsync(b => b.ISBN == isbn);
         }
 
-        public async Task<IEnumerable<Book>> GetByCategoryIdAsync(Guid categoryId)
-        {
-            return await _context.Books
-                .Where(b => b.CategoryId == categoryId)
-                .ToListAsync();
-        }
-
         public async Task<Book?> GetWithDetailsAsync(Guid id)
         {
             return await _context.Books

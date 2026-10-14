@@ -34,7 +34,6 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.ADMIN));
     options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN));
-    options.AddPolicy("UserOrAbove", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN, RoleNames.USER));
 });
 
 /* Đăng ký các Serivce */

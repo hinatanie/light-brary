@@ -175,50 +175,6 @@ namespace light_brary.Services
             return MapToResponse(record, roles.GetValueOrDefault(record.UserId, new List<string>()));
         }
 
-        public async Task<BorrowDetailActionResponse> ReturnSingleBookAsync(Guid borrowDetailId)
-        {
-            using var tx = await context.Database.BeginTransactionAsync();
-            try
-            {
-                var detail = await context.BorrowDetails
-                    .Include(d => d.BookCopy)
-                    .Include(d => d.BorrowRecord)
-                        .ThenInclude(r => r.BorrowDetails)
-                    .FirstOrDefaultAsync(d => d.Id == borrowDetailId);
-
-                if (detail is null)
-                    throw new NotFoundException($"Không tìm thấy chi tiết mượn với ID: {borrowDetailId}");
-
-                if (detail.Status != BorrowDetailStatus.Borrowing)
-                    throw new ConflictException($"Chi tiết mượn không ở trạng thái đang mượn (trạng thái hiện tại: {detail.Status}).");
-
-                detail.Status = BorrowDetailStatus.Returned;
-                detail.ReturnDate = DateTime.UtcNow;
-                detail.BookCopy.Status = BookCopyStatus.Available;
-
-                RecalculateRecordStatus(detail.BorrowRecord);
-
-                await context.SaveChangesAsync();
-                await tx.CommitAsync();
-
-                return new BorrowDetailActionResponse
-                {
-                    Id = detail.Id,
-                    BorrowRecordId = detail.BorrowRecordId,
-                    BookCopyId = detail.BookCopyId,
-                    Status = detail.Status.ToString(),
-                    ReturnDate = detail.ReturnDate,
-                    BookCopyStatus = detail.BookCopy.Status.ToString(),
-                    BorrowRecordStatus = detail.BorrowRecord.Status.ToString()
-                };
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
-        }
-
         public async Task<ReturnBooksResponse> ReturnMultipleBooksAsync(ReturnBooksRequest request)
         {
             if (request.BorrowDetailIds == null || !request.BorrowDetailIds.Any())

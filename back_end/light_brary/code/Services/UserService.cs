@@ -96,37 +96,6 @@ namespace light_brary.Services
             return records.Select(record => MapToBorrowRecordResponse(record, userResponse)).ToList();
         }
 
-        public async Task<IEnumerable<BorrowedBookResponse>> GetUserBorrowedBooksAsync(Guid userId)
-        {
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
-
-            var records = await borrowRecordRepository.GetByUserIdAsync(userId);
-
-            var list = new List<BorrowedBookResponse>();
-            foreach (var record in records)
-            {
-                foreach (var detail in record.BorrowDetails.Where(d => d.Status == BorrowDetailStatus.Borrowing))
-                {
-                    list.Add(new BorrowedBookResponse
-                    {
-                        BorrowDetailId = detail.Id,
-                        BorrowRecordId = record.Id,
-                        BookCopyId = detail.BookCopyId,
-                        Barcode = detail.BookCopy?.Barcode ?? string.Empty,
-                        BookId = detail.BookCopy?.BookId ?? Guid.Empty,
-                        BookTitle = detail.BookCopy?.Book?.Title ?? string.Empty,
-                        BorrowDate = record.BorrowDate,
-                        DueDate = record.DueDate,
-                        IsOverdue = DateTime.UtcNow > record.DueDate
-                    });
-                }
-            }
-
-            return list.OrderBy(b => b.DueDate).ThenBy(b => b.BorrowDetailId).ToList();
-        }
-
         public async Task AdminUpdatePasswordAsync(Guid id, AdminUpdatePasswordRequest request)
         {
             var user = await FindUserAsync(id);
