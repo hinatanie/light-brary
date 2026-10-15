@@ -30,7 +30,7 @@ namespace light_brary.Services
         {
             var book = await bookRepository.GetWithDetailsAsync(id);
             if (book is null)
-                throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
             return MapToResponse(book);
         }
@@ -39,12 +39,12 @@ namespace light_brary.Services
         {
             var category = await categoryRepository.GetByIdAsync(request.CategoryId);
             if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {request.CategoryId}");
+                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
             var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
             if (existingIsbn is not null)
-                throw new ConflictException($"Mã ISBN '{isbn}' đã tồn tại.");
+                throw AppException.Conflict($"Mã ISBN '{isbn}' đã tồn tại.");
 
             var book = new Book
             {
@@ -67,16 +67,16 @@ namespace light_brary.Services
         {
             var book = await bookRepository.GetWithDetailsAsync(id);
             if (book is null)
-                throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
             var category = await categoryRepository.GetByIdAsync(request.CategoryId);
             if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {request.CategoryId}");
+                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
             var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
             if (existingIsbn is not null && existingIsbn.Id != id)
-                throw new ConflictException($"Mã ISBN '{isbn}' đã tồn tại.");
+                throw AppException.Conflict($"Mã ISBN '{isbn}' đã tồn tại.");
 
             book.Title = request.Title.Trim();
             book.Author = request.Author.Trim();
@@ -95,10 +95,10 @@ namespace light_brary.Services
         {
             var book = await bookRepository.GetWithDetailsAsync(id);
             if (book is null)
-                throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
             if (book.BookCopies != null && book.BookCopies.Any())
-                throw new ConflictException("Không thể xóa đầu sách đang có bản sao vật lý.");
+                throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao vật lý.");
 
             await bookRepository.DeleteAsync(book);
         }

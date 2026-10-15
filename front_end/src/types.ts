@@ -103,9 +103,3 @@ export interface MeResponse {
   roles: string[];
   mustChangePassword?: boolean;
 }
-
-export interface UpdateUserRequest {
-  fullName: string;
-  phoneNumber: string;
-  address?: string | null;
-}

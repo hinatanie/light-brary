@@ -5,7 +5,7 @@ import { authApi } from '../api';
 import {
   LogIn,
   Lock,
-  Phone,
+  User as UserIcon,
   AlertCircle,
   RefreshCw,
   Shield,
@@ -34,7 +34,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
     return 'member';
   }, [roleMode, location.pathname]);
 
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +89,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
 
     try {
       const res = await authApi.login({
-        userName: phoneNumber.trim(),
+        userName: userName.trim(),
         password,
       });
 
@@ -120,7 +120,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
       if (err.status === 423 || err.code === 'ACCOUNT_LOCKED') {
         setError('Tài khoản đã bị tạm khóa do nhập sai mật khẩu quá 5 lần. Vui lòng thử lại sau 15 phút.');
       } else {
-        setError(err.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại số điện thoại hoặc mật khẩu.');
+        setError(err.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại tên đăng nhập hoặc mật khẩu.');
       }
     } finally {
       setLoading(false);
@@ -207,14 +207,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
       <form onSubmit={handleSubmit}>
         <div className="form-group" style={{ marginBottom: '16px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-            <Phone size={14} /> Số điện thoại *
+            <UserIcon size={14} /> {currentMode === 'member' ? 'Mã số sinh viên' : 'Tên đăng nhập'} *
           </label>
           <input
-            type="tel"
+            type="text"
             required
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="Số điện thoại"
+            maxLength={256}
+            autoComplete="username"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder={currentMode === 'member' ? 'Mã số sinh viên' : 'Tên đăng nhập'}
             style={{
               width: '100%',
               padding: '10px 14px',
@@ -291,10 +293,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
         {currentMode === 'member' ? (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '16px', color: '#94a3b8' }}>
-              Chưa có tài khoản độc giả?{' '}
-              <Link to="/register" style={{ color: '#f59e0b', textDecoration: 'none', fontWeight: 600 }}>
-                Đăng ký độc giả mới
-              </Link>
+              Đăng nhập bằng tài khoản được nhà trường cấp.
             </div>
 
             {/* Portal Switcher for Staff/Admin */}

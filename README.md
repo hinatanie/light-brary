@@ -6,6 +6,7 @@ Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở B
 
 ## 🚀 Tính Năng Chính
 
+- **Tài khoản được nhà trường cấp sẵn**: Sinh viên đăng nhập bằng mã số sinh viên lưu tại `UserName`; số điện thoại là thông tin liên hệ. Không có đăng ký công khai hoặc API tạo người dùng; cơ chế seed Admin ban đầu vẫn được giữ.
 - **Quản lý đầu sách & bản sao vật lý**: Quản lý thông tin sách (tiêu đề, tác giả, ISBN, ảnh bìa, thể loại) và bản sao từng cuốn (mã barcode, tình trạng kệ).
 - **Quy trình mượn - trả sách an toàn**: Lập phiếu mượn nhiều cuốn, gia hạn, trả sách tính phí phạt và báo mất sách (`Lost`).
 - **Chống Race Condition tuyệt đối**: Cơ chế khóa dòng `SELECT ... FOR UPDATE` trong transaction kết hợp với Partial Unique Constraint `UX_BorrowDetails_ActiveCopy` ở mức CSDL ngăn chặn 100% tình trạng 2 người cùng mượn 1 cuốn sách đồng thời.
@@ -151,7 +152,7 @@ Giao diện người dùng sẽ chạy tại: `http://localhost:3000` (hoặc `h
 
 Khi hệ thống khởi chạy lần đầu tiên trên môi trường Development:
 
-- **Số điện thoại đăng nhập**: `0916114536`
+- **Tên đăng nhập**: Theo cấu hình `Seed:AdminUserName`; nếu chưa cấu hình, dùng giá trị `Seed:AdminPhone` (mặc định `0999999999`) để tương thích cấu hình cũ.
 - **Email**: `admin@lightbrary.vn`
 - **Mật khẩu khởi tạo**: `ThuVienSach2026!`
 - **Lưu ý**: Hệ thống đã bật cờ `MustChangePassword`. Sau khi đăng nhập, hệ thống sẽ tự động yêu cầu bạn đổi sang mật khẩu mới trước khi tiếp tục.

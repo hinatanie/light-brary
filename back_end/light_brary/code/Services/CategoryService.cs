@@ -21,7 +21,7 @@ namespace light_brary.Services
         {
             var category = await categoryRepository.GetByIdAsync(id);
             if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
             return MapToResponse(category);
         }
@@ -31,7 +31,7 @@ namespace light_brary.Services
             var name = request.Name.Trim();
             var existing = await categoryRepository.GetByNameAsync(name);
             if (existing is not null)
-                throw new ConflictException($"Thể loại '{name}' đã tồn tại.");
+                throw AppException.Conflict($"Thể loại '{name}' đã tồn tại.");
 
             var category = new Category
             {
@@ -48,12 +48,12 @@ namespace light_brary.Services
         {
             var category = await categoryRepository.GetByIdAsync(id);
             if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
             var name = request.Name.Trim();
             var existing = await categoryRepository.GetByNameAsync(name);
             if (existing is not null && existing.Id != id)
-                throw new ConflictException($"Thể loại '{name}' đã tồn tại.");
+                throw AppException.Conflict($"Thể loại '{name}' đã tồn tại.");
 
             category.Name = name;
             category.Description = request.Description?.Trim();
@@ -67,10 +67,10 @@ namespace light_brary.Services
         {
             var category = await categoryRepository.GetWithBooksAsync(id);
             if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
             if (category.Books != null && category.Books.Any())
-                throw new ConflictException("Không thể xóa thể loại đang chứa các đầu sách.");
+                throw AppException.Conflict("Không thể xóa thể loại đang chứa các đầu sách.");
 
             await categoryRepository.DeleteAsync(category);
         }

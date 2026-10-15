@@ -25,11 +25,7 @@ namespace light_brary.Middleware
         {
             var (statusCode, code, message) = exception switch
             {
-                NotFoundException notFound     => (HttpStatusCode.NotFound, "NOT_FOUND", notFound.Message),
-                ConflictException conflict     => (HttpStatusCode.Conflict, "CONFLICT", conflict.Message),
-                BusinessException biz          => (HttpStatusCode.BadRequest, "BAD_REQUEST", biz.Message),
-                UnauthorizedException unauth   => (HttpStatusCode.Unauthorized, "UNAUTHORIZED", unauth.Message),
-                ForbiddenException forbidden   => (HttpStatusCode.Forbidden, "FORBIDDEN", forbidden.Message),
+                AppException appEx            => (appEx.StatusCode, appEx.Code, appEx.Message),
                 ArgumentException argEx        => (HttpStatusCode.BadRequest, "BAD_REQUEST", argEx.Message),
                 DbUpdateException              => (HttpStatusCode.Conflict, "DATABASE_CONFLICT", "Xung đột dữ liệu cơ sở dữ liệu."),
                 _                              => (HttpStatusCode.InternalServerError, "INTERNAL_ERROR", "Đã xảy ra lỗi hệ thống không mong muốn.")

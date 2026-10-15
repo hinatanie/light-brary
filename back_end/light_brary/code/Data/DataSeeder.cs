@@ -1,6 +1,6 @@
 using light_brary.Constants;
 using light_brary.Entities;
-using light_brary.Services.Authentication;
+using light_brary.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +20,7 @@ namespace light_brary.Data
                     {
                         Id = Guid.NewGuid(),
                         Name = roleName
-                    })).EnsureSucceeded();
+                    })).ThrowIfFailed();
                 }
             }
 
@@ -31,17 +31,18 @@ namespace light_brary.Data
                 throw new InvalidOperationException("Cần cấu hình Seed:AdminPassword bằng User Secrets hoặc biến môi trường Seed__AdminPassword để tạo Admin đầu tiên.");
 
             var phone = configuration["Seed:AdminPhone"] ?? "0999999999";
+            var userName = configuration["Seed:AdminUserName"] ?? phone;
             var admin = new User
             {
                 Id = Guid.NewGuid(),
-                UserName = phone,
+                UserName = userName.Trim(),
                 PhoneNumber = phone,
                 FullName = "Administrator",
                 Address = "Hệ thống LightBrary",
                 CreatedAt = DateTime.UtcNow
             };
-            (await userManager.CreateAsync(admin, password)).EnsureSucceeded();
-            (await userManager.AddToRoleAsync(admin, RoleNames.ADMIN)).EnsureSucceeded();
+            (await userManager.CreateAsync(admin, password)).ThrowIfFailed();
+            (await userManager.AddToRoleAsync(admin, RoleNames.ADMIN)).ThrowIfFailed();
         }
     }
 }

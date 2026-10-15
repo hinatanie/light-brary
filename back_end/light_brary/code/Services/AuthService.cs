@@ -1,7 +1,7 @@
 using light_brary.DTOs.Requests;
 using light_brary.Exceptions;
 using light_brary.Entities;
-using light_brary.Services.Authentication;
+using light_brary.Repositories;
 using Microsoft.AspNetCore.Identity;
 
 namespace light_brary.Services
@@ -9,48 +9,46 @@ namespace light_brary.Services
     public class AuthService(
         SignInManager<User> signInManager,
         UserService userService,
-        UserManager<User> userManager)
+        UserManager<User> userManager,
+        UserRepository userRepository)
     {
         public async Task LoginAsync(LoginRequest request)
         {
             signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
             var result = await signInManager.PasswordSignInAsync(
-                request.UserName,
+                request.UserName.Trim(),
                 request.Password,
                 isPersistent: false,
                 lockoutOnFailure: true);
 
             if (result.IsLockedOut)
-                throw new UnauthorizedException("Tài khoản của bạn đã bị khóa, liên hệ quản thư để được hỗ trợ.");
+                throw AppException.Unauthorized("Tài khoản của bạn đã bị khóa, liên hệ quản thư để được hỗ trợ.");
 
             if (!result.Succeeded)
-                throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không chính xác.");
-        }
-
-        public async Task RegisterAsync(RegisterRequest request)
-        {
-            var user = await userService.CreateAsync(new CreateUserRequest
-            {
-                FullName = request.FullName,
-                PhoneNumber = request.PhoneNumber,
-                Address = request.Address,
-                Password = request.Password
-            });
-            await LoginAsync(new LoginRequest
-            {
-                UserName = user.PhoneNumber,
-                Password = request.Password
-            });
+                throw AppException.Unauthorized("Tên đăng nhập hoặc mật khẩu không chính xác.");
         }
 
         public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
-            var user = await userManager.FindByIdAsync(userId.ToString())
-                ?? throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
-            if (request.NewPassword == request.CurrentPassword)
-                throw new BusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+            var user = await userService.GetRequiredUserAsync(userId);
 
-            (await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)).EnsureSucceeded();
+            if (request.NewPassword == request.CurrentPassword)
+                throw AppException.BadRequest("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+
+            (await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)).ThrowIfFailed();
+        }
+
+        public async Task ChangePhoneNumberAsync(Guid userId, ChangePhoneNumberRequest request)
+        {
+            var user = await userService.GetRequiredUserAsync(userId);
+
+            if (request.NewPhoneNumber == user.PhoneNumber)
+                throw AppException.BadRequest("Số điện thoại mới không được trùng với số điện thoại hiện tại.");
+
+            if (await userRepository.ExistsByPhoneNumberAsync(request.NewPhoneNumber))
+                throw AppException.Conflict("Số điện thoại này đã được sử dụng.");
+
+            (await userManager.SetPhoneNumberAsync(user, request.NewPhoneNumber)).ThrowIfFailed();
         }
     }
 }

@@ -16,22 +16,21 @@ namespace light_brary.Services
     public class BorrowRecordService(
         AppDbContext context,
         BorrowRecordRepository borrowRecordRepository,
-        UserRepository userRepository)
+        UserRepository userRepository,
+        UserService userService)
     {
         public async Task<BorrowRecordResponse> CreateAsync(CreateBorrowRecordRequest request)
         {
-            var user = await userRepository.GetByIdAsync(request.UserId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {request.UserId}");
+            var user = await userService.GetRequiredUserAsync(request.UserId);
 
             if (request.BookCopyIds == null || !request.BookCopyIds.Any())
-                throw new BusinessException("Danh sách bản sao sách không được để trống.");
+                throw AppException.BadRequest("Danh sách bản sao sách không được để trống.");
 
             if (request.BookCopyIds.Distinct().Count() != request.BookCopyIds.Count)
-                throw new BusinessException("Danh sách bản sao sách chứa ID bị trùng lặp.");
+                throw AppException.BadRequest("Danh sách bản sao sách chứa ID bị trùng lặp.");
 
             if (request.DueDate <= DateTime.UtcNow)
-                throw new BusinessException("Hạn trả sách phải sau thời điểm hiện tại.");
+                throw AppException.BadRequest("Hạn trả sách phải sau thời điểm hiện tại.");
 
             await using var tx = await context.Database.BeginTransactionAsync();
             var copies = await context.BookCopies
@@ -43,14 +42,14 @@ namespace light_brary.Services
             {
                 var foundIds = copies.Select(c => c.Id).ToHashSet();
                 var missingId = request.BookCopyIds.First(id => !foundIds.Contains(id));
-                throw new NotFoundException($"Không tìm thấy bản sao sách với ID: {missingId}");
+                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {missingId}");
             }
 
             foreach (var copy in copies)
             {
                 if (copy.Status != BookCopyStatus.Available)
                 {
-                    throw new ConflictException($"Bản sao sách '{copy.Barcode}' không sẵn sàng để mượn (trạng thái hiện tại: {copy.Status}).");
+                    throw AppException.Conflict($"Bản sao sách '{copy.Barcode}' không sẵn sàng để mượn (trạng thái hiện tại: {copy.Status}).");
                 }
 
                 copy.Status = BookCopyStatus.Borrowed;
@@ -80,13 +79,11 @@ namespace light_brary.Services
 
         public async Task<BorrowRecordResponse> BorrowForMemberAsync(Guid userId, MemberBorrowRequest request)
         {
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user is null)
-                throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
+            var user = await userService.GetRequiredUserAsync(userId);
 
             var dueDate = request.DueDate ?? DateTime.UtcNow.AddDays(14);
             if (dueDate <= DateTime.UtcNow)
-                throw new BusinessException("Hạn trả sách phải sau thời điểm hiện tại.");
+                throw AppException.BadRequest("Hạn trả sách phải sau thời điểm hiện tại.");
 
             await using var tx = await context.Database.BeginTransactionAsync();
             BookCopy? copy = null;
@@ -97,10 +94,10 @@ namespace light_brary.Services
                     .FirstOrDefaultAsync(bc => bc.Id == request.BookCopyId.Value && bc.BookId == request.BookId);
 
                 if (copy is null)
-                    throw new NotFoundException($"Không tìm thấy bản sao sách với ID: {request.BookCopyId.Value}");
+                    throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {request.BookCopyId.Value}");
 
                 if (copy.Status != BookCopyStatus.Available)
-                    throw new ConflictException($"Bản sao sách '{copy.Barcode}' không sẵn sàng để mượn (trạng thái: {copy.Status}).");
+                    throw AppException.Conflict($"Bản sao sách '{copy.Barcode}' không sẵn sàng để mượn (trạng thái: {copy.Status}).");
             }
             else
             {
@@ -111,7 +108,7 @@ namespace light_brary.Services
                     .FirstOrDefaultAsync();
 
                 if (copy is null)
-                    throw new ConflictException("Đầu sách này hiện không còn bản sao nào có sẵn trên kệ để cho mượn.");
+                    throw AppException.Conflict("Đầu sách này hiện không còn bản sao nào có sẵn trên kệ để cho mượn.");
             }
 
             copy.Status = BookCopyStatus.Borrowed;
@@ -153,7 +150,7 @@ namespace light_brary.Services
         {
             var record = await borrowRecordRepository.GetWithDetailsAsync(id);
             if (record is null)
-                throw new NotFoundException($"Không tìm thấy phiếu mượn với ID: {id}");
+                throw AppException.NotFound($"Không tìm thấy phiếu mượn với ID: {id}");
 
             var roles = await userRepository.GetRoleNamesByUserIdsAsync(new[] { record.UserId });
             return BorrowRecordResponse.FromEntity(record,
@@ -163,10 +160,10 @@ namespace light_brary.Services
         public async Task<ReturnBooksResponse> ReturnMultipleBooksAsync(ReturnBooksRequest request)
         {
             if (request.BorrowDetailIds == null || !request.BorrowDetailIds.Any())
-                throw new BusinessException("Danh sách chi tiết mượn không được để trống.");
+                throw AppException.BadRequest("Danh sách chi tiết mượn không được để trống.");
 
             if (request.BorrowDetailIds.Distinct().Count() != request.BorrowDetailIds.Count)
-                throw new BusinessException("Danh sách chi tiết mượn chứa ID bị trùng lặp.");
+                throw AppException.BadRequest("Danh sách chi tiết mượn chứa ID bị trùng lặp.");
 
             await using var tx = await context.Database.BeginTransactionAsync();
             var details = await context.BorrowDetails
@@ -180,11 +177,11 @@ namespace light_brary.Services
             {
                 var foundIds = details.Select(d => d.Id).ToHashSet();
                 var missingId = request.BorrowDetailIds.First(id => !foundIds.Contains(id));
-                throw new NotFoundException($"Không tìm thấy chi tiết mượn với ID: {missingId}");
+                throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {missingId}");
             }
 
             if (details.Any(d => d.Status != BorrowDetailStatus.Borrowing))
-                throw new ConflictException("Một hoặc nhiều cuốn sách không ở trạng thái đang mượn.");
+                throw AppException.Conflict("Một hoặc nhiều cuốn sách không ở trạng thái đang mượn.");
 
             var now = DateTime.UtcNow;
             var affectedRecords = new HashSet<BorrowRecord>();
@@ -230,10 +227,10 @@ namespace light_brary.Services
                 .FirstOrDefaultAsync(d => d.Id == borrowDetailId);
 
             if (detail is null)
-                throw new NotFoundException($"Không tìm thấy chi tiết mượn với ID: {borrowDetailId}");
+                throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {borrowDetailId}");
 
             if (detail.Status != BorrowDetailStatus.Borrowing)
-                throw new ConflictException($"Chi tiết mượn không ở trạng thái đang mượn (trạng thái hiện tại: {detail.Status}).");
+                throw AppException.Conflict($"Chi tiết mượn không ở trạng thái đang mượn (trạng thái hiện tại: {detail.Status}).");
 
             detail.Status = BorrowDetailStatus.Lost;
             detail.ReturnDate = null;

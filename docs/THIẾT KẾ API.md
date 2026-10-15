@@ -77,47 +77,15 @@ Lỗi validation có thêm `errors`:
 
 # Auth
 
+Tài khoản được nhà trường cấp sẵn. Hệ thống không cung cấp API đăng ký hoặc tạo người dùng.
+
+`UserService.CreateAsync(userName, fullName, phoneNumber, address, password)` được giữ để cấp tài khoản nội bộ. `userName` là mã số sinh viên, độc lập với số điện thoại liên hệ; Identity kiểm tra username trùng. Tạo user kèm role mặc định `User` trong cùng transaction.
+
 |Method|Endpoint|Chức năng|Quyền|
 |---|---|---|---|
-|POST|`/api/auth/register`|Độc giả tự đăng ký tài khoản|Công khai|
 |POST|`/api/auth/login`|Đăng nhập và nhận access token|Công khai|
 |POST|`/api/auth/change-password`|Đổi mật khẩu của chính mình|Đã đăng nhập|
-**1. Đăng ký tài khoản**
-```
-POST /api/auth/register
-Content-Type: application/json
-```
-Request — `RegisterRequest`:
-```
-{
-  "fullName": "Nguyễn Văn An",
-  "phoneNumber": "0901234567",
-  "address": "Quận 11, TP.HCM",
-  "password": "Example@12345"
-}
-```
-
-|Trường|Quy định|
-|---|---|
-|`fullName`|Bắt buộc, không chỉ chứa khoảng trắng, tối đa 150 ký tự|
-|`phoneNumber`|Bắt buộc, tối đa 50 ký tự, chuẩn hóa trước khi kiểm tra duy nhất|
-|`address`|Không bắt buộc, cho phép `null`, tối đa 255 ký tự|
-|`password`|Bắt buộc, đáp ứng chính sách mật khẩu của ứng dụng|
-Không nhận `role`, `roleIds`, `passwordHash` hoặc `createdAt` từ client.
-`confirmPassword` có thể kiểm tra ở giao diện, không cần đưa vào hợp đồng API.
-Response — `200 OK`: tạo tài khoản, gán vai trò mặc định rồi đăng nhập bằng Identity. Response token có cùng cấu trúc với `/api/auth/login` bên dưới. Client dùng access token để gọi `/api/me` lấy `UserResponse`.
-
-Quy tắc xử lý:
-- Băm mật khẩu.
-- Tạo tài khoản và gán role `USER` trong cùng transaction.
-- Chỉ trả thành công khi cả tài khoản và phép gán role đã được lưu.
-
-|Trường hợp lỗi|HTTP status|Code|
-|---|---|---|
-|Dữ liệu hoặc mật khẩu không hợp lệ|`400`|`VALIDATION_ERROR`|
-|Số điện thoại đã được sử dụng|`409`|`PHONE_NUMBER_EXISTS`|
-**Khác biệt với `POST /api/users`:** `/api/auth/register` dành cho người dùng tự đăng ký và luôn được gán `USER`; `/api/users` dành cho quản trị viên tạo tài khoản.
-**2. Đăng nhập**
+**Đăng nhập**
 ```
 POST /api/auth/login
 Content-Type: application/json
@@ -125,14 +93,14 @@ Content-Type: application/json
 Request — `LoginRequest`:
 ```
 {
-  "userName": "0901234567",
+  "userName": "SV20260001234",
   "password": "Example@12345"
 }
 ```
 
 |Trường|Quy định|
 |---|---|
-|`userName`|Bắt buộc, tối đa 10 ký tự; bỏ khoảng trắng đầu/cuối. Tài khoản hiện tại dùng số điện thoại làm tên đăng nhập|
+|`userName`|Bắt buộc, tối đa 256 ký tự; bỏ khoảng trắng đầu/cuối. Sinh viên dùng mã số sinh viên làm tên đăng nhập, độc lập với số điện thoại liên hệ|
 |`password`|Bắt buộc; giữ nguyên giá trị, không tự trim hoặc đổi chữ hoa/chữ thường|
 Response — `200 OK`, `AccessTokenResponse` có sẵn của ASP.NET Core Identity:
 ```json
@@ -159,17 +127,17 @@ GET /api/me
 Authorization: Bearer <jwt-access-token>
 ```
 JWT cần chứa định danh user và các role được server đọc từ database. Không nhận role do client gửi để phát hành token.
-Số điện thoại không tồn tại hoặc mật khẩu không đúng đều trả cùng lỗi:
+Tên đăng nhập không tồn tại hoặc mật khẩu không đúng đều trả cùng lỗi:
 ```
 {
   "type": "about:blank",
   "title": "Đăng nhập thất bại",
   "status": 401,
-  "detail": "Số điện thoại hoặc mật khẩu không đúng.",
+  "detail": "Tên đăng nhập hoặc mật khẩu không đúng.",
   "code": "INVALID_CREDENTIALS"
 }
 ```
-Không trả lỗi riêng như “Số điện thoại chưa đăng ký” trong API đăng nhập.
+Không trả lỗi riêng như “Mã số sinh viên không tồn tại” trong API đăng nhập.
 
 # 2. Quản lý người dùng
 ## 2.1. Response dùng chung: `UserResponse`
@@ -184,44 +152,23 @@ Không trả lỗi riêng như “Số điện thoại chưa đăng ký” trong
 }
 ```
 `roles` lấy từ `AspNetUserRoles` và `AspNetRoles`. Không trả `password`, `passwordHash` hoặc các trường bảo mật nội bộ của Identity.
-## 2.2. Request tạo user: `CreateUserRequest`
+## 2.2. Request cập nhật địa chỉ liên hệ: `UpdateProfileRequest`
+Dùng cho `PUT /api/me`. Họ tên và mã sinh viên do nhà trường quản lý; hệ thống thư viện không cung cấp API admin sửa hồ sơ chuẩn.
 ```
 {
-  "fullName": "Nguyễn Văn An",
-  "phoneNumber": "0901234567",
-  "address": "Quận 11, TP.HCM",
-  "password": "Example@12345"
+  "address": "Quận 11, TP.HCM"
 }
 ```
-
-|Trường|Quy định|
-|---|---|
-|`fullName`|Bắt buộc, không chỉ chứa khoảng trắng, tối đa 150 ký tự|
-|`phoneNumber`|Bắt buộc, tối đa 50 ký tự, chuẩn hóa trước khi kiểm tra trùng|
-|`address`|Cho phép bỏ qua hoặc `null`, tối đa 255 ký tự|
-|`password`|Bắt buộc, theo chính sách mật khẩu của ứng dụng|
-|**Đề xuất:** user mới mặc định được gán role `USER`. Tạo user và gán role trong cùng transaction. Muốn gán quyền khác thì sử dụng API phân quyền riêng.|
-## 2.3. Request cập nhật: `UpdateUserRequest`
-Dùng chung cho `PUT /api/users/{id}` và `PUT /api/me`:
-```
-{
-  "fullName": "Nguyễn Văn An",
-  "phoneNumber": "0901234567",
-  "address": null
-}
-```
-Không nhận `password`, `roles` hoặc `createdAt`. Đổi mật khẩu là nghiệp vụ riêng, không đặt trong API sửa thông tin cá nhân.
-## 2.4. Hợp đồng từng API
+Địa chỉ bắt buộc, không chỉ chứa khoảng trắng, tối đa 255 ký tự. API này chỉ cập nhật địa chỉ liên hệ, không cập nhật họ tên, username, số điện thoại, mật khẩu, role hoặc ngày tạo. Đổi số điện thoại và mật khẩu dùng API riêng.
+## 2.3. Hợp đồng từng API
 
 |Method|Endpoint|Request|Response thành công|
 |---|---|---|---|
 |GET|`/api/users`|Query: `keyword?`, `role?`, `page`, `pageSize`|`200` — `Page<UserResponse>`|
 |GET|`/api/users/{id}`|Path: `id`|`200` — `UserResponse`|
-|POST|`/api/users`|Body: `CreateUserRequest`|`201` — `UserResponse`|
-|PUT|`/api/users/{id}`|Path: `id`; body: `UpdateUserRequest`|`200` — `UserResponse`|
 |DELETE|`/api/users/{id}`|Path: `id`|`204`|
 |GET|`/api/me`|Không có body|`200` — `UserResponse`|
-|PUT|`/api/me`|Body: `UpdateUserRequest`|`200` — `UserResponse`|
+|PUT|`/api/me`|Body: `UpdateProfileRequest`|`200` — `UserResponse`|
 |Quy ước tìm kiếm:|
 - `keyword`: tìm theo họ tên hoặc số điện thoại.
 - `role`: tên role, ví dụ `USER`.

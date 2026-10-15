@@ -19,14 +19,6 @@ namespace light_brary.Controllers
             return new EmptyResult();
         }
 
-        [HttpPost("register")]
-        [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Register(RegisterRequest request)
-        {
-            await authService.RegisterAsync(request);
-            return new EmptyResult();
-        }
-
         [HttpPut("password")]
         [HttpPut("~/api/me/password")]
         [Authorize]
@@ -37,6 +29,13 @@ namespace light_brary.Controllers
             return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
-        // TODO: Thêm API đổi số điện thoại.
+        [HttpPut("phone-number")]
+        [Authorize]
+        public async Task<IActionResult> ChangePhoneNumber(ChangePhoneNumberRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await authService.ChangePhoneNumberAsync(userId, request);
+            return Ok(new { message = "Đổi số điện thoại thành công." });
+        }
     }
 }

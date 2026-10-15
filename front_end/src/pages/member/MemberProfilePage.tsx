@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { usersApi, authApi } from '../../api';
+import { authApi } from '../../api';
 import type { User, MeResponse } from '../../types';
 import {
   User as UserIcon,
@@ -79,22 +79,9 @@ export const MemberProfilePage: React.FC = () => {
       return;
     }
 
-    const cleanPhone = phoneNumber.trim();
-    if (!cleanPhone) {
-      showToast('Số điện thoại là bắt buộc!', 'error');
-      return;
-    }
-
-    if (!/^(0|\+84)[0-9]{9}$/.test(cleanPhone)) {
-      showToast('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số.', 'error');
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const updated = await usersApi.update(user.userId, {
-        fullName: fullName.trim(),
-        phoneNumber: cleanPhone,
+      const updated = await authApi.updateProfile({
         address: address.trim(),
       });
 
@@ -249,26 +236,24 @@ export const MemberProfilePage: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-                <UserIcon size={14} /> Họ và tên *
+                <UserIcon size={14} /> Họ và tên (theo hồ sơ nhà trường)
               </label>
               <input
                 type="text"
-                required
-                maxLength={50}
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                readOnly
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
               />
             </div>
 
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-                <Phone size={14} /> Số điện thoại (dùng để đăng nhập)
+                <Phone size={14} /> Số điện thoại liên hệ
               </label>
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                readOnly
                 placeholder="0912345678"
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
               />

@@ -12,7 +12,6 @@ import { MemberLayout } from './layouts/MemberLayout';
 
 // Auth & Status Pages
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -88,7 +87,6 @@ export function App() {
               <Route path="/login/admin" element={<LoginPage roleMode="admin" />} />
               <Route path="/login/librarian" element={<LoginPage roleMode="librarian" />} />
               <Route path="/login/librian" element={<Navigate to="/login/librarian" replace />} />
-              <Route path="/register" element={<RegisterPage />} />
             </Route>
 
             {/* 1. Admin Portal */}

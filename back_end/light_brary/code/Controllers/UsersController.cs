@@ -10,8 +10,9 @@ namespace light_brary.Controllers
     [ApiController]
     public class UsersController(UserService userService) : ControllerBase
     {
-        // User, Thủ thư và Admin: hồ sơ cá nhân và mật khẩu
+        // User ........................................................................................................................................................
 
+        // USER xem thong tin ca nhan
         [HttpGet("api/me")]
         [Authorize]
         public async Task<ActionResult<UserResponse>> GetMyProfile()
@@ -21,26 +22,31 @@ namespace light_brary.Controllers
             return Ok(profile);
         }
 
+        // USER cap nhat thong tin ca nhan
         [HttpPut("api/me")]
         [Authorize]
-        public async Task<ActionResult<UserResponse>> UpdateMyProfile(UpdateUserRequest request)
+        public async Task<ActionResult<UserResponse>> UpdateMyProfile(UpdateProfileRequest request)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var updated = await userService.UpdateProfileAsync(userId, request);
             return Ok(updated);
         }
 
-        [HttpGet("api/me/borrow-records")]
-        [Authorize]
-        public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetMyBorrowRecords()
+         // Admin: ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+        // ADMIN : xoa user
+        [HttpDelete("api/users/{id:guid}")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var records = await userService.GetUserBorrowRecordsAsync(userId);
-            return Ok(records);
+            await userService.DeleteAsync(id);
+            return NoContent();
         }
 
-        // Thủ thư và Admin: tra cứu và hỗ trợ người dùng
 
+        // Thủ thư và Admin: tra cứu và hỗ trợ người dùng .....................................................................................................
+
+        // ADMIN % LIBRARIAN : lay tat ca user (role = USER)
         [HttpGet("api/users")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<IEnumerable<UserResponse>>> GetAll(
@@ -51,6 +57,7 @@ namespace light_brary.Controllers
             return Ok(users);
         }
 
+        // ADMIN % LIBRARIAN : lay user theo id
         [HttpGet("api/users/{id:guid}")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<UserResponse>> GetById(Guid id)
@@ -67,38 +74,5 @@ namespace light_brary.Controllers
             return Ok(records);
         }
 
-        [HttpPut("api/users/{id:guid}/password")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<IActionResult> AdminUpdatePassword(Guid id, AdminUpdatePasswordRequest request)
-        {
-            await userService.AdminUpdatePasswordAsync(id, request);
-            return Ok(new { message = "Cập nhật mật khẩu người dùng thành công." });
-        }
-
-        // Admin: quản lý tài khoản người dùng
-
-        [HttpPost("api/users")]
-        [Authorize(Policy = "AdminOnly")]
-        public async Task<ActionResult<UserResponse>> Create(CreateUserRequest request)
-        {
-            var created = await userService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-
-        [HttpPut("api/users/{id:guid}")]
-        [Authorize(Policy = "AdminOnly")]
-        public async Task<ActionResult<UserResponse>> Update(Guid id, UpdateUserRequest request)
-        {
-            var updated = await userService.UpdateAsync(id, request);
-            return Ok(updated);
-        }
-
-        [HttpDelete("api/users/{id:guid}")]
-        [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            await userService.DeleteAsync(id);
-            return NoContent();
-        }
     }
 }

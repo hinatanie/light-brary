@@ -7,7 +7,6 @@ import type {
   BorrowRecord,
   AuthResponse,
   MeResponse,
-  UpdateUserRequest,
 } from './types';
 
 const API_BASE = '/api';
@@ -96,25 +95,6 @@ export const authApi = {
     return loadAuthResponse(raw);
   },
 
-  register: async (data: {
-    fullName: string;
-    email?: string;
-    password: string;
-    phoneNumber: string;
-    address?: string;
-  }): Promise<AuthResponse> => {
-    const raw = await request<any>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        fullName: data.fullName,
-        phoneNumber: data.phoneNumber,
-        password: data.password,
-        address: data.address,
-      }),
-    });
-    return loadAuthResponse(raw);
-  },
-
   logout: () => {
     localStorage.removeItem('lightbrary_token');
     localStorage.removeItem('lightbrary_user');
@@ -123,6 +103,12 @@ export const authApi = {
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     request<{ message: string }>('/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  updateProfile: (data: { address: string }) =>
+    request<User>('/me', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
@@ -303,43 +289,6 @@ export const usersApi = {
     return request<User[]>(qs ? `/users?${qs}` : '/users');
   },
   getById: (id: string | number) => request<User>(`/users/${id}`),
-  create: async (data: {
-    fullName: string;
-    phoneNumber: string;
-    password: string;
-    address?: string;
-    roles?: string[];
-  }): Promise<User> => {
-    const user = await request<User>('/users', {
-      method: 'POST',
-      body: JSON.stringify({
-        fullName: data.fullName.trim(),
-        phoneNumber: data.phoneNumber.trim(),
-        password: data.password,
-        address: data.address?.trim() || null,
-      }),
-    });
-
-    if (data.roles && data.roles.length > 0) {
-      try {
-        await usersApi.updateRoles(user.id, data.roles);
-      } catch (err) {
-        console.warn('Failed to assign initial roles:', err);
-      }
-    }
-
-    return user;
-  },
-  update: (id: string | number, data: UpdateUserRequest) =>
-    request<User>(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }).catch(() =>
-      request<User>('/me', {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
-    ),
   delete: (id: string | number) =>
     request<void>(`/users/${id}`, {
       method: 'DELETE',
@@ -375,11 +324,6 @@ export const usersApi = {
   },
   getUserBorrowRecords: (userId: string | number) =>
     request<BorrowRecord[]>(`/users/${userId}/borrow-records`),
-  updatePassword: (id: string | number, newPassword: string) =>
-    request<{ message: string }>(`/users/${id}/password`, {
-      method: 'PUT',
-      body: JSON.stringify({ newPassword }),
-    }),
 };
 
 // ─── 6. Roles API ────────────────────────────────────────────────────────────
