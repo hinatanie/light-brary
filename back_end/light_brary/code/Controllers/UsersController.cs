@@ -2,7 +2,6 @@ using light_brary.Services;
 using System.Security.Claims;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
-using light_brary.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -79,7 +78,7 @@ namespace light_brary.Controllers
         [Authorize]
         public async Task<ActionResult<UserResponse>> GetMyProfile()
         {
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var profile = await userService.GetProfileAsync(userId);
             return Ok(profile);
         }
@@ -88,7 +87,7 @@ namespace light_brary.Controllers
         [Authorize]
         public async Task<ActionResult<UserResponse>> UpdateMyProfile(UpdateUserRequest request)
         {
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var updated = await userService.UpdateProfileAsync(userId, request);
             return Ok(updated);
         }
@@ -97,7 +96,7 @@ namespace light_brary.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             await userService.ChangePasswordAsync(userId, request);
             return Ok(new { message = "Đổi mật khẩu thành công." });
         }
@@ -106,22 +105,13 @@ namespace light_brary.Controllers
         [Authorize]
         public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetMyBorrowRecords()
         {
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var records = await userService.GetUserBorrowRecordsAsync(userId);
             return Ok(records);
         }
 
         #endregion
 
-        private Guid GetCurrentUserId()
-        {
-            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(raw) || !Guid.TryParse(raw, out var userId))
-                throw new UnauthorizedException("Không xác định được danh tính người dùng.");
-
-            return userId;
-        }
     }
 }
 
