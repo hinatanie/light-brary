@@ -3,7 +3,6 @@ using light_brary.Services;
 using System.Security.Claims;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
-using light_brary.Exceptions;
 using light_brary.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +16,7 @@ namespace light_brary.Controllers
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow(MemberBorrowRequest request)
         {
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var created = await borrowRecordService.BorrowForMemberAsync(userId, request);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
@@ -46,7 +45,7 @@ namespace light_brary.Controllers
         public async Task<ActionResult<BorrowRecordResponse>> GetById(Guid id)
         {
             var record = await borrowRecordService.GetByIdAsync(id);
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var isStaffOrAdmin = User.IsInRole(RoleNames.ADMIN) || User.IsInRole(RoleNames.LIBRARIAN);
             if (!isStaffOrAdmin && record.User.Id != userId)
             {
@@ -69,16 +68,6 @@ namespace light_brary.Controllers
         {
             var result = await borrowRecordService.MarkLostBookAsync(id);
             return Ok(result);
-        }
-
-        private Guid GetCurrentUserId()
-        {
-            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(raw) || !Guid.TryParse(raw, out var userId))
-                throw new UnauthorizedException("Không xác định được danh tính người dùng.");
-
-            return userId;
         }
     }
 }
