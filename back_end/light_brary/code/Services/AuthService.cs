@@ -1,13 +1,15 @@
 using light_brary.DTOs.Requests;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using light_brary.Services.Authentication;
 using Microsoft.AspNetCore.Identity;
 
 namespace light_brary.Services
 {
     public class AuthService(
         SignInManager<User> signInManager,
-        UserService userService)
+        UserService userService,
+        UserManager<User> userManager)
     {
         public async Task LoginAsync(LoginRequest request)
         {
@@ -39,6 +41,16 @@ namespace light_brary.Services
                 UserName = user.PhoneNumber,
                 Password = request.Password
             });
+        }
+
+        public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            var user = await userManager.FindByIdAsync(userId.ToString())
+                ?? throw new NotFoundException($"Không tìm thấy người dùng với ID: {userId}");
+            if (request.NewPassword == request.CurrentPassword)
+                throw new BusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+
+            (await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)).EnsureSucceeded();
         }
     }
 }

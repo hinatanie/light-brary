@@ -30,15 +30,6 @@ namespace light_brary.Controllers
             return Ok(updated);
         }
 
-        [HttpPut("api/me/password")]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
-        {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            await userService.ChangePasswordAsync(userId, request);
-            return Ok(new { message = "Đổi mật khẩu thành công." });
-        }
-
         [HttpGet("api/me/borrow-records")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetMyBorrowRecords()

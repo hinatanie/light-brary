@@ -1,6 +1,8 @@
 using light_brary.Services;
+using System.Security.Claims;
 using light_brary.DTOs.Requests;
 using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace light_brary.Controllers
@@ -24,5 +26,17 @@ namespace light_brary.Controllers
             await authService.RegisterAsync(request);
             return new EmptyResult();
         }
+
+        [HttpPut("password")]
+        [HttpPut("~/api/me/password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await authService.ChangePasswordAsync(userId, request);
+            return Ok(new { message = "Đổi mật khẩu thành công." });
+        }
+
+        // TODO: Thêm API đổi số điện thoại.
     }
 }

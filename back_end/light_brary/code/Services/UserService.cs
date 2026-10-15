@@ -102,15 +102,6 @@ namespace light_brary.Services
             (await userManager.ResetPasswordAsync(user, token, request.NewPassword)).EnsureSucceeded();
         }
 
-        public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
-        {
-            var user = await FindUserAsync(userId);
-            if (request.NewPassword == request.CurrentPassword)
-                throw new BusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
-
-            (await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)).EnsureSucceeded();
-        }
-
         private async Task<User> FindUserAsync(Guid id)
         {
             return await userManager.FindByIdAsync(id.ToString())

@@ -122,7 +122,7 @@ export const authApi = {
   },
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
-    request<{ message: string }>('/me/password', {
+    request<{ message: string }>('/auth/password', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
