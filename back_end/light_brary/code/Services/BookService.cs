@@ -7,7 +7,6 @@ using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
-using light_brary.Enums;
 
 namespace light_brary.Services
 {
@@ -18,7 +17,7 @@ namespace light_brary.Services
         public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null)
         {
             var books = await bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
-            var responses = books.Select(MapToResponse);
+            var responses = books.Select(BookResponse.FromEntity);
             if (onlyAvailable == true)
             {
                 responses = responses.Where(b => b.AvailableCopies > 0);
@@ -32,7 +31,7 @@ namespace light_brary.Services
             if (book is null)
                 throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
-            return MapToResponse(book);
+            return BookResponse.FromEntity(book);
         }
 
         public async Task<BookResponse> CreateAsync(SaveBookRequest request)
@@ -60,7 +59,7 @@ namespace light_brary.Services
             await bookRepository.AddAsync(book);
 
             book.Category = category;
-            return MapToResponse(book);
+            return BookResponse.FromEntity(book);
         }
 
         public async Task<BookResponse> UpdateAsync(Guid id, SaveBookRequest request)
@@ -88,7 +87,7 @@ namespace light_brary.Services
 
             await bookRepository.UpdateAsync(book);
 
-            return MapToResponse(book);
+            return BookResponse.FromEntity(book);
         }
 
         public async Task DeleteAsync(Guid id)
@@ -101,30 +100,6 @@ namespace light_brary.Services
                 throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao vật lý.");
 
             await bookRepository.DeleteAsync(book);
-        }
-
-        private static BookResponse MapToResponse(Book book)
-        {
-            return new BookResponse
-            {
-                Id = book.Id,
-                Title = book.Title,
-                Author = book.Author,
-                ISBN = book.ISBN,
-                ImageUrl = book.ImageUrl,
-                PublishYear = book.PublishYear,
-                CategoryId = book.CategoryId,
-                CategoryName = book.Category?.Name ?? string.Empty,
-                Category = book.Category != null ? new Category
-                {
-                    Id = book.Category.Id,
-                    Name = book.Category.Name,
-                    Description = book.Category.Description
-                } : null!,
-                TotalCopies = book.BookCopies?.Count ?? 0,
-                AvailableCopies = book.BookCopies?.Count(c => c.Status == BookCopyStatus.Available) ?? 0,
-                CreatedAt = book.CreatedAt
-            };
         }
     }
 }

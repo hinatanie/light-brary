@@ -142,8 +142,8 @@ namespace light_brary.Services
         {
             var records = (await borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue)).ToList();
             var roles = await userRepository.GetRoleNamesByUserIdsAsync(records.Select(record => record.UserId));
-            return records.Select(record => MapToSummaryResponse(record,
-                roles.GetValueOrDefault(record.UserId, new List<string>()))).ToList();
+            return records.Select(record => BorrowRecordSummaryResponse.FromEntity(record,
+                UserResponse.FromEntity(record.User, roles.GetValueOrDefault(record.UserId, new List<string>())))).ToList();
         }
 
         public async Task<BorrowRecordResponse> GetByIdAsync(Guid id)
@@ -204,16 +204,7 @@ namespace light_brary.Services
 
             return new ReturnBooksResponse
             {
-                Items = details.Select(d => new BorrowDetailActionResponse
-                {
-                    Id = d.Id,
-                    BorrowRecordId = d.BorrowRecordId,
-                    BookCopyId = d.BookCopyId,
-                    Status = d.Status.ToString(),
-                    ReturnDate = d.ReturnDate,
-                    BookCopyStatus = d.BookCopy.Status.ToString(),
-                    BorrowRecordStatus = d.BorrowRecord.Status.ToString()
-                }).ToList()
+                Items = details.Select(BorrowDetailActionResponse.FromEntity).ToList()
             };
         }
 
@@ -241,16 +232,7 @@ namespace light_brary.Services
             await context.SaveChangesAsync();
             await tx.CommitAsync();
 
-            return new BorrowDetailActionResponse
-            {
-                Id = detail.Id,
-                BorrowRecordId = detail.BorrowRecordId,
-                BookCopyId = detail.BookCopyId,
-                Status = detail.Status.ToString(),
-                ReturnDate = detail.ReturnDate,
-                BookCopyStatus = detail.BookCopy.Status.ToString(),
-                BorrowRecordStatus = detail.BorrowRecord.Status.ToString()
-            };
+            return BorrowDetailActionResponse.FromEntity(detail);
         }
 
         private static void RecalculateRecordStatus(BorrowRecord record)
@@ -264,26 +246,5 @@ namespace light_brary.Services
                 record.Status = BorrowRecordStatus.Closed;
             }
         }
-
-        private static BorrowRecordSummaryResponse MapToSummaryResponse(BorrowRecord record, List<string> roles)
-        {
-            var isOverdue = record.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && DateTime.UtcNow > record.DueDate;
-
-            return new BorrowRecordSummaryResponse
-            {
-                Id = record.Id,
-                User = UserResponse.FromEntity(record.User, roles),
-                BorrowDate = record.BorrowDate,
-                DueDate = record.DueDate,
-                Status = record.Status.ToString(),
-                TotalBooks = record.BorrowDetails.Count,
-                BorrowingCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Borrowing),
-                ReturnedCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Returned),
-                LostCount = record.BorrowDetails.Count(d => d.Status == BorrowDetailStatus.Lost),
-                IsOverdue = isOverdue,
-                Details = record.BorrowDetails.Select(BorrowDetailResponse.FromEntity).ToList()
-            };
-        }
-
     }
 }

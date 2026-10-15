@@ -1,3 +1,4 @@
+using light_brary.Entities;
 using System;
 
 namespace light_brary.DTOs.Responses
@@ -11,6 +12,20 @@ namespace light_brary.DTOs.Responses
         public DateTime? ReturnDate { get; set; }
         public string BookCopyStatus { get; set; } = null!;
         public string BorrowRecordStatus { get; set; } = null!;
+
+        internal static BorrowDetailActionResponse FromEntity(BorrowDetail detail)
+        {
+            return new BorrowDetailActionResponse
+            {
+                Id = detail.Id,
+                BorrowRecordId = detail.BorrowRecordId,
+                BookCopyId = detail.BookCopyId,
+                Status = detail.Status.ToString(),
+                ReturnDate = detail.ReturnDate,
+                BookCopyStatus = detail.BookCopy.Status.ToString(),
+                BorrowRecordStatus = detail.BorrowRecord.Status.ToString()
+            };
+        }
     }
 }
 

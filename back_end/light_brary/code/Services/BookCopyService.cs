@@ -22,7 +22,7 @@ namespace light_brary.Services
                 throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {bookId}");
 
             var copies = await bookCopyRepository.GetByBookIdAsync(bookId);
-            return copies.Select(MapToResponse).ToList();
+            return copies.Select(BookCopyResponse.FromEntity).ToList();
         }
 
         public async Task<BookCopyResponse> GetByIdAsync(Guid id)
@@ -31,7 +31,7 @@ namespace light_brary.Services
             if (copy is null)
                 throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
 
-            return MapToResponse(copy);
+            return BookCopyResponse.FromEntity(copy);
         }
 
         public async Task<BookCopyResponse> GetByBarcodeAsync(string barcode)
@@ -41,7 +41,7 @@ namespace light_brary.Services
             if (copy is null)
                 throw AppException.NotFound($"Không tìm thấy bản sao sách với mã vạch: {code}");
 
-            return MapToResponse(copy);
+            return BookCopyResponse.FromEntity(copy);
         }
 
         public async Task<BookCopyResponse> CreateAsync(Guid bookId, SaveBookCopyRequest request)
@@ -66,7 +66,7 @@ namespace light_brary.Services
             await bookCopyRepository.AddAsync(copy);
 
             copy.Book = book;
-            return MapToResponse(copy);
+            return BookCopyResponse.FromEntity(copy);
         }
 
         public async Task<BookCopyResponse> UpdateAsync(Guid id, SaveBookCopyRequest request)
@@ -85,7 +85,7 @@ namespace light_brary.Services
 
             await bookCopyRepository.UpdateAsync(copy);
 
-            return MapToResponse(copy);
+            return BookCopyResponse.FromEntity(copy);
         }
 
         public async Task DeleteAsync(Guid id)
@@ -116,7 +116,7 @@ namespace light_brary.Services
             copy.Status = BookCopyStatus.Available;
             await bookCopyRepository.UpdateAsync(copy);
 
-            return MapToResponse(copy);
+            return BookCopyResponse.FromEntity(copy);
         }
 
         public async Task<BookCopyResponse> MarkLostAsync(Guid id)
@@ -134,20 +134,7 @@ namespace light_brary.Services
             copy.Status = BookCopyStatus.Lost;
             await bookCopyRepository.UpdateAsync(copy);
 
-            return MapToResponse(copy);
-        }
-
-        private static BookCopyResponse MapToResponse(BookCopy copy)
-        {
-            return new BookCopyResponse
-            {
-                Id = copy.Id,
-                BookId = copy.BookId,
-                BookTitle = copy.Book?.Title ?? string.Empty,
-                Barcode = copy.Barcode,
-                Status = copy.Status.ToString(),
-                ConditionNote = copy.ConditionNote
-            };
+            return BookCopyResponse.FromEntity(copy);
         }
     }
 }

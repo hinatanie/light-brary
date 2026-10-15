@@ -19,17 +19,15 @@ namespace light_brary.Services
 
         public async Task<IEnumerable<RoleResponse>> GetAllAsync()
         {
-            return await roleManager.Roles.Select(role => new RoleResponse
-            {
-                Id = role.Id,
-                Name = role.Name!
-            }).ToListAsync();
+            return await roleManager.Roles
+                .Select(role => RoleResponse.FromEntity(new IdentityRole<Guid> { Id = role.Id, Name = role.Name }))
+                .ToListAsync();
         }
 
         public async Task<RoleResponse> GetByIdAsync(Guid id)
         {
             var role = await FindRoleAsync(id);
-            return new RoleResponse { Id = role.Id, Name = role.Name! };
+            return RoleResponse.FromEntity(role);
         }
 
         public async Task<RoleResponse> CreateAsync(SaveRoleRequest request)
@@ -40,7 +38,7 @@ namespace light_brary.Services
 
             var role = new IdentityRole<Guid> { Id = Guid.NewGuid(), Name = name };
             (await roleManager.CreateAsync(role)).ThrowIfFailed();
-            return new RoleResponse { Id = role.Id, Name = role.Name! };
+            return RoleResponse.FromEntity(role);
         }
 
         public async Task<RoleResponse> UpdateAsync(Guid id, SaveRoleRequest request)
@@ -56,7 +54,7 @@ namespace light_brary.Services
                 throw AppException.Conflict($"Vai trò '{name}' đã tồn tại.");
 
             if (role.Name == name)
-                return new RoleResponse { Id = role.Id, Name = role.Name! };
+                return RoleResponse.FromEntity(role);
 
             var users = await userManager.GetUsersInRoleAsync(role.Name!);
             role.Name = name;
@@ -64,7 +62,7 @@ namespace light_brary.Services
             foreach (var user in users)
                 (await userManager.UpdateSecurityStampAsync(user)).ThrowIfFailed();
             await transaction.CommitAsync();
-            return new RoleResponse { Id = role.Id, Name = role.Name! };
+            return RoleResponse.FromEntity(role);
         }
 
         public async Task DeleteAsync(Guid id)
@@ -86,7 +84,8 @@ namespace light_brary.Services
             var user = await userService.GetRequiredUserAsync(userId);
             var names = (await userManager.GetRolesAsync(user)).ToArray();
             return await roleManager.Roles.Where(role => names.Contains(role.Name!))
-                .Select(role => new RoleResponse { Id = role.Id, Name = role.Name! }).ToListAsync();
+                .Select(role => RoleResponse.FromEntity(new IdentityRole<Guid> { Id = role.Id, Name = role.Name }))
+                .ToListAsync();
         }
 
         public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)

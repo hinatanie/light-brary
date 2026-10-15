@@ -14,7 +14,7 @@ namespace light_brary.Services
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync()
         {
             var categories = await categoryRepository.GetAllAsync();
-            return categories.Select(MapToResponse).ToList();
+            return categories.Select(CategoryResponse.FromEntity).ToList();
         }
 
         public async Task<CategoryResponse> GetByIdAsync(Guid id)
@@ -23,7 +23,7 @@ namespace light_brary.Services
             if (category is null)
                 throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
-            return MapToResponse(category);
+            return CategoryResponse.FromEntity(category);
         }
 
         public async Task<CategoryResponse> CreateAsync(SaveCategoryRequest request)
@@ -41,7 +41,7 @@ namespace light_brary.Services
 
             await categoryRepository.AddAsync(category);
 
-            return MapToResponse(category);
+            return CategoryResponse.FromEntity(category);
         }
 
         public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
@@ -60,7 +60,7 @@ namespace light_brary.Services
 
             await categoryRepository.UpdateAsync(category);
 
-            return MapToResponse(category);
+            return CategoryResponse.FromEntity(category);
         }
 
         public async Task DeleteAsync(Guid id)
@@ -74,12 +74,5 @@ namespace light_brary.Services
 
             await categoryRepository.DeleteAsync(category);
         }
-
-        private static CategoryResponse MapToResponse(Category category) => new()
-        {
-            Id = category.Id,
-            Name = category.Name,
-            Description = category.Description
-        };
     }
 }
