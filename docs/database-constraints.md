@@ -48,8 +48,11 @@ Bảng dưới đây sử dụng các giá trị enum hiện tại trong tài li
 | `AspNetRoles` | `AspNetUserRoles` | 1 - N | Một vai trò được gán cho nhiều người | `Restrict Delete` |
 | `Categories` | `Books` | 1 - N | Một thể loại chứa nhiều đầu sách | `Restrict` (Chặn xóa nếu còn sách) |
 | `Books` | `BookCopies` | 1 - N | Một đầu sách có nhiều bản sao vật lý trên kệ | `Restrict Delete` |
-| `AspNetUsers` | `BorrowRecords` | 1 - N | Một người dùng tạo nhiều phiếu mượn | `Restrict` (Bảo toàn lịch sử mượn) |
+| `AspNetUsers` | `BorrowRecords` | 1 - N | Một người dùng tạo nhiều phiếu mượn | `Cascade Delete` |
 | `BorrowRecords` | `BorrowDetails` | 1 - N | Một phiếu mượn chứa nhiều cuốn sách | `Cascade Delete` |
+| `BorrowRecords` | `Fines` | 1 - 1 | Một phiếu mượn có thể có một phiếu phạt | `Cascade Delete` |
+| `Fines` | `FineDetails` | 1 - N | Một phiếu phạt có nhiều chi tiết phạt | `Cascade Delete` |
+| `BorrowDetails` | `FineDetails` | 1 - 1 | Một lượt mượn sách có thể có một chi tiết phạt | `Cascade Delete` |
 | `BookCopies` | `BorrowDetails` | 1 - N | Một bản sao sách xuất hiện trong nhiều lượt mượn | `Restrict` (Bảo toàn lịch sử) |
 
 ---

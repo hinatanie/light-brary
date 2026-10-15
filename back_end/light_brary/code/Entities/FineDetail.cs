@@ -15,7 +15,6 @@ namespace light_brary.Entities
 
         public Guid BorrowDetailId { get; set; }
 
-        [DeleteBehavior(DeleteBehavior.Restrict)]
         public BorrowDetail BorrowDetail { get; set; } = null!;
 
         public ReasonForFine Reason { get; set; }

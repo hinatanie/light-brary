@@ -54,9 +54,5 @@ namespace light_brary.Repositories
                 .ToDictionary(group => group.Key, group => group.Select(role => role.Name).ToList());
         }
 
-        public async Task<bool> HasBorrowHistoryAsync(Guid userId)
-        {
-            return await _context.BorrowRecords.AnyAsync(record => record.UserId == userId);
-        }
     }
 }

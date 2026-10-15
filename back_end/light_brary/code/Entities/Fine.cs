@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
 
 namespace light_brary.Entities
 {
@@ -10,7 +9,6 @@ namespace light_brary.Entities
 
         public Guid BorrowRecordId { get; set; }
 
-        [DeleteBehavior(DeleteBehavior.Restrict)]
         public BorrowRecord BorrowRecord { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

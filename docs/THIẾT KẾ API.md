@@ -179,8 +179,8 @@ GET /api/users?keyword=An&role=USER&page=1&pageSize=20
 ```
 Quy tắc nghiệp vụ:
 - Trùng số điện thoại: `409 PHONE_NUMBER_EXISTS`.
-- User có bất kỳ lịch sử mượn nào: chặn xóa, trả `409 USER_HAS_BORROW_HISTORY`.
-- Khi được phép xóa user, các bản ghi gán role được xóa theo quan hệ cascade.
+- Xóa user sẽ xóa cả phiếu mượn, chi tiết mượn, tiền phạt, chi tiết tiền phạt và dữ liệu Identity liên quan theo quan hệ cascade.
+- Đầu sách, bản sao sách và trạng thái bản sao được giữ nguyên; xóa user không đồng nghĩa với trả sách.
 - Chặn xóa user nếu đó là tài khoản `ADMIN` cuối cùng.
 - `/api/me` lấy user ID từ danh tính đã xác thực, không nhận user ID từ client.  
     **Đề xuất cho `/api/me`:** cho phép mọi người dùng đã đăng nhập, gồm `ADMIN`, `LIBRARIAN`, `USER`. Nếu chỉ cho role `USER`, tài khoản chỉ mang role `LIBRARIAN` sẽ không xem được hồ sơ của chính mình.  

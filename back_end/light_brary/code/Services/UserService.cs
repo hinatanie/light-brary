@@ -74,9 +74,6 @@ namespace light_brary.Services
         {
             var user = await GetRequiredUserAsync(id);
 
-            if (await userRepository.HasBorrowHistoryAsync(id))
-                throw AppException.Conflict("Người dùng đã có lịch sử mượn sách, không thể xóa.");
-
             if (await userManager.IsInRoleAsync(user, RoleNames.ADMIN) &&
                 (await userManager.GetUsersInRoleAsync(RoleNames.ADMIN)).Count <= 1)
                 throw AppException.BadRequest("Không thể xóa tài khoản Admin cuối cùng trong hệ thống.");

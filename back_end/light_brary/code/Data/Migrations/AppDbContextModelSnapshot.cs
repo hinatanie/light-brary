@@ -538,7 +538,7 @@ namespace light_brary.code.Data.Migrations
                     b.HasOne("light_brary.Entities.User", "User")
                         .WithMany("BorrowRecords")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -549,7 +549,7 @@ namespace light_brary.code.Data.Migrations
                     b.HasOne("light_brary.Entities.BorrowRecord", "BorrowRecord")
                         .WithOne("Fine")
                         .HasForeignKey("light_brary.Entities.Fine", "BorrowRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("BorrowRecord");
@@ -560,7 +560,7 @@ namespace light_brary.code.Data.Migrations
                     b.HasOne("light_brary.Entities.BorrowDetail", "BorrowDetail")
                         .WithOne("FineDetail")
                         .HasForeignKey("light_brary.Entities.FineDetail", "BorrowDetailId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("light_brary.Entities.Fine", "Fine")

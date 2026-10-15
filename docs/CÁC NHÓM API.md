@@ -13,7 +13,7 @@ AspNetUsers
 | `GET`    | `/api/users/{id}`                | Lấy thông tin chi tiết một người dùng            | ADMIN, LIBRARIAN |
 | `POST`   | `/api/users`                     | Tạo tài khoản người dùng mới                     | ADMIN            |
 | `PUT`    | `/api/users/{id}`                | Cập nhật thông tin người dùng                    | ADMIN            |
-| `DELETE` | `/api/users/{id}`                | Xóa user nếu không bị ràng buộc bởi lịch sử mượn | ADMIN            |
+| `DELETE` | `/api/users/{id}`                | Xóa user cùng lịch sử mượn và tiền phạt liên quan | ADMIN            |
 | `GET`    | `/api/users/{id}/borrow-records` | Xem lịch sử mượn của một user                    | ADMIN, LIBRARIAN |
 | `GET`    | `/api/users/{id}/borrowed-books` | Xem những cuốn user đang mượn                    | ADMIN, LIBRARIAN |
 | `GET`    | `/api/me`                        | User xem thông tin tài khoản của chính mình      | USER             |
