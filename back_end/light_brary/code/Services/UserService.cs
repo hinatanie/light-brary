@@ -74,10 +74,6 @@ namespace light_brary.Services
         {
             var user = await GetRequiredUserAsync(id);
 
-            if (await userManager.IsInRoleAsync(user, RoleNames.ADMIN) &&
-                (await userManager.GetUsersInRoleAsync(RoleNames.ADMIN)).Count <= 1)
-                throw AppException.BadRequest("Không thể xóa tài khoản Admin cuối cùng trong hệ thống.");
-
             (await userManager.DeleteAsync(user)).ThrowIfFailed();
         }
 

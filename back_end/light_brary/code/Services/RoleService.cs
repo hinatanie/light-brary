@@ -107,10 +107,6 @@ namespace light_brary.Services
             var user = await userService.GetRequiredUserAsync(userId);
             if (!await userManager.IsInRoleAsync(user, role.Name!)) return;
 
-            if (role.Name!.Equals(RoleNames.ADMIN, StringComparison.OrdinalIgnoreCase) &&
-                (await userManager.GetUsersInRoleAsync(RoleNames.ADMIN)).Count <= 1)
-                throw AppException.BadRequest("Không thể gỡ vai trò Admin khỏi quản trị viên cuối cùng trong hệ thống.");
-
             (await userManager.RemoveFromRoleAsync(user, role.Name!)).ThrowIfFailed();
             (await userManager.UpdateSecurityStampAsync(user)).ThrowIfFailed();
             await transaction.CommitAsync();
