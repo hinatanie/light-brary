@@ -25,8 +25,6 @@ namespace light_brary.Entities
 
         public Guid UserId {get; set;}
  
-        [ForeignKey(nameof(UserId))]
-        [InverseProperty(nameof(User.BorrowRecords))]
         public User User {get; set;} = null!;
 
         [InverseProperty(nameof(BorrowDetail.BorrowRecord))]
