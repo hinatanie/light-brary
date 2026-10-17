@@ -18,7 +18,7 @@ namespace light_brary.Controllers
         public async Task<ActionResult<UserResponse>> GetMyProfile()
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var profile = await userService.GetProfileAsync(userId);
+            var profile = await userService.GetByIdAsync(userId);
             return Ok(profile);
         }
 

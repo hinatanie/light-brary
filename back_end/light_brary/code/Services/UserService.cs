@@ -77,8 +77,6 @@ namespace light_brary.Services
             (await userManager.DeleteAsync(user)).ThrowIfFailed();
         }
 
-        public Task<UserResponse> GetProfileAsync(Guid userId) => GetByIdAsync(userId);
-
         public async Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
         {
             var user = await GetRequiredUserAsync(userId);
