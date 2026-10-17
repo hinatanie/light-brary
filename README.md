@@ -130,7 +130,7 @@ Cơ sở dữ liệu mặc định sẽ lắng nghe tại `localhost:5432` với
 dotnet run --project back_end/light_brary
 ```
 
-- API sẽ tự động áp dụng migration và bootstrap tài khoản Admin nếu CSDL chưa có dữ liệu.
+- API tự động áp dụng migration, tạo Admin nếu chưa có và bổ sung dữ liệu thư viện mẫu trong môi trường Development.
 - Swagger UI: `http://localhost:5048/swagger`
 - OpenAPI Schema: `http://localhost:5048/openapi/v1.json`
 
@@ -148,16 +148,22 @@ Giao diện người dùng sẽ chạy tại: `http://localhost:3000` (hoặc `h
 
 ---
 
-## 🔑 Tài Khoản Quản Trị Khởi Tạo (Môi Trường Phát Triển)
+## 🔑 Tài khoản và dữ liệu khởi tạo
 
-Khi hệ thống khởi chạy lần đầu tiên trên môi trường Development:
+Khi chạy trên database trống trong môi trường **Development**, API tự seed:
 
-- **Tên đăng nhập**: Theo cấu hình `Seed:AdminUserName`; nếu chưa cấu hình, dùng giá trị `Seed:AdminPhone` (mặc định `0999999999`) để tương thích cấu hình cũ.
-- **Email**: `admin@lightbrary.vn`
-- **Mật khẩu khởi tạo**: `ThuVienSach2026!`
-- **Lưu ý**: Hệ thống đã bật cờ `MustChangePassword`. Sau khi đăng nhập, hệ thống sẽ tự động yêu cầu bạn đổi sang mật khẩu mới trước khi tiếp tục.
+- **20 sinh viên**, mã đăng nhập từ `3124560001` đến `3124560020`, có họ tên, số điện thoại và địa chỉ mẫu.
+- **1 Admin**, dùng `Seed:AdminUserName`; nếu chưa cấu hình thì dùng `Seed:AdminPhone` (mặc định `0999999999`).
+- **1 thủ thư**, tên đăng nhập `thuthu`.
+- **5 thể loại**, mỗi thể loại có 6 sách: Công nghệ thông tin, Kỹ năng sống, Văn học, Kinh tế, Lịch sử & triết học.
+- **30 đầu sách có thật**, lưu tên tiếng Anh, tác giả, ISBN, năm của ấn bản và đường dẫn ảnh bìa Open Library.
+- **75 bản sao**: 15 sách có 2 bản, 15 sách có 3 bản; barcode riêng và trạng thái sẵn sàng cho mượn.
 
-> Trong môi trường Production, thông tin Admin ban đầu và JWT Secret được nạp thông qua Environment Variables hoặc Secret Manager (`AdminBootstrap__Password`, `Jwt__SecretKey`), tuyệt đối không dùng giá trị mặc định.
+Admin dùng mật khẩu cấu hình tại `Seed:AdminPassword`. Sinh viên và thủ thư dùng `Seed:SamplePassword`; nếu chưa đặt thì dùng `Seed:AdminPassword`. Đặt mật khẩu bằng .NET User Secrets hoặc các biến môi trường `Seed__AdminPassword`, `Seed__SamplePassword`, không lưu mật khẩu thực tế vào Git.
+
+Seed chạy tự động cùng backend, không cần chạy `seed_data.sql` riêng. Chạy lại sẽ bổ sung tài khoản, sách và bản sao còn thiếu, giữ nguyên dữ liệu, mật khẩu và tình trạng mượn đã có. Nếu database đã có Admin hoặc thủ thư thì tái sử dụng các tài khoản đó; tổng dữ liệu có thể nhiều hơn số lượng trên nếu trước đó đã có dữ liệu khác. Ảnh bìa cần kết nối Internet.
+
+Đặt `Seed__SampleData=false` để tắt dữ liệu mẫu. Ngoài Development, dữ liệu mẫu mặc định tắt; có thể bật bằng `Seed__SampleData=true`. Cơ chế khởi tạo Admin vẫn hoạt động độc lập.
 
 ---
 

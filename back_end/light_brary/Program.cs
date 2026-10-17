@@ -85,7 +85,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-/* Tự động áp dụng Migration (tạo bảng nếu chưa có) & Khởi tạo tài khoản Admin ban đầu */
+/* Tự động áp dụng Migration và khởi tạo dữ liệu */
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -94,7 +94,13 @@ using (var scope = app.Services.CreateScope())
 
     var userManager = services.GetRequiredService<UserManager<User>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    await using var transaction = await context.Database.BeginTransactionAsync();
     await DataSeeder.SeedAsync(userManager, roleManager, builder.Configuration);
+    if (builder.Configuration.GetValue("Seed:SampleData", app.Environment.IsDevelopment()))
+    {
+        await LibraryDataSeeder.SeedAsync(context, userManager, builder.Configuration);
+    }
+    await transaction.CommitAsync();
 }
 
 app.Run();

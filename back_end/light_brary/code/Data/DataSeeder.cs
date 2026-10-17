@@ -2,7 +2,6 @@ using light_brary.Constants;
 using light_brary.Entities;
 using light_brary.Exceptions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace light_brary.Data
 {
@@ -24,7 +23,7 @@ namespace light_brary.Data
                 }
             }
 
-            if (await userManager.Users.AnyAsync()) return;
+            if ((await userManager.GetUsersInRoleAsync(RoleNames.ADMIN)).Any()) return;
 
             var password = configuration["Seed:AdminPassword"];
             if (string.IsNullOrWhiteSpace(password))
