@@ -143,14 +143,14 @@ export const MemberDashboardPage: React.FC = () => {
             <div
               style={{
                 padding: '16px 20px',
-                borderBottom: '1px solid #1e293b',
+                borderBottom: '1px solid var(--border-color)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
               <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Library size={18} color="#f59e0b" /> Danh Sách Sách Bạn Đang Giữ
+                <Library size={18} color="var(--primary)" /> Danh Sách Sách Bạn Đang Giữ
               </h3>
               <button
                 className="btn-action btn-copy"
@@ -201,7 +201,7 @@ export const MemberDashboardPage: React.FC = () => {
                         <td>
                           <span
                             style={{
-                              color: item.isOverdue ? '#ef4444' : '#f8fafc',
+                              color: item.isOverdue ? '#ef4444' : 'var(--text-main)',
                               fontWeight: item.isOverdue ? 600 : 'normal',
                               display: 'inline-flex',
                               alignItems: 'center',

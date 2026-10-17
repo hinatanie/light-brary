@@ -6,7 +6,7 @@ import { Sidebar } from '../components/Sidebar';
 export const StaffLayout: React.FC = () => {
   return (
     <div className="app-layout">
-      <Header portalTitle="Cổng Thủ Thư (Staff)" />
+      <Header portalTitle="Thư viện · Cổng thủ thư" />
       <div className="main-content-wrapper">
         <Sidebar role="staff" />
         <main className="app-body">

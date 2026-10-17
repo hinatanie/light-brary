@@ -233,7 +233,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <span style={{ color: '#94a3b8', fontSize: '13px' }}>—</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
                       )}
                     </td>
                   </tr>

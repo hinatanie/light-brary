@@ -149,7 +149,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <AlertCircle size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-value" style={{ color: overdueBorrows > 0 ? '#ef4444' : '#f8fafc' }}>
+                <span className="stat-value" style={{ color: overdueBorrows > 0 ? '#ef4444' : 'var(--text-main)' }}>
                   {overdueBorrows}
                 </span>
                 <span className="stat-label">Phiếu quá hạn</span>
@@ -160,9 +160,9 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* Quick Recent Activity */}
           <div className="table-card" style={{ marginTop: '24px' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={18} color="#f59e0b" /> Phiếu Mượn Gần Đây Nhất
+                <Clock size={18} color="var(--primary)" /> Phiếu Mượn Gần Đây Nhất
               </h3>
               <button
                 className="btn-action btn-copy"
@@ -204,7 +204,7 @@ export const AdminDashboardPage: React.FC = () => {
                   ))}
                   {borrowRecords.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                         Chưa có phiếu mượn nào trong hệ thống.
                       </td>
                     </tr>

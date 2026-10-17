@@ -363,7 +363,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
 
                 {availableCopies.length === 0 ? (
                   <div className="empty-inline-box">
-                    <AlertCircle size={18} color="#f59e0b" />
+                    <AlertCircle size={18} color="var(--primary)" />
                     <span>Hiện không còn cuốn sách nào ở trạng thái "Sẵn sàng" (Available) trên kệ!</span>
                   </div>
                 ) : (
@@ -550,12 +550,12 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
             </div>
 
             <form onSubmit={handleMarkLost} className="form-content">
-              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>
-                Độc giả làm mất cuốn sách: <strong style={{ color: '#f8fafc' }}>{lostTargetDetail.title}</strong> (Mã vạch: <code>{lostTargetDetail.barcode}</code>). Cuốn sách này sẽ được đánh dấu trạng thái "Lost" và không thể mượn lại cho đến khi được thay thế.
+              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                Độc giả làm mất cuốn sách: <strong style={{ color: 'var(--text-main)' }}>{lostTargetDetail.title}</strong> (Mã vạch: <code>{lostTargetDetail.barcode}</code>). Cuốn sách này sẽ được đánh dấu trạng thái "Lost" và không thể mượn lại cho đến khi được thay thế.
               </p>
 
               <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>
                   Ghi chú lý do / tình trạng
                 </label>
                 <input
@@ -563,7 +563,7 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
                   placeholder="Ví dụ: Độc giả làm rơi mất trong quá trình đi tàu..."
                   value={lostNote}
                   onChange={(e) => setLostNote(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
                 />
               </div>
 

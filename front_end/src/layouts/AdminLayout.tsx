@@ -6,7 +6,7 @@ import { Sidebar } from '../components/Sidebar';
 export const AdminLayout: React.FC = () => {
   return (
     <div className="app-layout">
-      <Header portalTitle="Cổng Quản Trị Viên (Admin)" />
+      <Header portalTitle="Thư viện · Cổng quản trị" />
       <div className="main-content-wrapper">
         <Sidebar role="admin" />
         <main className="app-body">

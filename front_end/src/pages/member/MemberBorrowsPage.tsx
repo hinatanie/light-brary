@@ -163,7 +163,7 @@ export const MemberBorrowsPage: React.FC = () => {
           <div className="modal-box modal-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileText size={20} color="#f59e0b" />
+                <FileText size={20} color="var(--primary)" />
                 <h3>Chi Tiết Phiếu Mượn #{selectedRecord.id}</h3>
               </div>
               <button className="btn-icon" onClick={() => setSelectedRecord(null)}>
@@ -177,26 +177,26 @@ export const MemberBorrowsPage: React.FC = () => {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '12px',
-                  background: '#0f172a',
+                  background: 'var(--surface-muted)',
                   padding: '16px',
                   borderRadius: '10px',
-                  border: '1px solid #1e293b',
+                  border: '1px solid var(--border-color)',
                   marginBottom: '20px',
                   fontSize: '13px',
                 }}
               >
                 <div>
-                  <span style={{ color: '#94a3b8' }}>Ngày mượn: </span>
+                  <span style={{ color: 'var(--text-muted)' }}>Ngày mượn: </span>
                   <strong>{new Date(selectedRecord.borrowDate).toLocaleDateString('vi-VN')}</strong>
                 </div>
                 <div>
-                  <span style={{ color: '#94a3b8' }}>Hạn trả: </span>
-                  <strong style={{ color: (selectedRecord.status === 'Overdue' || selectedRecord.details.some(d => d.isOverdue)) ? '#ef4444' : '#f8fafc' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Hạn trả: </span>
+                  <strong style={{ color: (selectedRecord.status === 'Overdue' || selectedRecord.details.some(d => d.isOverdue)) ? '#ef4444' : 'var(--text-main)' }}>
                     {new Date(selectedRecord.dueDate).toLocaleDateString('vi-VN')}
                   </strong>
                 </div>
                 <div>
-                  <span style={{ color: '#94a3b8' }}>Trạng thái phiếu: </span>
+                  <span style={{ color: 'var(--text-muted)' }}>Trạng thái phiếu: </span>
                   <span className={`badge badge-${selectedRecord.status.toLowerCase()}`}>
                     {selectedRecord.status === 'Borrowing'
                       ? 'Đang mượn'
@@ -207,13 +207,13 @@ export const MemberBorrowsPage: React.FC = () => {
                 </div>
                 {selectedRecord.note && (
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <span style={{ color: '#94a3b8' }}>Ghi chú: </span>
+                    <span style={{ color: 'var(--text-muted)' }}>Ghi chú: </span>
                     <span>{selectedRecord.note}</span>
                   </div>
                 )}
               </div>
 
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#f8fafc' }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--text-main)' }}>
                 Danh sách sách trong phiếu:
               </h4>
 

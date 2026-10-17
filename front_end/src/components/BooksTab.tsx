@@ -182,8 +182,8 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                             height: '54px',
                             objectFit: 'cover',
                             borderRadius: '6px',
-                            border: '1px solid #334155',
-                            backgroundColor: '#0f172a',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: 'var(--surface-muted)',
                             display: 'block',
                           }}
                           onError={(e) => {
@@ -201,7 +201,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#94a3b8',
+                            color: 'var(--text-muted)',
                           }}
                           title="Chưa có ảnh bìa"
                         >
@@ -339,11 +339,11 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                 />
                 {imageUrl && (
                   <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>Xem trước:</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Xem trước:</span>
                     <img
                       src={imageUrl}
                       alt="Ảnh bìa xem trước"
-                      style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #334155' }}
+                      style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)' }}
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}

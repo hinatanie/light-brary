@@ -522,7 +522,7 @@ export const MemberCatalogPage: React.FC = () => {
                                   Liên hệ Quầy Thủ Thư
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                   Chưa thể mượn
                                 </span>
                               )}

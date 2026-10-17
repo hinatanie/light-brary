@@ -575,7 +575,7 @@ export const StaffCreateBorrowPage: React.FC = () => {
                         </div>
 
                         {copies.length === 0 ? (
-                          <div style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '6px' }}>
+                          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px' }}>
                             Không có bản sao nào được ghi nhận cho đầu sách này.
                           </div>
                         ) : (
@@ -754,7 +754,7 @@ export const StaffCreateBorrowPage: React.FC = () => {
                         }}
                       >
                         {filteredUsers.length === 0 ? (
-                          <div style={{ padding: '12px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>
+                          <div style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
                             Không tìm thấy độc giả khớp với từ khóa.
                           </div>
                         ) : (
@@ -900,7 +900,7 @@ export const StaffCreateBorrowPage: React.FC = () => {
                       borderRadius: '10px',
                       padding: '24px 16px',
                       textAlign: 'center',
-                      color: '#94a3b8',
+                      color: 'var(--text-muted)',
                       backgroundColor: '#f8fafc',
                     }}
                   >

@@ -100,7 +100,7 @@ export const StaffDashboardPage: React.FC = () => {
                 <AlertCircle size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-value" style={{ color: overdueBorrows > 0 ? '#ef4444' : '#f8fafc' }}>
+                <span className="stat-value" style={{ color: overdueBorrows > 0 ? '#ef4444' : 'var(--text-main)' }}>
                   {overdueBorrows}
                 </span>
                 <span className="stat-label">Phiếu quá hạn trả</span>
@@ -130,17 +130,17 @@ export const StaffDashboardPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '16px',
-                border: '1px solid #334155',
+                border: '1px solid var(--border-color)',
                 transition: 'border-color 0.2s',
               }}
               onClick={() => navigate('/staff/borrows')}
             >
-              <div style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '14px', borderRadius: '12px' }}>
+              <div style={{ background: 'var(--primary-soft)', color: 'var(--primary)', padding: '14px', borderRadius: '12px' }}>
                 <PlusCircle size={28} />
               </div>
               <div>
-                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#f8fafc' }}>Tạo Phiếu Mượn Cho Bạn Đọc</h4>
-                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-main)' }}>Tạo Phiếu Mượn Cho Bạn Đọc</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
                   Chọn độc giả, hẹn ngày trả và quét mã vạch sách
                 </p>
               </div>
@@ -154,7 +154,7 @@ export const StaffDashboardPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '16px',
-                border: '1px solid #334155',
+                border: '1px solid var(--border-color)',
                 transition: 'border-color 0.2s',
               }}
               onClick={() => navigate('/staff/borrows')}
@@ -163,8 +163,8 @@ export const StaffDashboardPage: React.FC = () => {
                 <CheckCircle2 size={28} />
               </div>
               <div>
-                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#f8fafc' }}>Xác Nhận Trả Sách</h4>
-                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-main)' }}>Xác Nhận Trả Sách</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
                   Kiểm tra tình trạng sách, nhận sách hoàn trả và cập nhật trạng thái phiếu
                 </p>
               </div>
@@ -173,9 +173,9 @@ export const StaffDashboardPage: React.FC = () => {
 
           {/* Recent Borrows */}
           <div className="table-card" style={{ marginTop: '24px' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={18} color="#f59e0b" /> Phiếu Mượn Cần Xử Lý Gần Đây
+                <Clock size={18} color="var(--primary)" /> Phiếu Mượn Cần Xử Lý Gần Đây
               </h3>
               <button
                 className="btn-action btn-copy"
@@ -225,7 +225,7 @@ export const StaffDashboardPage: React.FC = () => {
                   })}
                   {borrowRecords.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                         Hiện không có phiếu mượn nào cần xử lý.
                       </td>
                     </tr>

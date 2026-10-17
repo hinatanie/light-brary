@@ -113,7 +113,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
       return (
         <span
           className="badge"
-          style={{ background: '#334155', color: '#94a3b8', fontSize: '11px', padding: '2px 8px' }}
+          style={{ background: 'var(--surface-muted)', color: 'var(--text-muted)', fontSize: '11px', padding: '2px 8px' }}
         >
           Chưa gán
         </span>
@@ -274,7 +274,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                       <div className="action-buttons">
                         <button
                           className="btn-action"
-                          style={{ color: '#f59e0b' }}
+                          style={{ color: 'var(--primary)' }}
                           title="Phân quyền tài khoản"
                           onClick={() => openRoleModal(u)}
                         >
@@ -303,7 +303,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={20} color="#f59e0b" />
+                <Shield size={20} color="var(--primary)" />
                 <h3>Phân Quyền: {roleUser.fullName}</h3>
               </div>
               <button className="btn-icon" onClick={() => setIsRoleModalOpen(false)}>
