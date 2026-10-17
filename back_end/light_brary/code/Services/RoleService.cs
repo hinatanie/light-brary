@@ -3,13 +3,13 @@ using light_brary.Data;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using light_brary.Repositories;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace light_brary.Services
 {
     public class RoleService(
-        RoleManager<IdentityRole<Guid>> roleManager,
+        RoleRepository roleRepository,
         UserManager<User> userManager,
         UserService userService,
         AppDbContext context)
@@ -18,20 +18,16 @@ namespace light_brary.Services
 
         public async Task<IEnumerable<RoleResponse>> GetAllAsync()
         {
-            return await roleManager.Roles
-                .Where(role => SystemRoles.Contains(role.Name!))
-                .Select(role => RoleResponse.FromEntity(new IdentityRole<Guid> { Id = role.Id, Name = role.Name }))
-                .ToListAsync();
+            var roles = await roleRepository.GetByNamesAsync(SystemRoles);
+            return roles.Select(RoleResponse.FromEntity).ToList();
         }
 
         public async Task<IEnumerable<RoleResponse>> GetUserRolesAsync(Guid userId)
         {
             var user = await userService.GetRequiredUserAsync(userId);
-            var names = (await userManager.GetRolesAsync(user)).ToArray();
-            return await roleManager.Roles
-                .Where(role => names.Contains(role.Name!) && SystemRoles.Contains(role.Name!))
-                .Select(role => RoleResponse.FromEntity(new IdentityRole<Guid> { Id = role.Id, Name = role.Name }))
-                .ToListAsync();
+            var names = await userManager.GetRolesAsync(user);
+            var roles = await roleRepository.GetByNamesAsync(names.Intersect(SystemRoles));
+            return roles.Select(RoleResponse.FromEntity).ToList();
         }
 
         public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
@@ -60,10 +56,7 @@ namespace light_brary.Services
 
         private async Task<IdentityRole<Guid>> FindRoleAsync(Guid id)
         {
-            // Serialize concurrent membership changes for this role.
-            var role = await context.Roles
-                .FromSqlInterpolated($"SELECT * FROM \"AspNetRoles\" WHERE \"Id\" = {id} FOR UPDATE")
-                .SingleOrDefaultAsync()
+            var role = await roleRepository.GetByIdForUpdateAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy vai trò với ID: {id}");
 
             if (!SystemRoles.Contains(role.Name))
