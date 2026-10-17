@@ -32,6 +32,15 @@ namespace light_brary.Controllers
             return Ok(updated);
         }
 
+        [HttpGet("api/me/borrow-records")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<BorrowRecordResponse>>> GetMyBorrowRecords()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var records = await userService.GetUserBorrowRecordsAsync(userId);
+            return Ok(records);
+        }
+
          // Admin: ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
         // ADMIN : xoa user
