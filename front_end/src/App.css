@@ -1307,32 +1307,39 @@
   margin-top: 2px;
 }
 
-.login-portals {
+.internal-auth-main {
   display: flex;
-  flex-wrap: wrap;
-  margin: 20px -18px 0;
-  border-top: 1px solid var(--border-color);
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 32px 16px;
+}
+
+.internal-auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px;
+  background: var(--card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+.internal-auth-brand {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  text-align: center;
   border-bottom: 1px solid var(--border-color);
 }
 
-.login-portals a {
-  flex: 1;
-  text-align: center;
-  padding: 12px 5px;
-  font-size: 12px;
-  text-decoration: none;
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
+.internal-auth-brand h1 {
+  color: var(--primary);
+  font-size: 22px;
+  margin: 14px 0 8px;
 }
 
-.login-portals a[aria-current='page'] {
-  background: var(--sidebar-active-bg);
-  border-bottom-color: var(--primary);
-  font-weight: 700;
-}
-
-.login-portals a:hover {
-  background: var(--primary-soft);
+.internal-auth-brand p {
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .portal-panel {
@@ -1508,7 +1515,6 @@
   .auth-sidebar { padding: 24px 22px; border-right: none; border-bottom: 1px solid var(--panel-border); }
   .auth-sidebar .sidebar-school { display: none; }
   .login-panel { width: 100%; max-width: 420px; margin: 0 auto; }
-  .login-portals { margin-left: 0; margin-right: 0; }
   .auth-main { padding: 16px 12px; gap: 16px; }
   .portal-introduction h2 { font-size: 23px; }
   .portal-services { grid-template-columns: 1fr; }

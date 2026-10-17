@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Layouts
 import { AuthLayout } from './layouts/AuthLayout';
+import { InternalAuthLayout } from './layouts/InternalAuthLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { StaffLayout } from './layouts/StaffLayout';
 import { MemberLayout } from './layouts/MemberLayout';
@@ -84,7 +85,11 @@ export function App() {
             {/* Auth Routes */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<LoginPage roleMode="member" />} />
+            </Route>
+            <Route element={<InternalAuthLayout portalTitle="Cổng quản trị thư viện" />}>
               <Route path="/login/admin" element={<LoginPage roleMode="admin" />} />
+            </Route>
+            <Route element={<InternalAuthLayout portalTitle="Cổng thủ thư" />}>
               <Route path="/login/librarian" element={<LoginPage roleMode="librarian" />} />
               <Route path="/login/librian" element={<Navigate to="/login/librarian" replace />} />
             </Route>

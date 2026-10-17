@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api';
 import { LogIn, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
@@ -104,11 +104,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
       </form>
 
       <p className="login-help">Quên mật khẩu? Vui lòng liên hệ cán bộ thư viện để được hỗ trợ.</p>
-      <nav className="login-portals" aria-label="Chọn cổng đăng nhập">
-        <Link to="/login" aria-current={currentMode === 'member' ? 'page' : undefined}>Sinh viên</Link>
-        <Link to="/login/librarian" aria-current={currentMode === 'librarian' ? 'page' : undefined}>Thủ thư</Link>
-        <Link to="/login/admin" aria-current={currentMode === 'admin' ? 'page' : undefined}>Quản trị</Link>
-      </nav>
     </section>
   );
 };
