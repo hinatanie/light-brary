@@ -181,37 +181,28 @@ Quy tắc nghiệp vụ:
 - Trùng số điện thoại: `409 PHONE_NUMBER_EXISTS`.
 - Xóa user sẽ xóa cả phiếu mượn, chi tiết mượn, tiền phạt, chi tiết tiền phạt và dữ liệu Identity liên quan theo quan hệ cascade.
 - Đầu sách, bản sao sách và trạng thái bản sao được giữ nguyên; xóa user không đồng nghĩa với trả sách.
-- Chặn xóa user nếu đó là tài khoản `ADMIN` cuối cùng.
+- Bảo vệ tài khoản Admin cuối cùng khi xóa user chưa được triển khai.
 - `/api/me` lấy user ID từ danh tính đã xác thực, không nhận user ID từ client.  
     **Đề xuất cho `/api/me`:** cho phép mọi người dùng đã đăng nhập, gồm `ADMIN`, `LIBRARIAN`, `USER`. Nếu chỉ cho role `USER`, tài khoản chỉ mang role `LIBRARIAN` sẽ không xem được hồ sơ của chính mình.  
     Các API lịch sử mượn và sách đang mượn được định nghĩa chung tại phần 6.
 
 ---
-# 3. Quản lý role và gán role
+# 3. Gán và gỡ các role cố định
 ## 3.1. Response dùng chung: `RoleResponse`
 ```
 {
-  "id": 2,
-  "name": "LIBRARIAN"
+  "id": "6a7ce103-658d-44fa-89fe-f5a0d0532be1",
+  "name": "Librarian"
 }
 ```
-## 3.2. Request tạo/sửa role: `SaveRoleRequest`
-```
-{
-  "name": "ASSISTANT"
-}
-```
-`name` bắt buộc, tối đa 256 ký tự. Đề xuất chuẩn hóa về chữ hoa và kiểm tra duy nhất sau chuẩn hóa.
-## 3.3. Hợp đồng từng API
-Tất cả endpoint trong phần này dành cho `ADMIN`.
+## 3.2. Hợp đồng từng API
+Hệ thống chỉ hỗ trợ ba role cố định: `Admin`, `Librarian`, `User`. Các role được tạo sẵn khi seed dữ liệu. Không có API tạo, đổi tên, xóa hoặc xem chi tiết một role.
+
+Tất cả endpoint trong phần này dành cho `Admin`.
 
 |Method|Endpoint|Request|Response thành công|
 |---|---|---|---|
 |GET|`/api/roles`|Không có body|`200` — `RoleResponse[]`|
-|GET|`/api/roles/{id}`|Path: `id`|`200` — `RoleResponse`|
-|POST|`/api/roles`|Body: `SaveRoleRequest`|`201` — `RoleResponse`|
-|PUT|`/api/roles/{id}`|Path: `id`; body: `SaveRoleRequest`|`200` — `RoleResponse`|
-|DELETE|`/api/roles/{id}`|Path: `id`|`204`|
 |GET|`/api/users/{userId}/roles`|Path: `userId`|`200` — `RoleResponse[]`|
 |POST|`/api/users/{userId}/roles/{roleId}`|Path: `userId`, `roleId`; không body|`204`|
 |DELETE|`/api/users/{userId}/roles/{roleId}`|Path: `userId`, `roleId`; không body|`204`|
@@ -219,12 +210,12 @@ Tất cả endpoint trong phần này dành cho `ADMIN`.
 ```
 [
   {
-    "id": 2,
-    "name": "LIBRARIAN"
+    "id": "6a7ce103-658d-44fa-89fe-f5a0d0532be1",
+    "name": "Librarian"
   },
   {
-    "id": 3,
-    "name": "USER"
+    "id": "36a76c21-f5ac-4aaa-b945-37be2734672a",
+    "name": "User"
   }
 ]
 ```
@@ -232,11 +223,10 @@ Quy tắc:
 - Gán role đã được gán: trả `204`, không tạo bản ghi trùng.
 - Gỡ role chưa được gán: trả `204`.
 - User hoặc role không tồn tại: trả `404`.
-- Role đang được gán cho user: chặn xóa với `409 ROLE_IN_USE`.
-- Tên role trùng: `409 ROLE_NAME_EXISTS`.
-- Chặn gỡ role `ADMIN` khỏi quản trị viên cuối cùng.  
-    **Đề xuất bảo vệ ba role hệ thống:** `ADMIN`, `LIBRARIAN`, `USER` không được đổi tên hoặc xóa vì các API đang dựa vào đúng những tên này để phân quyền.  
-    Role tự tạo như `ASSISTANT` không tự động có quyền gọi API. Với mô hình hiện tại, quyền truy cập vẫn phải được khai báo trong ứng dụng. Nếu hệ thống chỉ cần đúng ba role cố định, có thể bỏ API tạo/sửa/xóa role và chỉ giữ API xem/gán/gỡ.
+- API danh sách role và role của user chỉ trả về các role cố định nêu trên.
+- Gán hoặc gỡ một role ngoài ba role cố định: trả `400 BAD_REQUEST`. Dữ liệu role cũ không bị xóa tự động.
+- Khi quyền thay đổi, security stamp được cập nhật để phiên đăng nhập cũ không tiếp tục sử dụng quyền cũ.
+- Bảo vệ Admin cuối cùng khi gỡ quyền hoặc xóa tài khoản chưa được triển khai.
 
 ---
 # 4. Quản lý danh mục

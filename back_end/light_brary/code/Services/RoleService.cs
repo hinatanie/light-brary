@@ -1,6 +1,5 @@
 using light_brary.Constants;
 using light_brary.Data;
-using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
@@ -20,70 +19,17 @@ namespace light_brary.Services
         public async Task<IEnumerable<RoleResponse>> GetAllAsync()
         {
             return await roleManager.Roles
+                .Where(role => SystemRoles.Contains(role.Name!))
                 .Select(role => RoleResponse.FromEntity(new IdentityRole<Guid> { Id = role.Id, Name = role.Name }))
                 .ToListAsync();
-        }
-
-        public async Task<RoleResponse> GetByIdAsync(Guid id)
-        {
-            var role = await FindRoleAsync(id);
-            return RoleResponse.FromEntity(role);
-        }
-
-        public async Task<RoleResponse> CreateAsync(SaveRoleRequest request)
-        {
-            var name = request.Name.Trim();
-            if (await roleManager.RoleExistsAsync(name))
-                throw AppException.Conflict($"Vai trò '{name}' đã tồn tại.");
-
-            var role = new IdentityRole<Guid> { Id = Guid.NewGuid(), Name = name };
-            (await roleManager.CreateAsync(role)).ThrowIfFailed();
-            return RoleResponse.FromEntity(role);
-        }
-
-        public async Task<RoleResponse> UpdateAsync(Guid id, SaveRoleRequest request)
-        {
-            using var transaction = await context.Database.BeginTransactionAsync();
-            var role = await FindRoleAsync(id, forUpdate: true);
-            if (SystemRoles.Any(name => name.Equals(role.Name, StringComparison.OrdinalIgnoreCase)))
-                throw AppException.BadRequest("Không được phép chỉnh sửa tên các vai trò mặc định của hệ thống.");
-
-            var name = request.Name.Trim();
-            var existing = await roleManager.FindByNameAsync(name);
-            if (existing is not null && existing.Id != id)
-                throw AppException.Conflict($"Vai trò '{name}' đã tồn tại.");
-
-            if (role.Name == name)
-                return RoleResponse.FromEntity(role);
-
-            var users = await userManager.GetUsersInRoleAsync(role.Name!);
-            role.Name = name;
-            (await roleManager.UpdateAsync(role)).ThrowIfFailed();
-            foreach (var user in users)
-                (await userManager.UpdateSecurityStampAsync(user)).ThrowIfFailed();
-            await transaction.CommitAsync();
-            return RoleResponse.FromEntity(role);
-        }
-
-        public async Task DeleteAsync(Guid id)
-        {
-            using var transaction = await context.Database.BeginTransactionAsync();
-            var role = await FindRoleAsync(id, forUpdate: true);
-            if (SystemRoles.Any(name => name.Equals(role.Name, StringComparison.OrdinalIgnoreCase)))
-                throw AppException.BadRequest("Không được phép xóa các vai trò mặc định của hệ thống.");
-
-            if ((await userManager.GetUsersInRoleAsync(role.Name!)).Any())
-                throw AppException.Conflict("Vai trò đang được gán cho người dùng, không thể xóa.");
-
-            (await roleManager.DeleteAsync(role)).ThrowIfFailed();
-            await transaction.CommitAsync();
         }
 
         public async Task<IEnumerable<RoleResponse>> GetUserRolesAsync(Guid userId)
         {
             var user = await userService.GetRequiredUserAsync(userId);
             var names = (await userManager.GetRolesAsync(user)).ToArray();
-            return await roleManager.Roles.Where(role => names.Contains(role.Name!))
+            return await roleManager.Roles
+                .Where(role => names.Contains(role.Name!) && SystemRoles.Contains(role.Name!))
                 .Select(role => RoleResponse.FromEntity(new IdentityRole<Guid> { Id = role.Id, Name = role.Name }))
                 .ToListAsync();
         }
@@ -91,7 +37,7 @@ namespace light_brary.Services
         public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
         {
             using var transaction = await context.Database.BeginTransactionAsync();
-            var role = await FindRoleAsync(roleId, forUpdate: true);
+            var role = await FindRoleAsync(roleId);
             var user = await userService.GetRequiredUserAsync(userId);
             if (await userManager.IsInRoleAsync(user, role.Name!)) return;
 
@@ -103,7 +49,7 @@ namespace light_brary.Services
         public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
         {
             using var transaction = await context.Database.BeginTransactionAsync();
-            var role = await FindRoleAsync(roleId, forUpdate: true);
+            var role = await FindRoleAsync(roleId);
             var user = await userService.GetRequiredUserAsync(userId);
             if (!await userManager.IsInRoleAsync(user, role.Name!)) return;
 
@@ -112,14 +58,18 @@ namespace light_brary.Services
             await transaction.CommitAsync();
         }
 
-        private async Task<IdentityRole<Guid>> FindRoleAsync(Guid id, bool forUpdate = false)
+        private async Task<IdentityRole<Guid>> FindRoleAsync(Guid id)
         {
-            // Serialize membership changes with renames/deletion before reading the role or its users.
-            var roles = forUpdate
-                ? context.Roles.FromSqlInterpolated($"SELECT * FROM \"AspNetRoles\" WHERE \"Id\" = {id} FOR UPDATE")
-                : roleManager.Roles;
-            return await roles.SingleOrDefaultAsync(role => role.Id == id)
+            // Serialize concurrent membership changes for this role.
+            var role = await context.Roles
+                .FromSqlInterpolated($"SELECT * FROM \"AspNetRoles\" WHERE \"Id\" = {id} FOR UPDATE")
+                .SingleOrDefaultAsync()
                 ?? throw AppException.NotFound($"Không tìm thấy vai trò với ID: {id}");
+
+            if (!SystemRoles.Contains(role.Name))
+                throw AppException.BadRequest("Chỉ được phép gán hoặc gỡ các vai trò Admin, Librarian và User.");
+
+            return role;
         }
     }
 }

@@ -394,7 +394,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                     </div>
                     <div>
                       <strong style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Briefcase size={14} /> Staff (Nhân viên / Thủ thư)
+                        <Briefcase size={14} /> Librarian (Thủ thư)
                       </strong>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
                         Xử lý tạo phiếu mượn, xác nhận trả sách và tra cứu kho sách
@@ -434,7 +434,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                     </div>
                     <div>
                       <strong style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <UserCheck size={14} /> Member (Độc giả / Khách hàng)
+                        <UserCheck size={14} /> User (Bạn đọc / Sinh viên)
                       </strong>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
                         Xem sách đang mượn, lịch sử mượn sách và quản lý hồ sơ cá nhân
