@@ -29,22 +29,18 @@ export const AdminDashboardPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bks, cats, borrows, usrs] = await Promise.all([
+      const [bks, cats, borrows, usrs, allCopies] = await Promise.all([
         booksApi.getAll(),
         categoriesApi.getAll(),
         borrowRecordsApi.getAll(),
         usersApi.getAll(),
+        bookCopiesApi.getAll(),
       ]);
       setBooks(bks);
       setCategories(cats);
       setBorrowRecords(borrows);
       setUsers(usrs);
-
-      // Load copies
-      const copiesArrays = await Promise.all(
-        bks.map((b) => bookCopiesApi.getByBookId(b.id).catch(() => [] as BookCopy[]))
-      );
-      setCopies(copiesArrays.flat());
+      setCopies(allCopies);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải dữ liệu tổng quan', 'error');
     } finally {

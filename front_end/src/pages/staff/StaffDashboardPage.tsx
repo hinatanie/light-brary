@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { BookCopy, BorrowRecord } from '../../types';
-import { booksApi, bookCopiesApi, borrowRecordsApi } from '../../api';
+import { bookCopiesApi, borrowRecordsApi } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import {
   RotateCcw,
@@ -25,16 +25,12 @@ export const StaffDashboardPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bks, borrows] = await Promise.all([
-        booksApi.getAll(),
+      const [allCopies, borrows] = await Promise.all([
+        bookCopiesApi.getAll(),
         borrowRecordsApi.getAll(),
       ]);
       setBorrowRecords(borrows);
-
-      const copiesArrays = await Promise.all(
-        bks.map((b) => bookCopiesApi.getByBookId(b.id).catch(() => [] as BookCopy[]))
-      );
-      setCopies(copiesArrays.flat());
+      setCopies(allCopies);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải dữ liệu bàn làm việc', 'error');
     } finally {

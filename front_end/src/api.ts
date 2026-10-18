@@ -234,6 +234,7 @@ export const booksApi = {
 
 // ─── 4. Book Copies API ──────────────────────────────────────────────────────
 export const bookCopiesApi = {
+  getAll: () => request<BookCopy[]>('/book-copies/all'),
   getByBookId: (bookId: string | number) => request<BookCopy[]>(`/books/${bookId}/copies`),
   getById: (id: string | number) => request<BookCopy>(`/book-copies/${id}`),
   getByBarcode: (barcode: string) => request<BookCopy>(`/book-copies/by-barcode/${barcode}`),

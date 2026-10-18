@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { BorrowRecord, User, BookCopy } from '../../types';
-import { borrowRecordsApi, usersApi, booksApi, bookCopiesApi } from '../../api';
+import { borrowRecordsApi, usersApi, bookCopiesApi } from '../../api';
 import { BorrowRecordsTab } from '../../components/BorrowRecordsTab';
 import { useToast } from '../../contexts/ToastContext';
 import { RefreshCw } from 'lucide-react';
@@ -15,18 +15,14 @@ export const StaffBorrowsPage: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [borrows, usrs, bks] = await Promise.all([
+      const [borrows, usrs, allCopies] = await Promise.all([
         borrowRecordsApi.getAll(),
         usersApi.getAll(),
-        booksApi.getAll(),
+        bookCopiesApi.getAll(),
       ]);
       setBorrowRecords(borrows);
       setUsers(usrs);
 
-      const copiesArrays = await Promise.all(
-        bks.map((b) => bookCopiesApi.getByBookId(b.id).catch(() => [] as BookCopy[]))
-      );
-      const allCopies = copiesArrays.flat();
       setAvailableCopies(allCopies.filter((c) => c.status === 'Available'));
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải dữ liệu mượn trả', 'error');

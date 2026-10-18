@@ -19,13 +19,12 @@ export const AdminBookCopiesPage: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const bks = await booksApi.getAll();
+      const [bks, allCopies] = await Promise.all([
+        booksApi.getAll(),
+        bookCopiesApi.getAll(),
+      ]);
       setBooks(bks);
-
-      const copiesArrays = await Promise.all(
-        bks.map((b) => bookCopiesApi.getByBookId(b.id).catch(() => [] as BookCopy[]))
-      );
-      setCopies(copiesArrays.flat());
+      setCopies(allCopies);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải danh sách bản sao', 'error');
     } finally {
