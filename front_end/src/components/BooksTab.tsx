@@ -158,6 +158,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
             <table className="custom-table">
               <thead>
                 <tr>
+                  <th>STT</th>
                   <th>ID</th>
                   <th>Bìa sách</th>
                   <th>Tiêu đề sách</th>
@@ -169,8 +170,9 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {filteredBooks.map((b) => (
+                {filteredBooks.map((b, index) => (
                   <tr key={b.id}>
+                    <td>{index + 1}</td>
                     <td>#{b.id}</td>
                     <td>
                       {b.imageUrl ? (
