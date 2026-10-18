@@ -105,6 +105,7 @@ export function App() {
                 <Route path="book-copies" element={<AdminBookCopiesPage />} />
                 <Route path="borrows" element={<AdminBorrowsPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
+                <Route path="profile" element={<MemberProfilePage title="Hồ Sơ Cá Nhân" />} />
               </Route>
             </Route>
 

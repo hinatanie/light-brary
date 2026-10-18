@@ -70,6 +70,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
             <Users size={18} />
             <span>Người dùng & Quyền</span>
           </NavLink>
+          <NavLink
+            to="/admin/profile"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <User size={18} />
+            <span>Thông tin cá nhân</span>
+          </NavLink>
         </>
       )}
 

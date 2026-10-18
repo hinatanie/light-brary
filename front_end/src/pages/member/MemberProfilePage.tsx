@@ -20,7 +20,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 
-export const MemberProfilePage: React.FC = () => {
+export const MemberProfilePage: React.FC<{ title?: string }> = ({ title = 'Hồ Sơ Bạn Đọc Cá Nhân' }) => {
   const { user, updateUserSession } = useAuth();
   const { showToast } = useToast();
 
@@ -56,7 +56,7 @@ export const MemberProfilePage: React.FC = () => {
         email: me.email,
         phoneNumber: me.phoneNumber,
         address: me.address || '',
-        createdAt: new Date().toISOString(),
+        createdAt: me.createdAt,
         roles: me.roles,
       });
     } catch (err: any) {
@@ -147,7 +147,7 @@ export const MemberProfilePage: React.FC = () => {
     <div className="tab-container">
       <div className="section-header">
         <div>
-          <h2>👤 Hồ Sơ Bạn Đọc Cá Nhân</h2>
+          <h2>👤 {title}</h2>
           <p className="section-desc">
             Xem và cập nhật thông tin liên lạc phục vụ công tác mượn trả và liên hệ thông báo
           </p>

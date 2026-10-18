@@ -123,6 +123,7 @@ export const authApi = {
       phoneNumber: raw.phoneNumber || '',
       email: raw.email || '',
       address: raw.address || null,
+      createdAt: raw.createdAt,
       roles,
       mustChangePassword: Boolean(raw.mustChangePassword),
     };

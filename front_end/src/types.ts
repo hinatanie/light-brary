@@ -100,6 +100,7 @@ export interface MeResponse {
   email?: string;
   phoneNumber: string;
   address?: string | null;
+  createdAt?: string;
   roles: string[];
   mustChangePassword?: boolean;
 }
