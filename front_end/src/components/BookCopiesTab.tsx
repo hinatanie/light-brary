@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Book, BookCopy } from '../types';
 import { bookCopiesApi } from '../api';
 import { Plus, Search, Edit3, Trash2, Barcode, X, RefreshCw } from 'lucide-react';
@@ -22,6 +23,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   onNotify,
   readOnly = false,
 }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -191,7 +193,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
               </thead>
               <tbody>
                 {filteredCopies.map((c) => (
-                  <tr key={c.id}>
+                  <tr key={c.id} className="book-row" onClick={() => navigate(`../books/${encodeURIComponent(String(c.bookId))}`)}>
                     <td>#{c.id}</td>
                     <td>
                       <code className="barcode-badge">
@@ -199,7 +201,9 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                       </code>
                     </td>
                     <td>
-                      <strong>{c.bookTitle}</strong>
+                      <Link className="book-title-link" to={`../books/${encodeURIComponent(String(c.bookId))}`} onClick={(e) => e.stopPropagation()}>
+                        <strong>{c.bookTitle}</strong>
+                      </Link>
                     </td>
                     <td>{c.bookAuthor}</td>
                     <td>
@@ -214,7 +218,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                     <td>
                       <span className="condition-text">{c.conditionNote || 'Bình thường'}</span>
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       {!readOnly ? (
                         <div className="action-buttons">
                           <button
