@@ -16,6 +16,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { BookDetailsPage } from './pages/BookDetailsPage';
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -99,6 +100,7 @@ export function App() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboardPage />} />
                 <Route path="books" element={<AdminBooksPage />} />
+                <Route path="books/:bookId" element={<BookDetailsPage portalPath="/admin" />} />
                 <Route path="categories" element={<AdminCategoriesPage />} />
                 <Route path="book-copies" element={<AdminBookCopiesPage />} />
                 <Route path="borrows" element={<AdminBorrowsPage />} />
@@ -113,6 +115,7 @@ export function App() {
                 <Route path="borrows" element={<StaffBorrowsPage />} />
                 <Route path="create-borrow" element={<StaffCreateBorrowPage />} />
                 <Route path="books" element={<StaffBooksPage />} />
+                <Route path="books/:bookId" element={<BookDetailsPage portalPath="/staff" />} />
                 <Route path="book-copies" element={<StaffBookCopiesPage />} />
               </Route>
             </Route>

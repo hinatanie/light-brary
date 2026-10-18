@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Book, Category } from '../types';
 import { booksApi } from '../api';
 import { Plus, Search, Edit2, Trash2, BookOpen, Layers, X, Image as ImageIcon } from 'lucide-react';
@@ -9,6 +10,7 @@ interface BooksTabProps {
   onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
   onViewCopies: (bookId: string) => void;
+  onViewBook: (bookId: string) => void;
   readOnly?: boolean;
 }
 
@@ -18,6 +20,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
   onRefresh,
   onNotify,
   onViewCopies,
+  onViewBook,
   readOnly = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,7 +174,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
               </thead>
               <tbody>
                 {filteredBooks.map((b, index) => (
-                  <tr key={b.id}>
+                  <tr key={b.id} className="book-row" onClick={() => onViewBook(String(b.id))}>
                     <td>{index + 1}</td>
                     <td>#{b.id}</td>
                     <td>
@@ -212,7 +215,9 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                       )}
                     </td>
                     <td>
-                      <strong>{b.title}</strong>
+                      <Link className="book-title-link" to={String(b.id)} onClick={(e) => e.stopPropagation()}>
+                        <strong>{b.title}</strong>
+                      </Link>
                     </td>
                     <td>{b.author}</td>
                     <td>
@@ -220,7 +225,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                     </td>
                     <td><code>{b.isbn || '—'}</code></td>
                     <td>{b.publishYear || '—'}</td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div className="action-buttons">
                         <button
                           className="btn-action btn-copy"

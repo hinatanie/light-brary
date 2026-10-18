@@ -55,6 +55,7 @@ export const AdminBooksPage: React.FC = () => {
       onRefresh={loadData}
       onNotify={showToast}
       onViewCopies={handleViewCopies}
+      onViewBook={(bookId) => navigate(`/admin/books/${bookId}`)}
     />
   );
 };

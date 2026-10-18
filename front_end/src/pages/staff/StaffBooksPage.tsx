@@ -55,6 +55,7 @@ export const StaffBooksPage: React.FC = () => {
       onRefresh={loadData}
       onNotify={showToast}
       onViewCopies={handleViewCopies}
+      onViewBook={(bookId) => navigate(`/staff/books/${bookId}`)}
       readOnly={true}
     />
   );
