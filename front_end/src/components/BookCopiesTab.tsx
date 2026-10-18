@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import type { Book, BookCopy } from '../types';
-import { bookCopiesApi } from '../api';
-import { Plus, Search, Edit3, Trash2, Barcode, X, RefreshCw } from 'lucide-react';
+import { ApiError, bookCopiesApi, booksApi } from '../api';
+import { Plus, Search, Edit3, Trash2, Barcode, BookOpen, X, RefreshCw } from 'lucide-react';
 
 interface BookCopiesTabProps {
   copies: BookCopy[];
@@ -23,12 +22,42 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   onNotify,
   readOnly = false,
 }) => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
   const [targetCopy, setTargetCopy] = useState<BookCopy | null>(null);
+  const [viewingBookId, setViewingBookId] = useState<string | null>(null);
+  const [bookResult, setBookResult] = useState<{ id: string; book?: Book; error?: string } | null>(null);
+  const [failedCover, setFailedCover] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!viewingBookId) return;
+    let cancelled = false;
+    booksApi.getById(viewingBookId).then(
+      (book) => {
+        if (!cancelled) setBookResult({ id: viewingBookId, book });
+      },
+      (error: unknown) => {
+        if (!cancelled) {
+          setBookResult({
+            id: viewingBookId,
+            error: error instanceof ApiError && error.status === 404
+              ? 'Không tìm thấy sách này. Sách có thể đã bị xóa.'
+              : 'Không thể tải thông tin sách. Vui lòng đóng và mở lại để thử lại.',
+          });
+        }
+      },
+    );
+    return () => { cancelled = true; };
+  }, [viewingBookId]);
+
+  const openBookDetails = (id: string | number) => {
+    setBookResult(null);
+    setViewingBookId(String(id));
+  };
+
+  const viewingBook = bookResult?.id === viewingBookId ? bookResult?.book : undefined;
 
   // Form states for Add Copy
   const [bookId, setBookId] = useState<string>(selectedBookId || String(books[0]?.id || ''));
@@ -193,7 +222,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
               </thead>
               <tbody>
                 {filteredCopies.map((c) => (
-                  <tr key={c.id} className="book-row" onClick={() => navigate(`../books/${encodeURIComponent(String(c.bookId))}`)}>
+                  <tr key={c.id} className="book-row" onClick={() => openBookDetails(c.bookId)}>
                     <td>#{c.id}</td>
                     <td>
                       <code className="barcode-badge">
@@ -201,9 +230,9 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                       </code>
                     </td>
                     <td>
-                      <Link className="book-title-link" to={`../books/${encodeURIComponent(String(c.bookId))}`} onClick={(e) => e.stopPropagation()}>
+                      <button type="button" className="book-title-link book-title-button" onClick={(e) => { e.stopPropagation(); openBookDetails(c.bookId); }}>
                         <strong>{c.bookTitle}</strong>
-                      </Link>
+                      </button>
                     </td>
                     <td>{c.bookAuthor}</td>
                     <td>
@@ -247,6 +276,48 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
           </div>
         )}
       </div>
+
+      {viewingBookId && (
+        <div className="modal-backdrop" onClick={() => setViewingBookId(null)}>
+          <div className="modal-box modal-lg" role="dialog" aria-modal="true" aria-labelledby="copy-book-details-title" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Escape') setViewingBookId(null); }}>
+            <div className="modal-header">
+              <h3 id="copy-book-details-title">📖 Thông Tin Sách</h3>
+              <button type="button" className="btn-icon" aria-label="Đóng thông tin sách" autoFocus onClick={() => setViewingBookId(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            {bookResult?.id !== viewingBookId ? (
+              <div className="loading-banner" role="status">
+                <RefreshCw size={18} className="spin" /> Đang tải thông tin sách...
+              </div>
+            ) : bookResult?.error ? (
+              <div className="empty-state" role="alert"><p>{bookResult.error}</p></div>
+            ) : viewingBook ? (
+              <div className="book-details" style={{ overflowY: 'auto' }}>
+                <div className="book-details-cover">
+                  {viewingBook.imageUrl && failedCover !== viewingBook.imageUrl ? (
+                    <img src={viewingBook.imageUrl} alt={`Bìa sách ${viewingBook.title}`} onError={() => setFailedCover(viewingBook.imageUrl ?? null)} />
+                  ) : <BookOpen size={64} aria-label="Chưa có ảnh bìa" />}
+                </div>
+                <div className="book-details-info">
+                  <h3>{viewingBook.title}</h3>
+                  <dl className="book-details-fields">
+                    <dt>Tác giả</dt><dd>{viewingBook.author}</dd>
+                    <dt>Thể loại</dt><dd>{viewingBook.categoryName || '—'}</dd>
+                    <dt>ISBN</dt><dd>{viewingBook.isbn || '—'}</dd>
+                    <dt>Năm xuất bản</dt><dd>{viewingBook.publishYear ?? '—'}</dd>
+                    <dt>Tổng bản sao</dt><dd>{viewingBook.totalCopies ?? 0} cuốn</dd>
+                    <dt>Có sẵn trên kệ</dt><dd>{viewingBook.availableCopies ?? 0} cuốn</dd>
+                  </dl>
+                </div>
+              </div>
+            ) : null}
+            <div className="modal-actions" style={{ padding: '16px 24px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setViewingBookId(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Thêm Bản Sao */}
       {isAddModalOpen && (

@@ -451,6 +451,15 @@
   text-decoration: underline;
 }
 
+.book-title-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .book-details {
   display: flex;
   flex-wrap: wrap;
