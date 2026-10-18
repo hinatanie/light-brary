@@ -9,6 +9,14 @@ namespace light_brary.Repositories
 {
     public class BookCopyRepository(AppDbContext context) : GenericRepository<BookCopy>(context)
     {
+        public async Task<IEnumerable<BookCopy>> GetAllWithBookAsync()
+        {
+            return await _context.BookCopies
+                .Include(bc => bc.Book)
+                .OrderBy(bc => bc.Book.Title)
+                .ToListAsync();
+        }
+
         public async Task<BookCopy?> GetByBarcodeAsync(string barcode)
         {
             return await _context.BookCopies

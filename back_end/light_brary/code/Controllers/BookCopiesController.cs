@@ -10,6 +10,14 @@ namespace light_brary.Controllers
     [Route("api")]
     public class BookCopiesController(BookCopyService bookCopyService) : ControllerBase
     {
+        [HttpGet("book-copies/all")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
+        public async Task<ActionResult<IEnumerable<BookCopyResponse>>> GetAllAsync()
+        {
+            var copies = await bookCopyService.GetAllAsync();
+            return Ok(copies);
+        }
+
         [HttpGet("books/{bookId:guid}/copies")]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<BookCopyResponse>>> GetByBookId(Guid bookId)

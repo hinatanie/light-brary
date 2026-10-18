@@ -15,6 +15,12 @@ namespace light_brary.Services
         BookCopyRepository bookCopyRepository,
         BookRepository bookRepository)
     {
+        public async Task<IEnumerable<BookCopyResponse>> GetAllAsync()
+        {
+            var copies = await bookCopyRepository.GetAllWithBookAsync();
+            return copies.Select(BookCopyResponse.FromEntity).ToList();
+        }
+
         public async Task<IEnumerable<BookCopyResponse>> GetByBookIdAsync(Guid bookId)
         {
             var book = await bookRepository.GetByIdAsync(bookId);
