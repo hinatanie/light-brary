@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Layers, RefreshCw } from 'lucide-react';
-import { ApiError, booksApi } from '../api';
-import type { Book } from '../types';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, BookOpen, Edit2, Layers, RefreshCw, Trash2 } from 'lucide-react';
+import { ApiError, booksApi, categoriesApi } from '../api';
+import type { Book, Category } from '../types';
+import { BookFormModal } from '../components/BookFormModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 export const BookDetailsPage = ({ portalPath }: { portalPath: '/admin' | '/staff' }) => {
   const { bookId } = useParams<{ bookId: string }>();
+  const navigate = useNavigate();
+  const { hasRole } = useAuth();
+  const { showToast } = useToast();
   const [result, setResult] = useState<{ id: string; book?: Book; error?: string } | null>(null);
   const [failedImage, setFailedImage] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [busy, setBusy] = useState(false);
+  const canEdit = hasRole('Admin') || hasRole('Librarian');
+  const canDelete = hasRole('Admin');
 
   useEffect(() => {
     if (!bookId) return;
@@ -33,6 +44,33 @@ export const BookDetailsPage = ({ portalPath }: { portalPath: '/admin' | '/staff
   }, [bookId]);
 
   const book = result?.id === bookId ? result?.book : undefined;
+
+  const handleEdit = async () => {
+    if (!book || busy) return;
+    setBusy(true);
+    try {
+      setCategories(await categoriesApi.getAll());
+      setEditingBook(book);
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Không thể tải thể loại sách', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!book || busy || !window.confirm(`Bạn có chắc chắn muốn xóa đầu sách "${book.title}"?`)) return;
+    setBusy(true);
+    try {
+      await booksApi.delete(book.id);
+      showToast(`Đã xóa đầu sách "${book.title}"`);
+      navigate(`${portalPath}/books`, { replace: true });
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Lỗi khi xóa sách', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="tab-container">
@@ -68,12 +106,33 @@ export const BookDetailsPage = ({ portalPath }: { portalPath: '/admin' | '/staff
               <dt>Tổng bản sao</dt><dd>{book.totalCopies ?? 0} cuốn</dd>
               <dt>Có sẵn trên kệ</dt><dd>{book.availableCopies ?? 0} cuốn</dd>
             </dl>
-            <Link className="btn btn-primary" to={`${portalPath}/book-copies?bookId=${encodeURIComponent(String(book.id))}`}>
-              <Layers size={18} /> Xem bản sao
-            </Link>
+            <div className="book-details-actions">
+              <Link className="btn btn-primary" to={`${portalPath}/book-copies?bookId=${encodeURIComponent(String(book.id))}`}>
+                <Layers size={18} /> Xem bản sao
+              </Link>
+              {canEdit && (
+                <button className="btn btn-secondary" disabled={busy} onClick={handleEdit}>
+                  <Edit2 size={18} /> Chỉnh sửa
+                </button>
+              )}
+              {canDelete && (
+                <button className="btn-action btn-danger" disabled={busy} onClick={handleDelete}>
+                  <Trash2 size={18} /> Xóa
+                </button>
+              )}
+            </div>
           </div>
         </article>
       ) : null}
+      {editingBook && (
+        <BookFormModal
+          book={editingBook}
+          categories={categories}
+          onClose={() => setEditingBook(null)}
+          onSaved={(saved) => setResult({ id: String(saved.id), book: saved })}
+          onNotify={showToast}
+        />
+      )}
     </div>
   );
 };

@@ -502,6 +502,12 @@
   margin: 0;
 }
 
+.book-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 /* Badges & Tags */
 .badge {
   display: inline-block;

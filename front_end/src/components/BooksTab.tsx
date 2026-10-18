@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Book, Category } from '../types';
 import { booksApi } from '../api';
-import { Plus, Search, Edit2, Trash2, BookOpen, Layers, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, Layers } from 'lucide-react';
+import { BookFormModal } from './BookFormModal';
 
 interface BooksTabProps {
   books: Book[];
@@ -28,64 +29,14 @@ export const BooksTab: React.FC<BooksTabProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  // Form states
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [isbn, setIsbn] = useState('');
-  const [publishYear, setPublishYear] = useState<number | ''>('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [categoryId, setCategoryId] = useState<string>(String(categories[0]?.id || ''));
-  const [submitting, setSubmitting] = useState(false);
-
   const openCreateModal = () => {
     setEditingBook(null);
-    setTitle('');
-    setAuthor('');
-    setIsbn('');
-    setPublishYear(new Date().getFullYear());
-    setImageUrl('');
-    setCategoryId(String(categories[0]?.id || ''));
     setIsModalOpen(true);
   };
 
   const openEditModal = (book: Book) => {
     setEditingBook(book);
-    setTitle(book.title);
-    setAuthor(book.author);
-    setIsbn(book.isbn || '');
-    setPublishYear(book.publishYear || '');
-    setImageUrl(book.imageUrl || '');
-    setCategoryId(String(book.categoryId));
     setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const payload = {
-        title: title.trim(),
-        author: author.trim(),
-        isbn: isbn.trim() || undefined,
-        publishYear: publishYear ? Number(publishYear) : undefined,
-        imageUrl: imageUrl.trim() || undefined,
-        categoryId: categoryId,
-      };
-
-      if (editingBook) {
-        await booksApi.update(editingBook.id, payload);
-        onNotify(`Đã cập nhật sách "${title}" thành công!`);
-      } else {
-        await booksApi.create(payload);
-        onNotify(`Đã thêm mới đầu sách "${title}" thành công!`);
-      }
-      setIsModalOpen(false);
-      onRefresh();
-    } catch (err: any) {
-      onNotify(err.message || 'Lỗi khi lưu thông tin sách', 'error');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const handleDelete = async (book: Book) => {
@@ -262,118 +213,14 @@ export const BooksTab: React.FC<BooksTabProps> = ({
         )}
       </div>
 
-      {/* Modal Thêm / Sửa Sách */}
       {isModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingBook ? '✏️ Cập Nhật Đầu Sách' : '📖 Thêm Đầu Sách Mới'}</h3>
-              <button className="btn-icon" onClick={() => setIsModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="form-content">
-              <div className="form-group">
-                <label>Tên sách *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Thiết Kế Clean Architecture với C#"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Tác giả *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Robert C. Martin"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Mã ISBN</label>
-                  <input
-                    type="text"
-                    placeholder="978-0134494166"
-                    value={isbn}
-                    onChange={(e) => setIsbn(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Năm xuất bản</label>
-                  <input
-                    type="number"
-                    min={1000}
-                    max={2100}
-                    placeholder="2026"
-                    value={publishYear}
-                    onChange={(e) => setPublishYear(e.target.value ? Number(e.target.value) : '')}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Thể loại *</label>
-                <select
-                  required
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ImageIcon size={14} /> Đường dẫn ảnh bìa sách (Image URL)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/anh-bia-sach.jpg"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                />
-                {imageUrl && (
-                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Xem trước:</span>
-                    <img
-                      src={imageUrl}
-                      alt="Ảnh bìa xem trước"
-                      style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)' }}
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Đang lưu...' : editingBook ? 'Cập Nhật' : 'Tạo Sách Mới'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <BookFormModal
+          book={editingBook}
+          categories={categories}
+          onClose={() => setIsModalOpen(false)}
+          onSaved={() => onRefresh()}
+          onNotify={onNotify}
+        />
       )}
     </div>
   );
