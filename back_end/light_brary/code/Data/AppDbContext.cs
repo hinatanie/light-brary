@@ -13,8 +13,6 @@ namespace light_brary.Data
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<BorrowRecord> BorrowRecords => Set<BorrowRecord>();
         public DbSet<BorrowDetail> BorrowDetails => Set<BorrowDetail>();
-        public DbSet<Fine> Fines => Set<Fine>();
-        public DbSet<FineDetail> FineDetails => Set<FineDetail>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

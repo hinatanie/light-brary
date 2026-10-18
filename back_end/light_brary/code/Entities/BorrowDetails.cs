@@ -27,7 +27,5 @@ namespace light_brary.Entities
 
         [DeleteBehavior(DeleteBehavior.Restrict)]
         public BookCopy BookCopy {get; set;} = null!;
-
-        public FineDetail? FineDetail { get; set; }
     }
 }

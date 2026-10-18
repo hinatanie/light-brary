@@ -29,7 +29,5 @@ namespace light_brary.Entities
 
         [InverseProperty(nameof(BorrowDetail.BorrowRecord))]
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();
-
-        public Fine? Fine { get; set; }
     }
 }
