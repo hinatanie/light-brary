@@ -59,6 +59,21 @@ docker compose ps                # cột STATUS phải là "healthy"
 >
 > Các biến `POSTGRES_*` chỉ có tác dụng ở lần khởi tạo đầu tiên. Muốn áp dụng giá trị mới, chạy `docker compose down -v` (**xóa toàn bộ dữ liệu**) rồi `docker compose up -d`.
 
+Nếu backend báo `28P01: password authentication failed` dù cấu hình mật khẩu khớp, kiểm tra xem cổng `5432` có đang thuộc PostgreSQL của dự án khác không:
+
+```bash
+docker ps --format 'table {{.Names}}\t{{.Ports}}'
+docker compose ps
+```
+
+Nếu cổng bị trùng, đặt `POSTGRES_PORT=5433` trong `.env` (chọn cổng còn trống), rồi chạy `docker compose up -d postgres`. Cập nhật `ConnectionStrings:DefaultConnection` trong User Secrets sang cùng cổng, giữ các thông tin còn lại khớp với PostgreSQL của LightBrary:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=lightbrary_db;Username=postgres;Password=<mật khẩu PostgreSQL>" --project back_end/light_brary
+```
+
+Thay `<mật khẩu PostgreSQL>` bằng mật khẩu thực tế, sau đó chạy lại backend. Việc đổi cổng không cần xóa database hoặc volume.
+
 ### 2. Tạo User Secrets
 
 Chạy các lệnh từ thư mục gốc của solution. `--project` trỏ tới project API (project chứa `Program.cs`).
