@@ -20,7 +20,15 @@ namespace light_brary.Data
         {
             var password = configuration["Seed:SamplePassword"] ?? configuration["Seed:AdminPassword"];
             var phoneNumbers = (await userManager.Users.Select(user => user.PhoneNumber).ToListAsync()).ToHashSet();
-            var students = new[]
+            var primaryStudents = new (string StudentId, string FullName)[]
+            {
+                ("3123410249", "Lâm Thái Yến Nhi"),
+                ("3123410063", "Trần Đình Khánh Dư"),
+                ("3123410076", "Nguyễn Hải Đăng"),
+                ("3123410216", "Lương Quang Minh")
+            };
+
+            var additionalStudentNames = new[]
             {
                 "Nguyễn Văn An", "Trần Thị Bích", "Lê Minh Châu", "Phạm Quốc Dũng",
                 "Hoàng Thị Mai", "Huỳnh Gia Huy", "Phan Ngọc Linh", "Vũ Đức Long",
@@ -28,6 +36,12 @@ namespace light_brary.Data
                 "Hồ Thanh Sơn", "Ngô Bảo Trâm", "Dương Anh Tuấn", "Lý Thu Uyên",
                 "Trương Hải Vân", "Đinh Thành Vinh", "Mai Như Ý", "Cao Nhật Minh"
             };
+
+            var nextStudentId = primaryStudents.Select(s => long.Parse(s.StudentId)).Max() + 1;
+            var students = primaryStudents
+                .Concat(additionalStudentNames.Select((name, index) => (StudentId: (nextStudentId + index).ToString("D10"), FullName: name)))
+                .ToArray();
+
             var streets = new[] { "Nguyễn Trãi", "An Dương Vương", "Trần Hưng Đạo", "Nguyễn Văn Cừ", "Lê Hồng Phong" };
 
             if (!(await userManager.GetUsersInRoleAsync(RoleNames.LIBRARIAN)).Any())
@@ -38,7 +52,8 @@ namespace light_brary.Data
 
             for (var index = 0; index < students.Length; index++)
             {
-                await CreateUserAsync($"312456{index + 1:0000}", students[index], $"090100{index + 1:0000}",
+                var student = students[index];
+                await CreateUserAsync(student.StudentId, student.FullName, $"090100{index + 1:0000}",
                     $"{20 + index * 3} {streets[index % streets.Length]}, TP. Hồ Chí Minh", RoleNames.USER);
             }
 
