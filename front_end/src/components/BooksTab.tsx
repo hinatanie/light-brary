@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { Book, Category } from '../types';
+import type { Book } from '../types';
 import { booksApi } from '../api';
-import { Plus, Search, Edit2, Trash2, BookOpen, Layers } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, Layers, RefreshCw } from 'lucide-react';
 import { BookFormModal } from './BookFormModal';
+import { usePagedBooks } from '../hooks/usePagedBooks';
+import { Pagination } from './Pagination';
 
 interface BooksTabProps {
-  books: Book[];
-  categories: Category[];
-  onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
   onViewCopies: (bookId: string) => void;
   onViewBook: (bookId: string) => void;
@@ -16,16 +15,13 @@ interface BooksTabProps {
 }
 
 export const BooksTab: React.FC<BooksTabProps> = ({
-  books,
-  categories,
-  onRefresh,
   onNotify,
   onViewCopies,
   onViewBook,
   readOnly = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const { items: books, categories, query, pageNumber, pageSize, totalPages, totalCount,
+    loading, error, setFilters, setPage, refresh } = usePagedBooks();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
@@ -44,21 +40,11 @@ export const BooksTab: React.FC<BooksTabProps> = ({
     try {
       await booksApi.delete(book.id);
       onNotify(`Đã xóa đầu sách "${book.title}"`);
-      onRefresh();
+      refresh();
     } catch (err: any) {
       onNotify(err.message || 'Lỗi khi xóa sách', 'error');
     }
   };
-
-  const filteredBooks = books.filter((b) => {
-    const matchesSearch =
-      b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (b.isbn && b.isbn.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory =
-      categoryFilter === 'all' || b.categoryId === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
 
   return (
     <div className="tab-container">
@@ -82,17 +68,17 @@ export const BooksTab: React.FC<BooksTabProps> = ({
           <input
             type="text"
             placeholder="Tìm theo tên sách, tác giả, ISBN..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={query.keyword ?? ''}
+            onChange={(e) => setFilters({ keyword: e.target.value })}
           />
         </div>
 
         <select
           className="filter-select"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          value={query.categoryId ?? 'all'}
+          onChange={(e) => setFilters({ categoryId: e.target.value === 'all' ? undefined : e.target.value })}
         >
-          <option value="all">Tất cả thể loại ({books.length})</option>
+          <option value="all">Tất cả thể loại</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -102,7 +88,16 @@ export const BooksTab: React.FC<BooksTabProps> = ({
       </div>
 
       <div className="table-card">
-        {filteredBooks.length === 0 ? (
+        {loading ? (
+          <div className="loading-banner" role="status">
+            <RefreshCw size={18} className="spin" /> Đang tải danh mục đầu sách...
+          </div>
+        ) : error ? (
+          <div className="empty-state" role="alert">
+            <p>{error}</p>
+            <button className="btn btn-secondary" onClick={refresh}>Thử lại</button>
+          </div>
+        ) : books.length === 0 ? (
           <div className="empty-state">
             <BookOpen size={48} color="#94a3b8" />
             <p>Không tìm thấy đầu sách nào phù hợp.</p>
@@ -124,9 +119,9 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {filteredBooks.map((b, index) => (
+                {books.map((b, index) => (
                   <tr key={b.id} className="book-row" onClick={() => onViewBook(String(b.id))}>
-                    <td>{index + 1}</td>
+                    <td>{(pageNumber - 1) * pageSize + index + 1}</td>
                     <td>#{b.id}</td>
                     <td>
                       {b.imageUrl ? (
@@ -213,12 +208,15 @@ export const BooksTab: React.FC<BooksTabProps> = ({
         )}
       </div>
 
+      <Pagination page={pageNumber} pageSize={pageSize} totalPages={totalPages}
+        totalCount={totalCount} disabled={loading || !!error} onPageChange={setPage} />
+
       {isModalOpen && (
         <BookFormModal
           book={editingBook}
           categories={categories}
           onClose={() => setIsModalOpen(false)}
-          onSaved={() => onRefresh()}
+          onSaved={refresh}
           onNotify={onNotify}
         />
       )}

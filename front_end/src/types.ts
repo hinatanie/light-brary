@@ -19,6 +19,25 @@ export interface Book {
   availableCopies?: number;
 }
 
+export interface PagedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export type BookSort = 'newest' | 'title' | 'available' | 'year';
+
+export interface BookPageQuery {
+  page: number;
+  keyword?: string;
+  categoryId?: string | number;
+  author?: string;
+  onlyAvailable?: boolean;
+  sortBy?: BookSort;
+}
+
 export type BookCopyStatus = 'Available' | 'Borrowed' | 'Lost';
 
 export interface BookCopy {

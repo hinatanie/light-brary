@@ -7,6 +7,8 @@ import type {
   BorrowRecord,
   AuthResponse,
   MeResponse,
+  PagedResponse,
+  BookPageQuery,
 } from './types';
 
 const API_BASE = '/api';
@@ -128,8 +130,8 @@ export const authApi = {
 
 // ─── 2. Categories API ───────────────────────────────────────────────────────
 export const categoriesApi = {
-  getAll: async (): Promise<Category[]> => {
-    const list = await request<Category[]>('/categories');
+  getAll: async (signal?: AbortSignal): Promise<Category[]> => {
+    const list = await request<Category[]>('/categories', { signal });
     return list.map((c) => ({
       ...c,
       bookCount: c.bookCount ?? 0,
@@ -154,6 +156,13 @@ export const categoriesApi = {
 
 // ─── 3. Books API ────────────────────────────────────────────────────────────
 export const booksApi = {
+  getPaged: (query: BookPageQuery, signal?: AbortSignal) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return request<PagedResponse<Book>>(`/books/book/page?${params}`, { signal });
+  },
   getAll: (
     filterOrKeyword?:
       | string

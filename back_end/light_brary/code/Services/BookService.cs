@@ -101,5 +101,25 @@ namespace light_brary.Services
 
             await bookRepository.DeleteAsync(book);
         }
+
+        public async Task<PagedResponse<BookResponse>> GetPagedAsync(int pageNumber, string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null, string sortBy = "newest")
+        {
+            var (books, totalCount) = await bookRepository.GetPage(
+                pageNumber,
+                keyword: keyword,
+                categoryId: categoryId,
+                author: author,
+                onlyAvailable: onlyAvailable,
+                sortBy: sortBy);
+
+            var responses = books.Select(BookResponse.FromEntity).ToList();
+
+            return new PagedResponse<BookResponse>
+            {
+                Items = responses,
+                PageNumber = pageNumber,
+                TotalCount = totalCount
+            };
+        }
     }
 }
