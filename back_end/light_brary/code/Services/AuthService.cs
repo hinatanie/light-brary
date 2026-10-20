@@ -50,5 +50,12 @@ namespace light_brary.Services
 
             (await userManager.SetPhoneNumberAsync(user, request.NewPhoneNumber)).ThrowIfFailed();
         }
+
+        public async Task LogoutAsync(Guid userId)
+        {
+            var user = await userService.GetRequiredUserAsync(userId);
+            (await userManager.UpdateSecurityStampAsync(user)).ThrowIfFailed();
+        }
+
     }
 }

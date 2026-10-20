@@ -37,5 +37,14 @@ namespace light_brary.Controllers
             await authService.ChangePhoneNumberAsync(userId, request);
             return Ok(new { message = "Đổi số điện thoại thành công." });
         }
+
+        [HttpPut("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await authService.LogoutAsync(userId);
+            return Ok(new { message = "Đăng xuất thành công." });
+        }
     }
 }

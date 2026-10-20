@@ -95,11 +95,7 @@ export const authApi = {
     return loadAuthResponse(raw);
   },
 
-  logout: () => {
-    localStorage.removeItem('lightbrary_token');
-    localStorage.removeItem('lightbrary_user');
-    return Promise.resolve();
-  },
+  logout: () => request<{ message: string }>('/auth/logout', { method: 'PUT' }),
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     request<{ message: string }>('/auth/password', {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { AuthResponse, MeResponse } from '../types';
-import { authApi } from '../api';
+import { ApiError, authApi } from '../api';
 
 export interface UserSession {
   userId: string;
@@ -17,7 +17,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   login: (data: AuthResponse) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasRole: (role: string) => boolean;
   refreshUser: () => Promise<void>;
   updateUserSession: (updated: Partial<UserSession>) => void;
@@ -46,6 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [loading, setLoading] = useState<boolean>(true);
 
+  const clearSession = useCallback(() => {
+    localStorage.removeItem('lightbrary_token');
+    localStorage.removeItem('lightbrary_user');
+    setToken(null);
+    setUser(null);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     const curToken = localStorage.getItem('lightbrary_token');
     if (!curToken) {
@@ -71,12 +78,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Failed to fetch user session from /auth/me:', err);
       // If token expired or invalid, log out
       if ((err as any)?.status === 401) {
-        logout();
+        clearSession();
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearSession]);
 
   useEffect(() => {
     refreshUser();
@@ -98,11 +105,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(session);
   };
 
-  const logout = () => {
-    localStorage.removeItem('lightbrary_token');
-    localStorage.removeItem('lightbrary_user');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    if (localStorage.getItem('lightbrary_token')) {
+      try {
+        await authApi.logout();
+      } catch (err) {
+        // An expired or revoked token already has no access to protected APIs.
+        if (!(err instanceof ApiError) || err.status !== 401) throw err;
+      }
+    }
+    clearSession();
   };
 
   const hasRole = (role: string): boolean => {

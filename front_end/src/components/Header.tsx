@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { User as UserIcon, LogOut, LogIn, Shield, Briefcase, UserCheck, KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -10,10 +11,20 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     const roles = (user?.roles || []).map((r) => r.toLowerCase());
-    logout();
+    try {
+      await logout();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Đăng xuất thất bại. Vui lòng thử lại.', 'error');
+      setLoggingOut(false);
+      return;
+    }
     if (roles.includes('admin')) {
       navigate('/login/admin');
     } else if (roles.includes('staff') || roles.includes('librarian')) {
@@ -21,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
     } else {
       navigate('/login');
     }
+    setLoggingOut(false);
   };
 
   const getRoleBadge = () => {
@@ -86,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
             >
               <KeyRound size={16} />
             </Link>
-            <button className="btn-logout" onClick={handleLogout} title="Đăng xuất">
+            <button className="btn-logout" onClick={handleLogout} disabled={loggingOut} title={loggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'} aria-label="Đăng xuất">
               <LogOut size={16} />
             </button>
           </div>
