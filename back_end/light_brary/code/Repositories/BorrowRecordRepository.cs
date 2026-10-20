@@ -14,8 +14,8 @@ namespace light_brary.Repositories
         {
             return await _context.BorrowRecords
                 .Include(br => br.BorrowDetails)
-                    .ThenInclude(bd => bd.BookCopy)
-                        .ThenInclude(bc => bc!.Book)
+                .ThenInclude(bd => bd.BookCopy)
+                .ThenInclude(bc => bc!.Book)
                 .Where(br => br.UserId == userId)
                 .ToListAsync();
         }

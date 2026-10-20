@@ -80,8 +80,11 @@ namespace light_brary.Services
         public async Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
         {
             var user = await GetRequiredUserAsync(userId);
+
             user.Address = request.Address.Trim();
+
             (await userManager.UpdateAsync(user)).ThrowIfFailed();
+
             return UserResponse.FromEntity(
                 user,
                 await userManager.GetRolesAsync(user)
@@ -91,8 +94,14 @@ namespace light_brary.Services
         public async Task<IEnumerable<BorrowRecordResponse>> GetUserBorrowRecordsAsync(Guid userId)
         {
             var user = await GetRequiredUserAsync(userId);
+
             var records = await borrowRecordRepository.GetByUserIdAsync(userId);
-            var userResponse = UserResponse.FromEntity(user, await userManager.GetRolesAsync(user));
+
+            var userResponse = UserResponse.FromEntity(
+                user,
+                await userManager.GetRolesAsync(user)
+            );
+
             return records.Select(record => BorrowRecordResponse.FromEntity(record, userResponse)).ToList();
         }
 
