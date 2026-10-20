@@ -46,7 +46,7 @@ namespace light_brary.Data
 
             if (!(await userManager.GetUsersInRoleAsync(RoleNames.LIBRARIAN)).Any())
             {
-                await CreateUserAsync("thuthu", "Nguyễn Thị Thanh Hà", "0902000000",
+                await CreateUserAsync("0888888888", "Nguyễn Thị Thanh Hà", "0888888888",
                     "273 An Dương Vương, TP. Hồ Chí Minh", RoleNames.LIBRARIAN);
             }
 
