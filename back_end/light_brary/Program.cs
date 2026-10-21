@@ -48,6 +48,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<BookCopyRepository>();
 builder.Services.AddScoped<BookRepository>();
 builder.Services.AddScoped<BorrowRecordRepository>();
+builder.Services.AddScoped<BorrowDetailRepository>();
 builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<UserRepository>();

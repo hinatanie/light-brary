@@ -16,6 +16,7 @@ namespace light_brary.Services
     public class BorrowRecordService(
         AppDbContext context,
         BorrowRecordRepository borrowRecordRepository,
+        BorrowDetailRepository borrowDetailRepository,
         UserRepository userRepository,
         UserService userService)
     {
@@ -105,12 +106,7 @@ namespace light_brary.Services
                 throw AppException.BadRequest("Danh sách chi tiết mượn chứa ID bị trùng lặp.");
 
             await using var tx = await context.Database.BeginTransactionAsync();
-            var details = await context.BorrowDetails
-                .Include(d => d.BookCopy)
-                .Include(d => d.BorrowRecord)
-                    .ThenInclude(r => r.BorrowDetails)
-                .Where(d => request.BorrowDetailIds.Contains(d.Id))
-                .ToListAsync();
+            var details = await borrowDetailRepository.GetByIdsWithDetailsAsync(request.BorrowDetailIds);
 
             if (details.Count != request.BorrowDetailIds.Count)
             {
@@ -150,11 +146,7 @@ namespace light_brary.Services
         public async Task<BorrowDetailActionResponse> MarkLostBookAsync(Guid borrowDetailId)
         {
             await using var tx = await context.Database.BeginTransactionAsync();
-            var detail = await context.BorrowDetails
-                .Include(d => d.BookCopy)
-                .Include(d => d.BorrowRecord)
-                    .ThenInclude(r => r.BorrowDetails)
-                .FirstOrDefaultAsync(d => d.Id == borrowDetailId);
+            var detail = await borrowDetailRepository.GetWithDetailsAsync(borrowDetailId);
 
             if (detail is null)
                 throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {borrowDetailId}");
