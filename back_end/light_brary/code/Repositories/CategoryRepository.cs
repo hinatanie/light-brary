@@ -13,7 +13,7 @@ namespace light_brary.Repositories
                 .ToListAsync();
         }
 
-        public override Task<Category?> GetByIdAsync(Guid id) => GetWithBooksAsync(id);
+        public override Task<Category?> GetByIdAsync(Guid id) => _context.Categories.FirstOrDefaultAsync(c => c.Id == id);
 
         public async Task<Category?> GetByNameAsync(string name)
         {
