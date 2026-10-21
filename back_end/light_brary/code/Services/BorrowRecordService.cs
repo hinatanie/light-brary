@@ -77,67 +77,6 @@ namespace light_brary.Services
             return await GetByIdAsync(record.Id);
         }
 
-        public async Task<BorrowRecordResponse> BorrowForMemberAsync(Guid userId, MemberBorrowRequest request)
-        {
-            var user = await userService.GetRequiredUserAsync(userId);
-
-            var dueDate = request.DueDate ?? DateTime.UtcNow.AddDays(14);
-            if (dueDate <= DateTime.UtcNow)
-                throw AppException.BadRequest("Hạn trả sách phải sau thời điểm hiện tại.");
-
-            await using var tx = await context.Database.BeginTransactionAsync();
-            BookCopy? copy = null;
-            if (request.BookCopyId.HasValue && request.BookCopyId.Value != Guid.Empty)
-            {
-                copy = await context.BookCopies
-                    .Include(bc => bc.Book)
-                    .FirstOrDefaultAsync(bc => bc.Id == request.BookCopyId.Value && bc.BookId == request.BookId);
-
-                if (copy is null)
-                    throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {request.BookCopyId.Value}");
-
-                if (copy.Status != BookCopyStatus.Available)
-                    throw AppException.Conflict($"Bản sao sách '{copy.Barcode}' không sẵn sàng để mượn (trạng thái: {copy.Status}).");
-            }
-            else
-            {
-                copy = await context.BookCopies
-                    .Include(bc => bc.Book)
-                    .Where(bc => bc.BookId == request.BookId && bc.Status == BookCopyStatus.Available)
-                    .OrderBy(bc => bc.Id)
-                    .FirstOrDefaultAsync();
-
-                if (copy is null)
-                    throw AppException.Conflict("Đầu sách này hiện không còn bản sao nào có sẵn trên kệ để cho mượn.");
-            }
-
-            copy.Status = BookCopyStatus.Borrowed;
-
-            var record = new BorrowRecord
-            {
-                UserId = userId,
-                BorrowDate = DateTime.UtcNow,
-                DueDate = dueDate,
-                Status = BorrowRecordStatus.Borrowing,
-                Note = string.IsNullOrWhiteSpace(request.Note) ? "Độc giả tự đăng ký mượn qua hệ thống" : request.Note.Trim(),
-                BorrowDetails = new List<BorrowDetail>
-                {
-                    new BorrowDetail
-                    {
-                        BookCopyId = copy.Id,
-                        Status = BorrowDetailStatus.Borrowing,
-                        ReturnDate = null
-                    }
-                }
-            };
-
-            await context.BorrowRecords.AddAsync(record);
-            await context.SaveChangesAsync();
-            await tx.CommitAsync();
-
-            return await GetByIdAsync(record.Id);
-        }
-
         public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
             var records = (await borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue)).ToList();

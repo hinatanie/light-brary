@@ -376,21 +376,6 @@ export const borrowRecordsApi = {
         note: data.note,
       }),
     }),
-  borrowBookForMember: (data: {
-    bookId: string | number;
-    bookCopyId?: string | number;
-    dueDate?: string;
-    note?: string;
-  }) =>
-    request<BorrowRecord>('/me/borrow', {
-      method: 'POST',
-      body: JSON.stringify({
-        bookId: data.bookId,
-        bookCopyId: data.bookCopyId || undefined,
-        dueDate: data.dueDate,
-        note: data.note,
-      }),
-    }),
   returnBooks: (
     _borrowRecordId: string | number,
     data: { items: { borrowDetailId: string | number }[] }

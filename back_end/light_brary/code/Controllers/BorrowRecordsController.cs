@@ -12,15 +12,6 @@ namespace light_brary.Controllers
     [ApiController]
     public class BorrowRecordsController(BorrowRecordService borrowRecordService) : ControllerBase
     {
-        [HttpPost("api/me/borrow")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow(MemberBorrowRequest request)
-        {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var created = await borrowRecordService.BorrowForMemberAsync(userId, request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-
         [HttpPost("api/borrow-records")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowRecordResponse>> Create(CreateBorrowRecordRequest request)
