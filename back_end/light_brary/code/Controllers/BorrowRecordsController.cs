@@ -43,7 +43,7 @@ namespace light_brary.Controllers
                 return Forbid();
             }
             return Ok(record);
-        }
+        } 
 
         [HttpPost("api/returns")]
         [Authorize(Policy = "LibrarianOrAdmin")]
