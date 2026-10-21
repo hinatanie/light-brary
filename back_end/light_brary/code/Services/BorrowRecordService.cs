@@ -24,9 +24,6 @@ namespace light_brary.Services
         {
             var user = await userService.GetRequiredUserAsync(request.UserId);
 
-            if (request.BookCopyIds == null || !request.BookCopyIds.Any())
-                throw AppException.BadRequest("Danh sách bản sao sách không được để trống.");
-
             if (request.BookCopyIds.Distinct().Count() != request.BookCopyIds.Count)
                 throw AppException.BadRequest("Danh sách bản sao sách chứa ID bị trùng lặp.");
 
@@ -99,21 +96,13 @@ namespace light_brary.Services
 
         public async Task<ReturnBooksResponse> ReturnMultipleBooksAsync(ReturnBooksRequest request)
         {
-            if (request.BorrowDetailIds == null || !request.BorrowDetailIds.Any())
-                throw AppException.BadRequest("Danh sách chi tiết mượn không được để trống.");
-
-            if (request.BorrowDetailIds.Distinct().Count() != request.BorrowDetailIds.Count)
-                throw AppException.BadRequest("Danh sách chi tiết mượn chứa ID bị trùng lặp.");
-
             await using var tx = await context.Database.BeginTransactionAsync();
-            var details = await borrowDetailRepository.GetByIdsWithDetailsAsync(request.BorrowDetailIds);
+            var detailIds = request.BorrowDetailIds.Distinct().ToList();
+            var details = await borrowDetailRepository.GetByIdsWithDetailsAsync(detailIds);
+            var missingIds = detailIds.Except(details.Select(d => d.Id)).ToList();
 
-            if (details.Count != request.BorrowDetailIds.Count)
-            {
-                var foundIds = details.Select(d => d.Id).ToHashSet();
-                var missingId = request.BorrowDetailIds.First(id => !foundIds.Contains(id));
-                throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {missingId}");
-            }
+            if (missingIds.Count > 0)
+                throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {string.Join(", ", missingIds)}");
 
             if (details.Any(d => d.Status != BorrowDetailStatus.Borrowing))
                 throw AppException.Conflict("Một hoặc nhiều cuốn sách không ở trạng thái đang mượn.");
