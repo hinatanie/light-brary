@@ -1,8 +1,4 @@
 using light_brary.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
@@ -38,9 +34,7 @@ namespace light_brary.Services
 
             if (copies.Count != request.BookCopyIds.Count)
             {
-                var foundIds = copies.Select(c => c.Id).ToHashSet();
-                var missingId = request.BookCopyIds.First(id => !foundIds.Contains(id));
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {missingId}");
+                throw AppException.NotFound("Không tìm thấy một hoặc nhiều bản sao sách được yêu cầu.");
             }
 
             foreach (var copy in copies)
