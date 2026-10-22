@@ -5,7 +5,7 @@ import { authApi } from '../api';
 import { KeyRound, Lock, AlertCircle, CheckCircle2, RefreshCw, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export const ChangePasswordPage: React.FC = () => {
-  const { user, updateUserSession } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -52,7 +52,6 @@ export const ChangePasswordPage: React.FC = () => {
       });
 
       setSuccess(true);
-      updateUserSession({ mustChangePassword: false });
 
       setTimeout(() => {
         navigate(getDashboardPath(), { replace: true });
@@ -66,24 +65,22 @@ export const ChangePasswordPage: React.FC = () => {
 
   return (
     <div className="table-card" style={{ maxWidth: '480px', margin: '40px auto', padding: '32px 28px', borderRadius: '16px', background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
-      {!user?.mustChangePassword && (
-        <div style={{ marginBottom: '16px' }}>
-          <Link
-            to={getDashboardPath()}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '13px',
-              color: 'var(--text-muted)',
-              textDecoration: 'none',
-              transition: 'color 0.15s',
-            }}
-          >
-            <ArrowLeft size={16} /> Quay lại trang chính
-          </Link>
-        </div>
-      )}
+      <div style={{ marginBottom: '16px' }}>
+        <Link
+          to={getDashboardPath()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            transition: 'color 0.15s',
+          }}
+        >
+          <ArrowLeft size={16} /> Quay lại trang chính
+        </Link>
+      </div>
 
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'var(--primary-soft)', color: 'var(--primary)', marginBottom: '12px' }}>
@@ -92,15 +89,9 @@ export const ChangePasswordPage: React.FC = () => {
         <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 8px 0' }}>
           Đổi Mật Khẩu
         </h2>
-        {user?.mustChangePassword ? (
-          <p style={{ fontSize: '13px', color: 'var(--primary)', margin: 0, fontWeight: 500 }}>
-            Đây là lần đăng nhập đầu tiên hoặc tài khoản cần cập nhật mật khẩu mới trước khi tiếp tục sử dụng hệ thống.
-          </p>
-        ) : (
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-            Cập nhật mật khẩu định kỳ để bảo vệ an toàn cho tài khoản của bạn.
-          </p>
-        )}
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+          Cập nhật mật khẩu định kỳ để bảo vệ an toàn cho tài khoản của bạn.
+        </p>
       </div>
 
       {error && (

@@ -59,7 +59,6 @@ export interface User {
   address?: string | null;
   createdAt?: string;
   roles: string[];
-  mustChangePassword?: boolean;
 }
 
 export interface Role {
@@ -109,7 +108,6 @@ export interface AuthResponse {
   phoneNumber: string;
   expiresAt?: string;
   roles: string[];
-  mustChangePassword?: boolean;
   user?: User;
 }
 
@@ -122,5 +120,4 @@ export interface MeResponse {
   address?: string | null;
   createdAt?: string;
   roles: string[];
-  mustChangePassword?: boolean;
 }

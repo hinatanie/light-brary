@@ -20,7 +20,6 @@ namespace light_brary.Controllers
         }
 
         [HttpPut("password")]
-        [HttpPut("~/api/me/password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {

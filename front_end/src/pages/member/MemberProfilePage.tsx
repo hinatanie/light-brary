@@ -124,7 +124,6 @@ export const MemberProfilePage: React.FC<{ title?: string }> = ({ title = 'Hồ 
       setCurrentPwd('');
       setNewPwd('');
       setConfirmPwd('');
-      updateUserSession({ mustChangePassword: false });
     } catch (err: any) {
       showToast(err.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.', 'error');
     } finally {

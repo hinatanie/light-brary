@@ -16,13 +16,11 @@ const API_BASE = '/api';
 export class ApiError extends Error {
   status: number;
   code?: string;
-  lockoutEndUtc?: string;
 
-  constructor(message: string, status: number, code?: string, lockoutEndUtc?: string) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
     this.code = code;
-    this.lockoutEndUtc = lockoutEndUtc;
     this.name = 'ApiError';
   }
 }
@@ -63,7 +61,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       data?.title ||
       (typeof data === 'string' && data) ||
       `Yêu cầu thất bại (${response.status})`;
-    throw new ApiError(errorMsg, response.status, data?.code, data?.lockoutEndUtc);
+    throw new ApiError(errorMsg, response.status, data?.code);
   }
 
   return data as T;
@@ -82,7 +80,6 @@ async function loadAuthResponse(raw: any): Promise<AuthResponse> {
     phoneNumber: user.phoneNumber,
     email: user.email || '',
     roles: user.roles,
-    mustChangePassword: Boolean(user.mustChangePassword),
     user,
   };
 }
@@ -123,7 +120,6 @@ export const authApi = {
       address: raw.address || null,
       createdAt: raw.createdAt,
       roles,
-      mustChangePassword: Boolean(raw.mustChangePassword),
     };
   },
 };

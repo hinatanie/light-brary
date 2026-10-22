@@ -41,11 +41,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ roleMode }) => {
       // Successful login for this portal
       login(res);
 
-      if (res.mustChangePassword) {
-        navigate('/change-password', { replace: true });
-        return;
-      }
-
       // Điều hướng dựa vào đường dẫn đăng nhập (URL path), không phụ thuộc vào role của user
       const from = (location.state as any)?.from?.pathname;
       if (

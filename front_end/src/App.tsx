@@ -59,10 +59,6 @@ const RootRedirect: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.mustChangePassword) {
-    return <Navigate to="/change-password" replace />;
-  }
-
   if (user.roles && user.roles.some((r) => r.toLowerCase() === 'admin')) {
     return <Navigate to="/admin" replace />;
   }
