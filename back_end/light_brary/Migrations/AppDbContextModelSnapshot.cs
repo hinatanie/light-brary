@@ -2,21 +2,18 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using light_brary.Data;
 
 #nullable disable
 
-namespace light_brary.Data.Migrations
+namespace light_brary.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261018110301_UnmapFineEntities")]
-    partial class UnmapFineEntities
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -236,7 +233,7 @@ namespace light_brary.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BookCopyId")
+                    b.Property<Guid?>("BookCopyId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("BorrowRecordId")
@@ -459,7 +456,7 @@ namespace light_brary.Data.Migrations
                     b.HasOne("light_brary.Entities.Book", "Book")
                         .WithMany("BookCopies")
                         .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Book");
@@ -470,8 +467,7 @@ namespace light_brary.Data.Migrations
                     b.HasOne("light_brary.Entities.BookCopy", "BookCopy")
                         .WithMany("BorrowDetails")
                         .HasForeignKey("BookCopyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("light_brary.Entities.BorrowRecord", "BorrowRecord")
                         .WithMany("BorrowDetails")

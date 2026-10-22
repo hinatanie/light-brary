@@ -4,10 +4,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace light_brary.code.Data.Migrations
+namespace light_brary.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class chantroimoi : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -192,7 +192,7 @@ namespace light_brary.code.Data.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -220,26 +220,6 @@ namespace light_brary.code.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Fines",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    BorrowRecordId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    PaidAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Fines", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Fines_BorrowRecords_BorrowRecordId",
-                        column: x => x.BorrowRecordId,
-                        principalTable: "BorrowRecords",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "BookCopies",
                 columns: table => new
                 {
@@ -257,7 +237,7 @@ namespace light_brary.code.Data.Migrations
                         column: x => x.BookId,
                         principalTable: "Books",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -268,7 +248,7 @@ namespace light_brary.code.Data.Migrations
                     ReturnDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     BorrowRecordId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BookCopyId = table.Column<Guid>(type: "uuid", nullable: false)
+                    BookCopyId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -278,38 +258,11 @@ namespace light_brary.code.Data.Migrations
                         column: x => x.BookCopyId,
                         principalTable: "BookCopies",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_BorrowDetails_BorrowRecords_BorrowRecordId",
                         column: x => x.BorrowRecordId,
                         principalTable: "BorrowRecords",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "FineDetails",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FineId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BorrowDetailId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Reason = table.Column<int>(type: "integer", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric(18,0)", precision: 18, scale: 0, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FineDetails", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_FineDetails_BorrowDetails_BorrowDetailId",
-                        column: x => x.BorrowDetailId,
-                        principalTable: "BorrowDetails",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_FineDetails_Fines_FineId",
-                        column: x => x.FineId,
-                        principalTable: "Fines",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -399,23 +352,6 @@ namespace light_brary.code.Data.Migrations
                 table: "Categories",
                 column: "Name",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_FineDetails_BorrowDetailId",
-                table: "FineDetails",
-                column: "BorrowDetailId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_FineDetails_FineId",
-                table: "FineDetails",
-                column: "FineId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Fines_BorrowRecordId",
-                table: "Fines",
-                column: "BorrowRecordId",
-                unique: true);
         }
 
         /// <inheritdoc />
@@ -437,16 +373,10 @@ namespace light_brary.code.Data.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "FineDetails");
-
-            migrationBuilder.DropTable(
-                name: "AspNetRoles");
-
-            migrationBuilder.DropTable(
                 name: "BorrowDetails");
 
             migrationBuilder.DropTable(
-                name: "Fines");
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "BookCopies");

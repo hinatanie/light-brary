@@ -9,11 +9,11 @@ using light_brary.Data;
 
 #nullable disable
 
-namespace light_brary.code.Data.Migrations
+namespace light_brary.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261015163740_CascadeUserBorrowHistory")]
-    partial class CascadeUserBorrowHistory
+    [Migration("20261022030516_chantroimoi")]
+    partial class chantroimoi
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -236,7 +236,7 @@ namespace light_brary.code.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BookCopyId")
+                    b.Property<Guid?>("BookCopyId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("BorrowRecordId")
@@ -307,58 +307,6 @@ namespace light_brary.code.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("light_brary.Entities.Fine", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BorrowRecordId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BorrowRecordId")
-                        .IsUnique();
-
-                    b.ToTable("Fines");
-                });
-
-            modelBuilder.Entity("light_brary.Entities.FineDetail", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18)
-                        .HasColumnType("numeric(18,0)");
-
-                    b.Property<Guid>("BorrowDetailId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("FineId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Reason")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BorrowDetailId")
-                        .IsUnique();
-
-                    b.HasIndex("FineId");
-
-                    b.ToTable("FineDetails");
                 });
 
             modelBuilder.Entity("light_brary.Entities.User", b =>
@@ -511,7 +459,7 @@ namespace light_brary.code.Data.Migrations
                     b.HasOne("light_brary.Entities.Book", "Book")
                         .WithMany("BookCopies")
                         .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Book");
@@ -522,8 +470,7 @@ namespace light_brary.code.Data.Migrations
                     b.HasOne("light_brary.Entities.BookCopy", "BookCopy")
                         .WithMany("BorrowDetails")
                         .HasForeignKey("BookCopyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("light_brary.Entities.BorrowRecord", "BorrowRecord")
                         .WithMany("BorrowDetails")
@@ -547,36 +494,6 @@ namespace light_brary.code.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("light_brary.Entities.Fine", b =>
-                {
-                    b.HasOne("light_brary.Entities.BorrowRecord", "BorrowRecord")
-                        .WithOne("Fine")
-                        .HasForeignKey("light_brary.Entities.Fine", "BorrowRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BorrowRecord");
-                });
-
-            modelBuilder.Entity("light_brary.Entities.FineDetail", b =>
-                {
-                    b.HasOne("light_brary.Entities.BorrowDetail", "BorrowDetail")
-                        .WithOne("FineDetail")
-                        .HasForeignKey("light_brary.Entities.FineDetail", "BorrowDetailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("light_brary.Entities.Fine", "Fine")
-                        .WithMany("Details")
-                        .HasForeignKey("FineId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BorrowDetail");
-
-                    b.Navigation("Fine");
-                });
-
             modelBuilder.Entity("light_brary.Entities.Book", b =>
                 {
                     b.Navigation("BookCopies");
@@ -587,26 +504,14 @@ namespace light_brary.code.Data.Migrations
                     b.Navigation("BorrowDetails");
                 });
 
-            modelBuilder.Entity("light_brary.Entities.BorrowDetail", b =>
-                {
-                    b.Navigation("FineDetail");
-                });
-
             modelBuilder.Entity("light_brary.Entities.BorrowRecord", b =>
                 {
                     b.Navigation("BorrowDetails");
-
-                    b.Navigation("Fine");
                 });
 
             modelBuilder.Entity("light_brary.Entities.Category", b =>
                 {
                     b.Navigation("Books");
-                });
-
-            modelBuilder.Entity("light_brary.Entities.Fine", b =>
-                {
-                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("light_brary.Entities.User", b =>
