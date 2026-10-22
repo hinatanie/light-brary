@@ -24,155 +24,114 @@ Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở B
 
 ---
 
-## ⚙️ Cấu hình môi trường
+## Run using Docker Compose
 
-Dự án dùng **hai nơi** để chứa cấu hình cục bộ. Cả hai đều **không được đưa lên Git**:
-
-| Nơi lưu      | Dùng cho                                    | Ai đọc         |
-| ------------ | ------------------------------------------- | -------------- |
-| `.env`       | Thông tin khởi tạo PostgreSQL               | Docker Compose |
-| User Secrets | Bí mật của ứng dụng (ví dụ `Jwt:SecretKey`) | ASP.NET Core   |
-
-### 1. Tạo file `.env`
-
-```powershell
-Copy-Item .env.example .env      # macOS/Linux: cp .env.example .env
-```
-
-Mở `.env` và chỉnh nếu cần:
-
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=Asdf1234!
-POSTGRES_DB=lightbrary_db
-POSTGRES_PORT=5432
-```
-
-Khởi động và kiểm tra database:
-
-```powershell
-docker compose up -d
-docker compose ps                # cột STATUS phải là "healthy"
-```
-
-> ⚠️ ASP.NET Core **không đọc** file `.env`. Nếu bạn đổi user, mật khẩu, tên database hoặc cổng, hãy sửa cả chuỗi kết nối `ConnectionStrings:DefaultConnection` trong `user-secrets` cho khớp.
->
-> Các biến `POSTGRES_*` chỉ có tác dụng ở lần khởi tạo đầu tiên. Muốn áp dụng giá trị mới, chạy `docker compose down -v` (**xóa toàn bộ dữ liệu**) rồi `docker compose up -d`.
-
-Nếu backend báo `28P01: password authentication failed` dù cấu hình mật khẩu khớp, kiểm tra xem cổng `5432` có đang thuộc PostgreSQL của dự án khác không:
+Cần Docker Engine/Docker Desktop đang chạy và Docker Compose v2 trở lên. Chạy từ thư mục gốc repository:
 
 ```bash
-docker ps --format 'table {{.Names}}\t{{.Ports}}'
+cp .env.example .env
+docker compose up --build
+```
+
+Trên PowerShell dùng `Copy-Item .env.example .env`. Nếu đã có `.env`, giữ file hiện tại và bổ sung các biến còn thiếu theo `.env.example`. Thay hai placeholder `POSTGRES_PASSWORD` và `SEED_ADMIN_PASSWORD` trong `.env` bằng mật khẩu riêng trước khi sử dụng. Mật khẩu Admin phải có ít nhất 8 ký tự. File `.env` được Git và Docker build context bỏ qua; không đưa mật khẩu thực tế lên Git. Với mật khẩu PostgreSQL, nên dùng chuỗi chữ/số ngẫu nhiên (ví dụ sinh bằng `openssl rand -hex 24`) để tránh ký tự phân cách connection string.
+
+Compose khởi động ba service độc lập với những container PostgreSQL/Redis chạy thủ công trên máy:
+
+| Service | Địa chỉ từ máy host (mặc định) | Địa chỉ trong Docker network |
+| --- | --- | --- |
+| API | `http://localhost:5218` | `api:8080` |
+| PostgreSQL 17 | `localhost:5434` | `postgres:5432` |
+| Redis 7 | `localhost:6381` | `redis:6379` |
+
+Các cổng host chỉ bind vào `127.0.0.1`. Đổi `API_PORT`, `POSTGRES_PORT`, `REDIS_PORT` trong `.env` nếu bị trùng. Cổng API mặc định khớp proxy Vite hiện tại; đổi cổng API thì cần cập nhật target proxy khi chạy frontend. Cổng PostgreSQL/Redis được chọn để tránh các container local đang dùng `5433` và `6380`.
+
+- API: `http://localhost:5218/api/books`
+- Swagger UI: `http://localhost:5218/swagger`
+- Swagger JSON: `http://localhost:5218/swagger/v1/swagger.json`
+- Health: `http://localhost:5218/health` trả `Healthy` khi API chạy; đây là liveness check, không kiểm tra PostgreSQL/Redis liên tục.
+
+Compose mặc định dùng `Development` để có Swagger và dữ liệu mẫu. Đây là cấu hình phát triển cục bộ. Ngoài Development, Swagger không được bật. Nếu chạy với `ASPNETCORE_ENVIRONMENT=Production`, đặt thêm `SEED_SAMPLE_DATA=false` để tắt dữ liệu mẫu.
+
+API đợi PostgreSQL và Redis healthy trước khi khởi động. Cơ chế `AppDbContext.Database.MigrateAsync()` hiện có vẫn tự áp dụng migration rồi seed Admin/dữ liệu mẫu; không cần SDK hoặc lệnh EF trong runtime container. PostgreSQL lưu dữ liệu trong named volume `postgres_data`; Redis chỉ là cache, không cần lưu bền.
+
+Configuration được nạp qua `appsettings.json`, `appsettings.Development.json` (khi Development) rồi environment variables. Compose truyền:
+
+```text
+ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=<POSTGRES_DB>;Username=<POSTGRES_USER>;Password=<POSTGRES_PASSWORD>
+ConnectionStrings__Redis=redis:6379
+Seed__AdminPassword=<SEED_ADMIN_PASSWORD>
+Seed__SampleData=<SEED_SAMPLE_DATA>
+```
+
+ASP.NET Core không tự đọc `.env`; Docker Compose đọc file này và truyền các biến trên vào API. User Secrets của máy host không được copy vào image. Code xác thực hiện tại dùng ASP.NET Core Identity API endpoints, không đọc `Jwt:SecretKey`, nên Compose không cần JWT secret riêng. Dockerfile dùng SDK .NET 10 để restore/publish và ASP.NET Runtime 10 để chạy `light_brary.dll` bằng user không phải root; runtime chỉ nhận output publish và công cụ `curl` cho health check.
+
+Kiểm tra hoặc chạy nền:
+
+```bash
+docker compose config --quiet
+docker compose up --build -d --wait
 docker compose ps
+curl --fail http://localhost:5218/health
+curl --fail http://localhost:5218/api/books
+docker compose logs api
 ```
 
-Nếu cổng bị trùng, đặt `POSTGRES_PORT=5433` trong `.env` (chọn cổng còn trống), rồi chạy `docker compose up -d postgres`. Cập nhật `ConnectionStrings:DefaultConnection` trong User Secrets sang cùng cổng, giữ các thông tin còn lại khớp với PostgreSQL của LightBrary:
+Dừng hệ thống, giữ dữ liệu database:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=lightbrary_db;Username=postgres;Password=<mật khẩu PostgreSQL>" --project back_end/light_brary
+docker compose down
 ```
 
-Thay `<mật khẩu PostgreSQL>` bằng mật khẩu thực tế, sau đó chạy lại backend. Việc đổi cổng không cần xóa database hoặc volume.
-
-### 2. Tạo User Secrets
-
-Chạy các lệnh từ thư mục gốc của solution. `--project` trỏ tới project API (project chứa `Program.cs`).
-
-**Bước 1: khởi tạo (chỉ làm nếu `.csproj` của project API chưa có `<UserSecretsId>`)**
-
-```powershell
-dotnet user-secrets init --project back_end/light_brary
-```
-
-Nếu `.csproj` đã có dòng `<UserSecretsId>`, bỏ qua bước này. Dòng đó được commit và không phải bí mật.
-
-**Bước 2: sinh một khóa ngẫu nhiên (tối thiểu 32 ký tự) và lưu lại**
-
-```powershell
-$bytes = New-Object byte[] 48
-[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-$key = [Convert]::ToBase64String($bytes)
-
-dotnet user-secrets set "Jwt:SecretKey" $key --project back_end/light_brary
-```
-
-### 3. Kiểm tra
-
-```powershell
-dotnet user-secrets list --project back_end/light_brary
-```
-
-Kết quả mong đợi có dòng:
-
-```
-Jwt:SecretKey = <chuỗi ngẫu nhiên>
-```
-
-> `list` in giá trị ra dạng văn bản thường, hãy cẩn thận khi chia sẻ màn hình hoặc chụp ảnh gửi người khác.
-
-Các lệnh hữu ích khác:
-
-```powershell
-dotnet user-secrets remove "Jwt:SecretKey" --project back_end/light_brary   # xóa một khóa
-dotnet user-secrets clear --project back_end/light_brary                    # xóa tất cả
-```
-
----
-
-## 🛠 Yêu Cầu Hệ Thống
-
-- **.NET SDK**: 10.0 trở lên
-- **Node.js**: 18.0 trở lên
-- **PostgreSQL**: 16 hoặc 17 (hoặc Docker Compose)
-- **Redis**: dùng cho cache chi tiết sách, mặc định Development kết nối `localhost:6380`.
-
----
-
-## ⚡ Hướng Dẫn Khởi Chạy
-
-### 1. Khởi động Cơ sở dữ liệu PostgreSQL
-
-Sử dụng Docker Compose đi kèm:
+Chỉ khi chủ động muốn xóa database và khởi tạo lại:
 
 ```bash
-docker compose up -d
+docker compose down -v
 ```
 
-Cơ sở dữ liệu mặc định sẽ lắng nghe tại `localhost:5432` với database `lightbrary_db`.
+**Cảnh báo: `down -v` xóa database volume và toàn bộ dữ liệu trong đó.** Không cần xóa volume khi chỉ đổi host port. `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` chỉ khởi tạo database ở lần đầu; sửa `.env` không đổi credential của database đã có. Với dữ liệu cần giữ, cập nhật credential trong PostgreSQL rồi đồng bộ cấu hình thay vì xóa volume.
 
-### 2. Khởi động Redis
+File Compose cũ chưa mount named volume và dùng container cố định `lightbrary-postgres`. Cấu hình mới không tự nhập dữ liệu từ container đó: nếu cần giữ dữ liệu cũ, dùng `pg_dump`/restore trước khi chuyển, và không xóa container hoặc volume cũ khi chưa có bản sao lưu.
 
-Nếu chưa có Redis, có thể chạy bằng Docker:
+## Local development without Docker
+
+Backend vẫn chạy trực tiếp với .NET SDK 10; cần PostgreSQL 17 (hoặc bản 16 hiện đang dùng) và Redis 7 sẵn sàng trên máy. Nếu dùng database/container riêng hiện có, không cần bật cả bộ Compose. Khi chỉ muốn dùng dependencies từ Compose:
 
 ```bash
-docker run -d --name lightbrary-redis -p 6380:6379 redis:7-alpine
+cp .env.example .env
+docker compose up -d postgres redis
 ```
 
-Nếu Redis đã chạy, dùng lại instance hiện có. Khi đổi địa chỉ Redis, đặt `ConnectionStrings:Redis` qua User Secrets hoặc biến môi trường `ConnectionStrings__Redis`. Ngoài môi trường Development, cần cấu hình giá trị này trước khi khởi chạy backend.
+Nếu đã có `.env`, bổ sung biến còn thiếu, không ghi đè file. Cấu hình này expose PostgreSQL tại `localhost:5434`, Redis tại `localhost:6381`. Khi dùng Redis local hiện tại ở `localhost:6380`, giữ nguyên `appsettings.Development.json`; chỉ override Redis khi dùng địa chỉ khác.
 
-Chi tiết sách theo ID được cache trong 10 phút với tiền tố `LightBrary:books:`. Cache được xóa sau khi sửa/xóa sách, thêm/xóa bản sao, mượn/trả/báo mất sách hoặc sửa thể loại liên quan. Danh sách phân trang vẫn đọc từ database.
-
-### 3. Khởi chạy Backend (.NET 10 Web API)
+Đặt secrets cho project API (thay placeholder bằng giá trị thực tế, khớp database của bạn):
 
 ```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5434;Database=lightbrary_db;Username=postgres;Password=<mật-khẩu-PostgreSQL>" --project back_end/light_brary
+dotnet user-secrets set "Seed:AdminPassword" "<mật-khẩu-Admin-ít-nhất-8-ký-tự>" --project back_end/light_brary
+# Chỉ cần dòng này nếu Redis không chạy ở localhost:6380:
+dotnet user-secrets set "ConnectionStrings:Redis" "localhost:6381" --project back_end/light_brary
+
+dotnet restore Library.slnx
 dotnet run --project back_end/light_brary
 ```
 
-- API tự động áp dụng migration, tạo Admin nếu chưa có và bổ sung dữ liệu thư viện mẫu trong môi trường Development.
-- Swagger UI: `http://localhost:5048/swagger`
-- OpenAPI Schema: `http://localhost:5048/openapi/v1.json`
+Project đã có `UserSecretsId`, không cần khởi tạo lại. Có thể dùng environment variables `ConnectionStrings__DefaultConnection`, `ConnectionStrings__Redis`, `Seed__AdminPassword` thay User Secrets. Không có mật khẩu mặc định trong appsettings; lần đầu seed Admin cần cung cấp mật khẩu. Profile HTTP trong `Properties/launchSettings.json` dùng `http://localhost:5218`, Swagger tại `/swagger`, schema tại `/swagger/v1/swagger.json` và health tại `/health`.
 
-### 4. Khởi chạy Frontend (React + Vite)
+Backend tự chạy migration và seed theo cơ chế hiện có. Chi tiết sách theo ID được cache 10 phút với tiền tố `LightBrary:books:`; danh sách phân trang vẫn đọc từ database. Để kiểm tra cache qua HTTP, lấy một ID từ `GET /api/books`, gọi `GET /api/books/{id}` hai lần rồi kiểm tra Redis:
 
-Mở một terminal mới:
+```bash
+docker compose exec redis redis-cli --scan --pattern 'LightBrary:books:*'
+```
+
+Khởi chạy frontend trong terminal khác (cần Node.js tương thích Vite hiện tại):
 
 ```bash
 cd front_end
-npm install
+npm ci
 npm run dev
 ```
 
-Giao diện người dùng sẽ chạy tại: `http://localhost:3000` (hoặc `http://localhost:5173`).
+Frontend mặc định chạy tại `http://localhost:3000`, proxy `/api` đến `http://localhost:5218`.
 
 ---
 
@@ -208,6 +167,49 @@ Các test dùng SQLite trong bộ nhớ và `IDistributedCache` trong bộ nhớ
 
 ```bash
 LIGHTBRARY_TEST_REDIS=localhost:6380 dotnet test Library.slnx
+# Hoặc dùng Redis của Compose:
+LIGHTBRARY_TEST_REDIS=localhost:6381 dotnet test Library.slnx
 ```
 
 Mỗi test dùng tiền tố Redis riêng và xóa các key do test tạo. Bộ test kiểm tra cache miss/hit, dữ liệu không tồn tại, cập nhật/xóa sách và xóa cache khi dữ liệu liên quan thay đổi. Các endpoint vẫn cần được kiểm tra trên môi trường development với PostgreSQL đã cấu hình.
+
+## GitHub Actions CI
+
+Workflow `.github/workflows/ci.yml` chạy khi push lên mọi branch (bao gồm `main`) và khi mở/cập nhật pull request. Job dùng Ubuntu, checkout source, cài .NET SDK `10.0.x`, rồi chạy toàn bộ solution:
+
+```bash
+dotnet restore Library.slnx
+dotnet build Library.slnx --configuration Release --no-restore
+dotnet test Library.slnx --configuration Release --no-build --no-restore
+```
+
+CI dùng SQLite/cache bộ nhớ theo thiết kế test hiện tại, không cần secret, PostgreSQL hoặc Redis service container. Workflow chỉ build/test, không deploy.
+
+Cấu trúc đóng gói và CI:
+
+```text
+light-brary/
+├── Dockerfile
+├── compose.yml
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── Library.slnx
+├── README.md
+├── back_end/
+│   ├── light_brary/
+│   │   ├── light_brary.csproj
+│   │   ├── Program.cs
+│   │   ├── appsettings.json
+│   │   ├── appsettings.Development.json
+│   │   ├── Migrations/
+│   │   └── code/
+│   └── light_brary.Tests/
+│       ├── light_brary.Tests.csproj
+│       └── BookCacheTests.cs
+├── front_end/
+└── docs/
+```
