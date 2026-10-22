@@ -109,8 +109,8 @@ export const MemberProfilePage: React.FC<{ title?: string }> = ({ title = 'Hồ 
       showToast('Mật khẩu mới không được trùng với mật khẩu hiện tại!', 'error');
       return;
     }
-    if (newPwd.length < 6) {
-      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự!', 'error');
+    if (newPwd.length < 8) {
+      showToast('Mật khẩu mới phải có tối thiểu 8 ký tự!', 'error');
       return;
     }
 
@@ -325,7 +325,7 @@ export const MemberProfilePage: React.FC<{ title?: string }> = ({ title = 'Hồ 
 
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
-                <Lock size={14} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
+                <Lock size={14} /> Mật khẩu mới * (Tối thiểu 8 ký tự)
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input

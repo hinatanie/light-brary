@@ -38,8 +38,8 @@ export const ChangePasswordPage: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Mật khẩu mới phải có tối thiểu 6 ký tự!');
+    if (newPassword.length < 8) {
+      setError('Mật khẩu mới phải có tối thiểu 8 ký tự!');
       return;
     }
 
@@ -135,7 +135,7 @@ export const ChangePasswordPage: React.FC = () => {
 
         <div className="form-group" style={{ marginBottom: '16px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
-            <Lock size={14} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
+            <Lock size={14} /> Mật khẩu mới * (Tối thiểu 8 ký tự)
           </label>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input
