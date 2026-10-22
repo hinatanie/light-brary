@@ -148,7 +148,7 @@ Khi chạy trên database trống trong môi trường **Development**, API tự
 
 Admin dùng mật khẩu cấu hình tại `Seed:AdminPassword`. Sinh viên và thủ thư dùng `Seed:SamplePassword`; nếu chưa đặt thì dùng `Seed:AdminPassword`. Đặt mật khẩu bằng .NET User Secrets hoặc các biến môi trường `Seed__AdminPassword`, `Seed__SamplePassword`, không lưu mật khẩu thực tế vào Git.
 
-Seed chạy tự động cùng backend, không cần chạy `seed_data.sql` riêng. Chạy lại sẽ bổ sung tài khoản, sách và bản sao còn thiếu, giữ nguyên dữ liệu, mật khẩu và tình trạng mượn đã có. Nếu database đã có Admin hoặc thủ thư thì tái sử dụng các tài khoản đó; tổng dữ liệu có thể nhiều hơn số lượng trên nếu trước đó đã có dữ liệu khác. Ảnh bìa cần kết nối Internet.
+Seed chạy tự động cùng backend, không cần chạy script SQL riêng. Chạy lại sẽ bổ sung tài khoản, sách và bản sao còn thiếu, giữ nguyên dữ liệu, mật khẩu và tình trạng mượn đã có. Nếu database đã có Admin hoặc thủ thư thì tái sử dụng các tài khoản đó; tổng dữ liệu có thể nhiều hơn số lượng trên nếu trước đó đã có dữ liệu khác. Ảnh bìa cần kết nối Internet.
 
 Đặt `Seed__SampleData=false` để tắt dữ liệu mẫu. Ngoài Development, dữ liệu mẫu mặc định tắt; có thể bật bằng `Seed__SampleData=true`. Cơ chế khởi tạo Admin vẫn hoạt động độc lập.
 

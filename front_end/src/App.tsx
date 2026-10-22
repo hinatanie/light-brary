@@ -92,7 +92,6 @@ export function App() {
             </Route>
             <Route element={<InternalAuthLayout portalTitle="Cổng thủ thư" />}>
               <Route path="/login/librarian" element={<LoginPage roleMode="librarian" />} />
-              <Route path="/login/librian" element={<Navigate to="/login/librarian" replace />} />
             </Route>
 
             {/* 1. Admin Portal */}
