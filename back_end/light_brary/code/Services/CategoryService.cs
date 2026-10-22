@@ -3,10 +3,13 @@ using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace light_brary.Services
 {
-    public class CategoryService(CategoryRepository categoryRepository)
+    public class CategoryService(
+        CategoryRepository categoryRepository,
+        IDistributedCache cache)
     {
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync(string? name = null)
         {
@@ -39,7 +42,7 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
         {
-            var category = await categoryRepository.GetByIdAsync(id)
+            var category = await categoryRepository.GetWithBooksAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
             var name = await CheckNameAsync(request.Name, id);
@@ -48,6 +51,11 @@ namespace light_brary.Services
             category.Description = request.Description?.Trim();
 
             await categoryRepository.UpdateAsync(category);
+
+            foreach (var book in category.Books)
+            {
+                await cache.RemoveAsync($"books:{book.Id}");
+            }
 
             return CategoryResponse.FromEntity(category);
         }

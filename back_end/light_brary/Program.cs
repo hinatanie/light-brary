@@ -30,6 +30,15 @@ builder.Services.AddSwaggerGen();
 /* Cấu hình Database */
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+/* Cấu hình Redis */
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis")
+        ?? throw new InvalidOperationException("Chưa cấu hình ConnectionStrings:Redis.");
+    options.InstanceName = "LightBrary:";
+});
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.ADMIN));

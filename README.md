@@ -124,6 +124,7 @@ dotnet user-secrets clear --project back_end/light_brary                    # x�
 - **.NET SDK**: 10.0 trở lên
 - **Node.js**: 18.0 trở lên
 - **PostgreSQL**: 16 hoặc 17 (hoặc Docker Compose)
+- **Redis**: dùng cho cache chi tiết sách, mặc định Development kết nối `localhost:6380`.
 
 ---
 
@@ -139,7 +140,19 @@ docker compose up -d
 
 Cơ sở dữ liệu mặc định sẽ lắng nghe tại `localhost:5432` với database `lightbrary_db`.
 
-### 2. Khởi chạy Backend (.NET 10 Web API)
+### 2. Khởi động Redis
+
+Nếu chưa có Redis, có thể chạy bằng Docker:
+
+```bash
+docker run -d --name lightbrary-redis -p 6380:6379 redis:7-alpine
+```
+
+Nếu Redis đã chạy, dùng lại instance hiện có. Khi đổi địa chỉ Redis, đặt `ConnectionStrings:Redis` qua User Secrets hoặc biến môi trường `ConnectionStrings__Redis`. Ngoài môi trường Development, cần cấu hình giá trị này trước khi khởi chạy backend.
+
+Chi tiết sách theo ID được cache trong 10 phút với tiền tố `LightBrary:books:`. Cache được xóa sau khi sửa/xóa sách, thêm/xóa bản sao, mượn/trả/báo mất sách hoặc sửa thể loại liên quan. Danh sách phân trang vẫn đọc từ database.
+
+### 3. Khởi chạy Backend (.NET 10 Web API)
 
 ```bash
 dotnet run --project back_end/light_brary
@@ -149,7 +162,7 @@ dotnet run --project back_end/light_brary
 - Swagger UI: `http://localhost:5048/swagger`
 - OpenAPI Schema: `http://localhost:5048/openapi/v1.json`
 
-### 3. Khởi chạy Frontend (React + Vite)
+### 4. Khởi chạy Frontend (React + Vite)
 
 Mở một terminal mới:
 
@@ -184,10 +197,17 @@ Seed chạy tự động cùng backend, không cần chạy `seed_data.sql` riê
 
 ## 🧪 Kiểm Thử Tự Động (Automated Tests)
 
-Solution hiện chứa một project backend, chưa có project Unit Tests hoặc Integration Tests. Kiểm tra compile từ thư mục gốc:
+Kiểm tra compile và chạy các test cache từ thư mục gốc:
 
 ```bash
 dotnet build Library.slnx
+dotnet test Library.slnx
 ```
 
-Các endpoint cần được kiểm tra trên môi trường development với PostgreSQL đã cấu hình.
+Các test dùng SQLite trong bộ nhớ và `IDistributedCache` trong bộ nhớ, không cần PostgreSQL. Để chạy cùng bộ test với Redis thật trên Bash:
+
+```bash
+LIGHTBRARY_TEST_REDIS=localhost:6380 dotnet test Library.slnx
+```
+
+Mỗi test dùng tiền tố Redis riêng và xóa các key do test tạo. Bộ test kiểm tra cache miss/hit, dữ liệu không tồn tại, cập nhật/xóa sách và xóa cache khi dữ liệu liên quan thay đổi. Các endpoint vẫn cần được kiểm tra trên môi trường development với PostgreSQL đã cấu hình.

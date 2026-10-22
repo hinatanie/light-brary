@@ -4,12 +4,14 @@ using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
 using light_brary.Enums;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace light_brary.Services
 {
     public class BookCopyService(
         BookCopyRepository bookCopyRepository,
-        BookRepository bookRepository)
+        BookRepository bookRepository,
+        IDistributedCache cache)
     {
         public async Task<IEnumerable<BookCopyResponse>> GetAllAsync()
         {
@@ -62,6 +64,7 @@ namespace light_brary.Services
             };
 
             await bookCopyRepository.AddAsync(copy);
+            await cache.RemoveAsync($"books:{bookId}");
 
             copy.Book = book;
             return BookCopyResponse.FromEntity(copy);
@@ -95,6 +98,7 @@ namespace light_brary.Services
                 throw AppException.Conflict("Không thể xóa bản sao sách đã có lịch sử mượn.");
 
             await bookCopyRepository.DeleteAsync(copy);
+            await cache.RemoveAsync($"books:{copy.BookId}");
         }
 
 

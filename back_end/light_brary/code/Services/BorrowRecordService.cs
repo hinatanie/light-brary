@@ -5,6 +5,7 @@ using light_brary.Exceptions;
 using light_brary.Entities;
 using light_brary.Enums;
 using light_brary.Data;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace light_brary.Services
 {
@@ -13,7 +14,8 @@ namespace light_brary.Services
         BorrowRecordRepository borrowRecordRepository,
         BorrowDetailRepository borrowDetailRepository,
         UserService userService,
-        BookCopyRepository bookCopyRepository)
+        BookCopyRepository bookCopyRepository,
+        IDistributedCache cache)
     {
         public async Task<BorrowRecordResponse> CreateAsync(CreateBorrowRecordRequest request)
         {
@@ -57,6 +59,11 @@ namespace light_brary.Services
             };
 
             await borrowRecordRepository.AddAsync(record);
+
+            foreach (var bookId in copies.Select(copy => copy.BookId).Distinct())
+            {
+                await cache.RemoveAsync($"books:{bookId}");
+            }
 
             return await GetByIdAsync(record.Id);
         }
@@ -110,6 +117,11 @@ namespace light_brary.Services
 
             await context.SaveChangesAsync();
 
+            foreach (var bookId in details.Select(detail => detail.BookCopy!.BookId).Distinct())
+            {
+                await cache.RemoveAsync($"books:{bookId}");
+            }
+
             return new ReturnBooksResponse
             {
                 Items = details.Select(BorrowDetailActionResponse.FromEntity).ToList()
@@ -133,6 +145,7 @@ namespace light_brary.Services
             RecalculateRecordStatus(detail.BorrowRecord);
 
             await context.SaveChangesAsync();
+            await cache.RemoveAsync($"books:{copy.BookId}");
 
             return BorrowDetailActionResponse.FromEntity(detail);
         }

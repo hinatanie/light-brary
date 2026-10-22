@@ -4,19 +4,40 @@ using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
 using light_brary.Enums;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace light_brary.Services
 {
     public class BookService(
         BookRepository bookRepository,
-        CategoryRepository categoryRepository)
+        CategoryRepository categoryRepository,
+        IDistributedCache cache)
     {
         public async Task<BookResponse> GetByIdAsync(Guid id)
         {
+            var cacheKey = $"books:{id}";
+            var cachedBook = await cache.GetStringAsync(cacheKey);
+
+            if (cachedBook is not null &&
+                JsonSerializer.Deserialize<BookResponse>(cachedBook) is { } cachedResponse)
+            {
+                return cachedResponse;
+            }
+
             var book = await bookRepository.GetWithDetailsAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
+            var response = BookResponse.FromEntity(book);
 
-            return BookResponse.FromEntity(book);
+            await cache.SetStringAsync(
+                cacheKey,
+                JsonSerializer.Serialize(response),
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                });
+
+            return response;
         }
 
         public async Task<BookResponse> CreateAsync(SaveBookRequest request)
@@ -69,6 +90,8 @@ namespace light_brary.Services
 
             await bookRepository.UpdateAsync(book);
 
+            await cache.RemoveAsync($"books:{id}");
+
             return BookResponse.FromEntity(book);
         }
 
@@ -81,6 +104,8 @@ namespace light_brary.Services
                 throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao đang được mượn.");
 
             await bookRepository.DeleteAsync(book);
+
+            await cache.RemoveAsync($"books:{id}");
         }
 
         public async Task<PagedResponse<BookResponse>> GetPagedAsync(
