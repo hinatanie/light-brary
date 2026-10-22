@@ -1,18 +1,8 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import { Header } from '../components/Header';
-import { Sidebar } from '../components/Sidebar';
+import { PortalLayout } from './PortalLayout';
 
 export const AdminLayout: React.FC = () => {
   return (
-    <div className="app-layout">
-      <Header portalTitle="Thư viện · Cổng quản trị" />
-      <div className="main-content-wrapper">
-        <Sidebar role="admin" />
-        <main className="app-body">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+    <PortalLayout portalTitle="Thư viện · Cổng quản trị" role="admin" />
   );
 };
