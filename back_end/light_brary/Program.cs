@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 
 /* Cấu hình CORS cho Frontend */
 builder.Services.AddCors(options =>
@@ -94,6 +95,7 @@ app.UseMiddleware<ValidateUserMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health").AllowAnonymous();
 
 /* Tự động áp dụng Migration và khởi tạo dữ liệu */
 using (var scope = app.Services.CreateScope())
