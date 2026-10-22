@@ -68,7 +68,7 @@ Categories
 
 |Method|Endpoint|Chức năng|Role|
 |---|---|---|---|
-|`GET`|`/api/books`|Lấy danh sách sách|Tất cả|
+|`GET`|`/api/books`|Lấy danh sách sách có lọc và phân trang (`page=1`, `pageSize=10` mặc định)|Tất cả|
 |`GET`|`/api/books/{id}`|Xem chi tiết một đầu sách|Tất cả|
 |`POST`|`/api/books`|Thêm đầu sách|ADMIN, LIBRARIAN|
 |`PUT`|`/api/books/{id}`|Sửa thông tin đầu sách|ADMIN, LIBRARIAN|
@@ -124,7 +124,7 @@ AspNetUsers
 |Method|Endpoint|Chức năng|Role|
 |---|---|---|---|
 |`POST`|`/api/borrow-details/{id}/return`|Trả một cuốn sách|ADMIN, LIBRARIAN|
-|`POST`|`/api/returns`|Trả nhiều cuốn sách|ADMIN, LIBRARIAN|
+|`POST`|`/api/borrow-records/{borrowRecordId}/returns`|Trả nhiều cuốn sách trong một phiếu|ADMIN, LIBRARIAN|
 |`POST`|`/api/borrow-details/{id}/mark-lost`|Báo mất sách đang mượn|ADMIN, LIBRARIAN|
 |`POST`|`/api/book-copies/{id}/mark-available`|Khôi phục sách Lost thành Available|ADMIN, LIBRARIAN|
 |`GET`|`/api/borrow-records?overdue=true`|Danh sách mượn quá hạn|ADMIN, LIBRARIAN|
@@ -197,5 +197,5 @@ GET    /api/users/{userId}/borrowed-books
 # Return / Lost
 POST   /api/borrow-details/{id}/return
 POST   /api/borrow-details/{id}/mark-lost
-POST   /api/returns
+POST   /api/borrow-records/{borrowRecordId}/returns
 ```

@@ -19,9 +19,8 @@ namespace light_brary.Services
 
         public async Task<IEnumerable<BookCopyResponse>> GetByBookIdAsync(Guid bookId)
         {
-            var book = await bookRepository.GetByIdAsync(bookId);
-            if (book is null)
-                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {bookId}");
+            var book = await bookRepository.GetByIdAsync(bookId)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {bookId}");
 
             var copies = await bookCopyRepository.GetByBookIdAsync(bookId);
             return copies.Select(BookCopyResponse.FromEntity).ToList();
@@ -29,9 +28,8 @@ namespace light_brary.Services
 
         public async Task<BookCopyResponse> GetByIdAsync(Guid id)
         {
-            var copy = await bookCopyRepository.GetWithBookAsync(id);
-            if (copy is null)
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
+            var copy = await bookCopyRepository.GetWithBookAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
 
             return BookCopyResponse.FromEntity(copy);
         }
@@ -39,18 +37,16 @@ namespace light_brary.Services
         public async Task<BookCopyResponse> GetByBarcodeAsync(string barcode)
         {
             var code = barcode.Trim();
-            var copy = await bookCopyRepository.GetByBarcodeAsync(code);
-            if (copy is null)
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với mã vạch: {code}");
+            var copy = await bookCopyRepository.GetByBarcodeAsync(code)
+                ?? throw AppException.NotFound($"Không tìm thấy bản sao sách với mã vạch: {code}");
 
             return BookCopyResponse.FromEntity(copy);
         }
 
         public async Task<BookCopyResponse> CreateAsync(Guid bookId, SaveBookCopyRequest request)
         {
-            var book = await bookRepository.GetByIdAsync(bookId);
-            if (book is null)
-                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {bookId}");
+            var book = await bookRepository.GetByIdAsync(bookId)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {bookId}");
 
             var barcode = request.Barcode.Trim();
             var existing = await bookCopyRepository.GetByBarcodeAsync(barcode);
@@ -73,9 +69,8 @@ namespace light_brary.Services
 
         public async Task<BookCopyResponse> UpdateAsync(Guid id, SaveBookCopyRequest request)
         {
-            var copy = await bookCopyRepository.GetWithBookAsync(id);
-            if (copy is null)
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
+            var copy = await bookCopyRepository.GetWithBookAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
 
             var barcode = request.Barcode.Trim();
             var existing = await bookCopyRepository.GetByBarcodeAsync(barcode);
@@ -92,9 +87,8 @@ namespace light_brary.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var copy = await bookCopyRepository.GetByIdAsync(id);
-            if (copy is null)
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
+            var copy = await bookCopyRepository.GetByIdAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
 
             var hasBorrowHistory = await bookCopyRepository.HasBorrowHistoryAsync(id);
             if (hasBorrowHistory)
@@ -103,40 +97,6 @@ namespace light_brary.Services
             await bookCopyRepository.DeleteAsync(copy);
         }
 
-        public async Task<BookCopyResponse> MarkAvailableAsync(Guid id)
-        {
-            var copy = await bookCopyRepository.GetWithBookAsync(id);
-            if (copy is null)
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
 
-            if (copy.Status == BookCopyStatus.Available)
-                throw AppException.Conflict("Bản sao sách hiện đã ở trạng thái Available.");
-
-            if (copy.Status == BookCopyStatus.Borrowed)
-                throw AppException.Conflict("Bản sao đang được mượn, vui lòng thực hiện thông qua nghiệp vụ trả sách.");
-
-            copy.Status = BookCopyStatus.Available;
-            await bookCopyRepository.UpdateAsync(copy);
-
-            return BookCopyResponse.FromEntity(copy);
-        }
-
-        public async Task<BookCopyResponse> MarkLostAsync(Guid id)
-        {
-            var copy = await bookCopyRepository.GetWithBookAsync(id);
-            if (copy is null)
-                throw AppException.NotFound($"Không tìm thấy bản sao sách với ID: {id}");
-
-            if (copy.Status == BookCopyStatus.Lost)
-                throw AppException.Conflict("Bản sao sách hiện đã ở trạng thái Lost.");
-
-            if (copy.Status == BookCopyStatus.Borrowed)
-                throw AppException.Conflict("Bản sao đang được mượn, vui lòng báo mất thông qua chi tiết phiếu mượn.");
-
-            copy.Status = BookCopyStatus.Lost;
-            await bookCopyRepository.UpdateAsync(copy);
-
-            return BookCopyResponse.FromEntity(copy);
-        }
     }
 }

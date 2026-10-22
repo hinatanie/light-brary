@@ -161,34 +161,7 @@ export const booksApi = {
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== '') params.set(key, String(value));
     }
-    return request<PagedResponse<Book>>(`/books/book/page?${params}`, { signal });
-  },
-  getAll: (
-    filterOrKeyword?:
-      | string
-      | { keyword?: string; categoryId?: number | string; author?: string; onlyAvailable?: boolean },
-    categoryId?: number,
-    author?: string,
-    onlyAvailable?: boolean
-  ) => {
-    const params = new URLSearchParams();
-    if (typeof filterOrKeyword === 'object' && filterOrKeyword !== null) {
-      if (filterOrKeyword.keyword) params.append('keyword', filterOrKeyword.keyword);
-      if (filterOrKeyword.categoryId) params.append('categoryId', filterOrKeyword.categoryId.toString());
-      if (filterOrKeyword.author) params.append('author', filterOrKeyword.author);
-      if (filterOrKeyword.onlyAvailable !== undefined && filterOrKeyword.onlyAvailable !== null) {
-        params.append('onlyAvailable', filterOrKeyword.onlyAvailable.toString());
-      }
-    } else {
-      if (filterOrKeyword) params.append('keyword', filterOrKeyword);
-      if (categoryId) params.append('categoryId', categoryId.toString());
-      if (author) params.append('author', author);
-      if (onlyAvailable !== undefined && onlyAvailable !== null) {
-        params.append('onlyAvailable', onlyAvailable.toString());
-      }
-    }
-    const qs = params.toString();
-    return request<Book[]>(qs ? `/books?${qs}` : '/books');
+    return request<PagedResponse<Book>>(`/books?${params}`, { signal });
   },
   getById: (id: string | number) => request<Book>(`/books/${id}`),
   create: (data: {
@@ -377,10 +350,10 @@ export const borrowRecordsApi = {
       }),
     }),
   returnBooks: (
-    _borrowRecordId: string | number,
+    borrowRecordId: string | number,
     data: { items: { borrowDetailId: string | number }[] }
   ) =>
-    request<any>('/returns', {
+    request<any>(`/borrow-records/${borrowRecordId}/returns`, {
       method: 'POST',
       body: JSON.stringify({
         borrowDetailIds: data.items.map((i) => i.borrowDetailId),

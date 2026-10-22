@@ -22,37 +22,14 @@ namespace light_brary.Repositories
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 
-        public async Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, Guid? categoryId = null, string? author = null)
-        {
-            var query = _context.Books
-                .Include(b => b.Category)
-                .Include(b => b.BookCopies)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                var kw = keyword.Trim().ToLower();
-                query = query.Where(b => b.Title.ToLower().Contains(kw) || b.ISBN.ToLower().Contains(kw));
-            }
-
-            if (categoryId.HasValue && categoryId.Value != Guid.Empty)
-            {
-                query = query.Where(b => b.CategoryId == categoryId.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(author))
-            {
-                var auth = author.Trim().ToLower();
-                query = query.Where(b => b.Author.ToLower().Contains(auth));
-            }
-
-            return await query
-                .OrderByDescending(b => b.CreatedAt)
-                .ThenByDescending(b => b.Id)
-                .ToListAsync();
-        }
-
-        public async Task<(IEnumerable<Book> Books, int TotalCount)> GetPage(int pageNumber, int pageSize = 10, string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null, string sortBy = "newest")
+        public async Task<(IEnumerable<Book> Books, int TotalCount)> GetPagedAsync(
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? keyword = null,
+            Guid? categoryId = null,
+            string? author = null,
+            bool? onlyAvailable = null,
+            string sortBy = "newest")
         {
             var query = _context.Books
                 .AsNoTracking()

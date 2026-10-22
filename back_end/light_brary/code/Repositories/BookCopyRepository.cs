@@ -42,5 +42,12 @@ namespace light_brary.Repositories
             return await _context.BorrowDetails
                 .AnyAsync(bd => bd.BookCopyId == id);
         }
+
+        public async Task<IEnumerable<BookCopy>> GetBookCopysByListIdAsync(IEnumerable<Guid> bookCopyIds)
+        {
+            return await _context.BookCopies
+                .Where(bc => bookCopyIds.Contains(bc.Id))
+                .ToListAsync();
+        }
     }
 }

@@ -31,6 +31,7 @@ export type BookSort = 'newest' | 'title' | 'available' | 'year';
 
 export interface BookPageQuery {
   page: number;
+  pageSize?: number;
   keyword?: string;
   categoryId?: string | number;
   author?: string;

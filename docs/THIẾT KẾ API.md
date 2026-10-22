@@ -307,7 +307,7 @@ Không đưa toàn bộ danh sách bản sao vào response đầu sách. Dùng e
 
 |Method|Endpoint|Request|Response thành công|
 |---|---|---|---|
-|GET|`/api/books`|Query: `keyword?`, `categoryId?`, `author?`, `page`, `pageSize`|`200` — `Page<BookResponse>`|
+|GET|`/api/books`|Query: `keyword?`, `categoryId?`, `author?`, `onlyAvailable?`, `sortBy?`, `page`, `pageSize`|`200` — `PagedResponse<BookResponse>`|
 |GET|`/api/books/{id}`|Path: `id`|`200` — `BookResponse`|
 |POST|`/api/books`|Body: `SaveBookRequest`|`201` — `BookResponse`|
 |PUT|`/api/books/{id}`|Path: `id`; body: `SaveBookRequest`|`200` — `BookResponse`|
@@ -317,8 +317,13 @@ Không đưa toàn bộ danh sách bản sao vào response đầu sách. Dùng e
 GET /api/books?keyword=C%23&categoryId=1&author=Bình&page=1&pageSize=20
 ```
 Quy ước:
-- `keyword` tìm theo tiêu đề hoặc ISBN.
+- API đầu sách dùng `page` mặc định `1`, `pageSize` mặc định `10`, giới hạn `1` đến `100`.
+- Response gồm `items`, `pageNumber`, `pageSize`, `totalCount`, `totalPages`.
+- `keyword` tìm theo tiêu đề, ISBN hoặc tác giả.
 - `author` tìm theo tên tác giả.
+- `onlyAvailable=true` chỉ lấy đầu sách có bản sao sẵn sàng để mượn.
+- `sortBy` nhận `newest` (mặc định), `title`, `available` hoặc `year`.
+- Danh sách và tìm kiếm đều dùng `/api/books`; không còn route `/api/books/book/page`.
 - Các bộ lọc kết hợp bằng điều kiện `AND`.
 - Sắp xếp mặc định `createdAt DESC, id DESC`.  
     Những URL tìm kiếm trong danh sách ban đầu là **cùng một API `GET /api/books`**, chỉ khác query parameters.  
@@ -534,7 +539,7 @@ Trong một transaction, server cập nhật chi tiết thành `Returned`, ghi `
 Với hợp đồng này, chỉ chi tiết đang `Borrowing` được trả. Chi tiết đã `Returned` hoặc `Lost` trả `409 INVALID_BORROW_DETAIL_STATE`.
 ## 7.2. Trả nhiều cuốn sách
 ```
-POST /api/returns
+POST /api/borrow-records/{borrowRecordId}/returns
 ```
 Request — `ReturnBooksRequest`:
 ```
@@ -543,11 +548,13 @@ Request — `ReturnBooksRequest`:
 }
 ```
 Quy tắc:
-- Danh sách không rỗng, không trùng ID.
-- Có thể chứa chi tiết thuộc nhiều phiếu.
-- Tất cả chi tiết phải đang `Borrowing`.
-- Xử lý toàn bộ trong một transaction.
-- Chỉ cần một chi tiết không hợp lệ thì không cập nhật chi tiết nào.  
+- Phiếu mượn được chỉ định phải tồn tại; không tồn tại trả `404`.
+- Danh sách không rỗng; ID trùng được xử lý một lần.
+- ID chi tiết không tồn tại được bỏ qua; nếu không tìm thấy chi tiết nào, trả `200` với `items: []`.
+- Các chi tiết tìm thấy phải thuộc phiếu được chỉ định; sai phiếu trả `400`.
+- Các chi tiết tìm thấy phải đang `Borrowing`; sai trạng thái trả `409`.
+- Lưu các thay đổi trong một lần `SaveChangesAsync()`, dùng transaction tự động của EF Core.
+- Nếu có chi tiết sai phiếu hoặc sai trạng thái thì không cập nhật chi tiết nào.
     Response `200 OK`:
 ```
 {
@@ -618,7 +625,7 @@ Nếu muốn ghi nhận “độc giả trả lại cuốn đã báo mất” v�
 |Method|Endpoint|Body|Response thành công|
 |---|---|---|---|
 |POST|`/api/borrow-details/{id}/return`|Không có|`200` — `BorrowDetailActionResponse`|
-|POST|`/api/returns`|`ReturnBooksRequest`|`200` — `{ "items": BorrowDetailActionResponse[] }`|
+|POST|`/api/borrow-records/{borrowRecordId}/returns`|`ReturnBooksRequest`|`200` — `{ "items": BorrowDetailActionResponse[] }`|
 |POST|`/api/borrow-details/{id}/mark-lost`|Không có|`200` — `BorrowDetailActionResponse`|
 |POST|`/api/book-copies/{id}/mark-lost`|Không có|`200` — `BookCopyResponse`|
 |POST|`/api/book-copies/{id}/mark-available`|Không có|`200` — `BookCopyResponse`|

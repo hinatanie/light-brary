@@ -22,9 +22,8 @@ namespace light_brary.Middleware
             if (!Guid.TryParse(userManager.GetUserId(context.User), out _))
                 throw AppException.Unauthorized("Không xác định được danh tính người dùng.");
 
-            var user = await signInManager.ValidateSecurityStampAsync(context.User);
-            if (user is null)
-                throw AppException.Unauthorized("Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.");
+            var user = await signInManager.ValidateSecurityStampAsync(context.User)
+                ?? throw AppException.Unauthorized("Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.");
 
             if (await userManager.IsLockedOutAsync(user))
                 throw AppException.Unauthorized("Tài khoản của bạn đã bị khóa, liên hệ quản thư để được hỗ trợ.");

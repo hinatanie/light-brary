@@ -3,7 +3,7 @@ import { booksApi, categoriesApi } from '../api';
 import type { Book, BookPageQuery, BookSort, Category, PagedResponse } from '../types';
 import { useToast } from '../contexts/ToastContext';
 
-export function usePagedBooks(sortBy: BookSort = 'newest') {
+export function usePagedBooks(sortBy: BookSort = 'newest', enabled = true) {
   const { showToast } = useToast();
   const [query, setQuery] = useState<BookPageQuery>({ page: 1, sortBy });
   const [result, setResult] = useState<PagedResponse<Book>>({
@@ -15,6 +15,7 @@ export function usePagedBooks(sortBy: BookSort = 'newest') {
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     categoriesApi.getAll(controller.signal).then(setCategories).catch((err: unknown) => {
       if (!controller.signal.aborted) {
@@ -22,9 +23,10 @@ export function usePagedBooks(sortBy: BookSort = 'newest') {
       }
     });
     return () => controller.abort();
-  }, [showToast]);
+  }, [enabled, showToast]);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     const load = async () => {
       setLoading(true);
@@ -50,7 +52,7 @@ export function usePagedBooks(sortBy: BookSort = 'newest') {
     };
     void load();
     return () => controller.abort();
-  }, [query, revision, showToast]);
+  }, [enabled, query, revision, showToast]);
 
   const setFilters = useCallback((filters: Partial<Omit<BookPageQuery, 'page'>>) => {
     setQuery(current => ({ ...current, ...filters, page: 1 }));

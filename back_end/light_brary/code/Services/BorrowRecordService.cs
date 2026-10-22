@@ -1,5 +1,4 @@
 using light_brary.Repositories;
-using Microsoft.EntityFrameworkCore;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
@@ -13,26 +12,21 @@ namespace light_brary.Services
         AppDbContext context,
         BorrowRecordRepository borrowRecordRepository,
         BorrowDetailRepository borrowDetailRepository,
-        UserRepository userRepository,
-        UserService userService)
+        UserService userService,
+        BookCopyRepository bookCopyRepository)
     {
         public async Task<BorrowRecordResponse> CreateAsync(CreateBorrowRecordRequest request)
         {
-            var user = await userService.GetRequiredUserAsync(request.UserId);
+            await userService.GetRequiredUserAsync(request.UserId);
 
-            if (request.BookCopyIds.Distinct().Count() != request.BookCopyIds.Count)
-                throw AppException.BadRequest("Danh sách bản sao sách chứa ID bị trùng lặp.");
+            var bookCopyIds = request.BookCopyIds.Distinct().ToList();
 
             if (request.DueDate <= DateTime.UtcNow)
                 throw AppException.BadRequest("Hạn trả sách phải sau thời điểm hiện tại.");
 
-            await using var tx = await context.Database.BeginTransactionAsync();
-            var copies = await context.BookCopies
-                .Include(bc => bc.Book)
-                .Where(bc => request.BookCopyIds.Contains(bc.Id))
-                .ToListAsync();
+            var copies = await bookCopyRepository.GetBookCopysByListIdAsync(bookCopyIds);
 
-            if (copies.Count != request.BookCopyIds.Count)
+            if (copies.Count() != bookCopyIds.Count)
             {
                 throw AppException.NotFound("Không tìm thấy một hoặc nhiều bản sao sách được yêu cầu.");
             }
@@ -62,63 +56,56 @@ namespace light_brary.Services
                 }).ToList()
             };
 
-            await context.BorrowRecords.AddAsync(record);
-            await context.SaveChangesAsync();
-            await tx.CommitAsync();
+            await borrowRecordRepository.AddAsync(record);
 
             return await GetByIdAsync(record.Id);
         }
 
-        public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(Guid? userId = null, string? status = null, bool? overdue = null)
+        public async Task<IEnumerable<BorrowRecordSummaryResponse>> GetAllAsync(
+            Guid? userId = null,
+            string? status = null,
+            bool? overdue = null)
         {
-            var records = (await borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue)).ToList();
-            var roles = await userRepository.GetRoleNamesByUserIdsAsync(records.Select(record => record.UserId));
-            return records.Select(record => BorrowRecordSummaryResponse.FromEntity(record,
-                UserResponse.FromEntity(record.User, roles.GetValueOrDefault(record.UserId, new List<string>())))).ToList();
+            var records = await borrowRecordRepository.GetAllWithDetailsAsync(userId, status, overdue);
+
+            return records.Select(record => BorrowRecordSummaryResponse.FromEntity(
+                record,
+                UserResponse.FromEntity(record.User, Array.Empty<string>()))).ToList();
         }
 
         public async Task<BorrowRecordResponse> GetByIdAsync(Guid id)
         {
-            var record = await borrowRecordRepository.GetWithDetailsAsync(id);
-            if (record is null)
-                throw AppException.NotFound($"Không tìm thấy phiếu mượn với ID: {id}");
+            var record = await borrowRecordRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy phiếu mượn với ID: {id}");
 
-            var roles = await userRepository.GetRoleNamesByUserIdsAsync(new[] { record.UserId });
-            return BorrowRecordResponse.FromEntity(record,
-                UserResponse.FromEntity(record.User, roles.GetValueOrDefault(record.UserId, new List<string>())));
+            return BorrowRecordResponse.FromEntity(
+                record,
+                UserResponse.FromEntity(record.User, Array.Empty<string>()));
         }
 
-        public async Task<ReturnBooksResponse> ReturnMultipleBooksAsync(ReturnBooksRequest request)
+        public async Task<ReturnBooksResponse> ReturnMultipleBooksAsync(Guid borrowRecordId, ReturnBooksRequest request)
         {
-            await using var tx = await context.Database.BeginTransactionAsync();
+            var record = await borrowRecordRepository.GetWithDetailsAsync(borrowRecordId)
+                ?? throw AppException.NotFound($"Không tìm thấy phiếu mượn với ID: {borrowRecordId}");
+
             var detailIds = request.BorrowDetailIds.Distinct().ToList();
-            var details = await borrowDetailRepository.GetByIdsWithDetailsAsync(detailIds);
-            var missingIds = detailIds.Except(details.Select(d => d.Id)).ToList();
 
-            if (missingIds.Count > 0)
-                throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {string.Join(", ", missingIds)}");
+            var details = record.BorrowDetails.Where(d => detailIds.Contains(d.Id)).ToList();
 
-            if (details.Any(d => d.Status != BorrowDetailStatus.Borrowing))
-                throw AppException.Conflict("Một hoặc nhiều cuốn sách không ở trạng thái đang mượn.");
+            EnsureBorrowing(details);
 
             var now = DateTime.UtcNow;
-            var affectedRecords = new HashSet<BorrowRecord>();
 
             foreach (var detail in details)
             {
                 detail.Status = BorrowDetailStatus.Returned;
                 detail.ReturnDate = now;
                 detail.BookCopy.Status = BookCopyStatus.Available;
-                affectedRecords.Add(detail.BorrowRecord);
             }
 
-            foreach (var record in affectedRecords)
-            {
-                RecalculateRecordStatus(record);
-            }
+            RecalculateRecordStatus(record);
 
             await context.SaveChangesAsync();
-            await tx.CommitAsync();
 
             return new ReturnBooksResponse
             {
@@ -128,14 +115,10 @@ namespace light_brary.Services
 
         public async Task<BorrowDetailActionResponse> MarkLostBookAsync(Guid borrowDetailId)
         {
-            await using var tx = await context.Database.BeginTransactionAsync();
-            var detail = await borrowDetailRepository.GetWithDetailsAsync(borrowDetailId);
+            var detail = await borrowDetailRepository.GetWithDetailsAsync(borrowDetailId)
+                ?? throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {borrowDetailId}");
 
-            if (detail is null)
-                throw AppException.NotFound($"Không tìm thấy chi tiết mượn với ID: {borrowDetailId}");
-
-            if (detail.Status != BorrowDetailStatus.Borrowing)
-                throw AppException.Conflict($"Chi tiết mượn không ở trạng thái đang mượn (trạng thái hiện tại: {detail.Status}).");
+            EnsureBorrowing([detail]);
 
             detail.Status = BorrowDetailStatus.Lost;
             detail.ReturnDate = null;
@@ -144,9 +127,15 @@ namespace light_brary.Services
             RecalculateRecordStatus(detail.BorrowRecord);
 
             await context.SaveChangesAsync();
-            await tx.CommitAsync();
 
             return BorrowDetailActionResponse.FromEntity(detail);
+        }
+
+        private static void EnsureBorrowing(List<BorrowDetail> details)
+        {
+            if (details.Any(d => d.Status != BorrowDetailStatus.Borrowing))
+                throw AppException.Conflict(
+                    "Một hoặc nhiều chi tiết mượn không ở trạng thái đang mượn.");
         }
 
         private static void RecalculateRecordStatus(BorrowRecord record)

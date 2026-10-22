@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import type { Book, BookCopy } from '../types';
 import { ApiError, bookCopiesApi, booksApi } from '../api';
 import { Plus, Search, Edit3, Trash2, Barcode, BookOpen, X, RefreshCw } from 'lucide-react';
+import { usePagedBooks } from '../hooks/usePagedBooks';
+import { Pagination } from './Pagination';
 
 interface BookCopiesTabProps {
   copies: BookCopy[];
-  books: Book[];
   selectedBookId: string | null;
   onClearSelectedBook: () => void;
   onRefresh: () => void;
@@ -15,7 +16,6 @@ interface BookCopiesTabProps {
 
 export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   copies,
-  books,
   selectedBookId,
   onClearSelectedBook,
   onRefresh,
@@ -25,11 +25,26 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const { items: books, query, pageNumber, pageSize, totalPages, totalCount,
+    loading: booksLoading, error: booksError, setFilters, setPage, refresh } = usePagedBooks('title', isAddModalOpen);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
   const [targetCopy, setTargetCopy] = useState<BookCopy | null>(null);
   const [viewingBookId, setViewingBookId] = useState<string | null>(null);
   const [bookResult, setBookResult] = useState<{ id: string; book?: Book; error?: string } | null>(null);
   const [failedCover, setFailedCover] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedBookId) return;
+    let cancelled = false;
+    booksApi.getById(selectedBookId).then(
+      (book) => { if (!cancelled) setSelectedBook(book); },
+      (error: unknown) => {
+        if (!cancelled) onNotify(error instanceof Error ? error.message : 'Không thể tải thông tin đầu sách.', 'error');
+      },
+    );
+    return () => { cancelled = true; };
+  }, [selectedBookId, onNotify]);
 
   useEffect(() => {
     if (!viewingBookId) return;
@@ -60,7 +75,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   const viewingBook = bookResult?.id === viewingBookId ? bookResult?.book : undefined;
 
   // Form states for Add Copy
-  const [bookId, setBookId] = useState<string>(selectedBookId || String(books[0]?.id || ''));
+  const [chosenBook, setChosenBook] = useState<Book | null>(null);
   const [barcode, setBarcode] = useState('');
   const [conditionNote, setConditionNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -71,7 +86,8 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
   };
 
   const openAddModal = () => {
-    setBookId(selectedBookId || String(books[0]?.id || ''));
+    setChosenBook(selectedBook && String(selectedBook.id) === selectedBookId ? selectedBook : null);
+    setFilters({ keyword: '' });
     generateBarcode();
     setConditionNote('Sách mới nhập kho');
     setIsAddModalOpen(true);
@@ -79,10 +95,11 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!chosenBook) return;
     setSubmitting(true);
     try {
       await bookCopiesApi.create({
-        bookId: bookId,
+        bookId: chosenBook.id,
         barcode: barcode.trim(),
         conditionNote: conditionNote.trim() || undefined,
       });
@@ -136,8 +153,6 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
     }
   };
 
-  const selectedBook = books.find((b) => b.id === selectedBookId);
-
   const filteredCopies = copies.filter((c) => {
     const matchesBook = selectedBookId === null || String(c.bookId) === String(selectedBookId);
     const matchesSearch =
@@ -166,10 +181,10 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
         )}
       </div>
 
-      {selectedBookId !== null && selectedBook && (
+      {selectedBookId !== null && (
         <div className="filter-badge-banner">
           <span>
-            Đang lọc bản sao của đầu sách: <strong>{selectedBook.title}</strong>
+            Đang lọc bản sao của đầu sách: <strong>{selectedBook && String(selectedBook.id) === selectedBookId ? selectedBook.title : `#${selectedBookId}`}</strong>
           </span>
           <button className="btn-link-dark" onClick={onClearSelectedBook}>
             <X size={14} /> Xóa bộ lọc (Xem tất cả)
@@ -331,19 +346,42 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
             </div>
             <form onSubmit={handleAddSubmit} className="form-content">
               <div className="form-group">
+                <label htmlFor="copy-book-keyword">Tìm đầu sách</label>
+                <input
+                  id="copy-book-keyword"
+                  type="search"
+                  placeholder="Tìm tên sách, tác giả, ISBN..."
+                  value={query.keyword ?? ''}
+                  onChange={(e) => setFilters({ keyword: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
                 <label>Chọn đầu sách *</label>
                 <select
                   required
-                  value={bookId}
-                  onChange={(e) => setBookId(e.target.value)}
+                  value={chosenBook ? String(chosenBook.id) : ''}
+                  disabled={booksLoading || !!booksError}
+                  onChange={(e) => setChosenBook(books.find((book) => String(book.id) === e.target.value) ?? null)}
                 >
+                  <option value="">Chọn đầu sách...</option>
+                  {chosenBook && !books.some((book) => String(book.id) === String(chosenBook.id)) && (
+                    <option value={chosenBook.id}>{chosenBook.title} ({chosenBook.author})</option>
+                  )}
                   {books.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.title} ({b.author})
                     </option>
                   ))}
                 </select>
+                {booksLoading ? <p role="status">Đang tải đầu sách...</p> : booksError ? (
+                  <div role="alert">
+                    <p>{booksError}</p>
+                    <button type="button" className="btn btn-secondary" onClick={refresh}>Thử lại</button>
+                  </div>
+                ) : books.length === 0 && <p>Không tìm thấy đầu sách phù hợp.</p>}
               </div>
+              <Pagination page={pageNumber} pageSize={pageSize} totalPages={totalPages}
+                totalCount={totalCount} disabled={booksLoading || !!booksError} onPageChange={setPage} />
 
               <div className="form-group">
                 <label>Mã vạch (Barcode) *</label>
@@ -384,7 +422,7 @@ export const BookCopiesTab: React.FC<BookCopiesTabProps> = ({
                 >
                   Hủy
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                <button type="submit" className="btn btn-primary" disabled={submitting || !chosenBook}>
                   {submitting ? 'Đang thêm...' : 'Lưu Bản Sao'}
                 </button>
               </div>

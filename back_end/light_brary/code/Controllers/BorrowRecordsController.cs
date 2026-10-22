@@ -45,11 +45,11 @@ namespace light_brary.Controllers
             return Ok(record);
         } 
 
-        [HttpPost("api/returns")]
+        [HttpPost("api/borrow-records/{borrowRecordId:guid}/returns")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks(ReturnBooksRequest request)
+        public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks(Guid borrowRecordId, ReturnBooksRequest request)
         {
-            var result = await borrowRecordService.ReturnMultipleBooksAsync(request);
+            var result = await borrowRecordService.ReturnMultipleBooksAsync(borrowRecordId, request);
             return Ok(result);
         }
 

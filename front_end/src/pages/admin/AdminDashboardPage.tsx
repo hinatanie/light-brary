@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Book, Category, BookCopy, BorrowRecord, User } from '../../types';
+import type { Category, BookCopy, BorrowRecord, User } from '../../types';
 import { categoriesApi, booksApi, bookCopiesApi, borrowRecordsApi, usersApi } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -20,7 +20,7 @@ export const AdminDashboardPage: React.FC = () => {
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>([]);
+  const [totalBooks, setTotalBooks] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [copies, setCopies] = useState<BookCopy[]>([]);
   const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);
@@ -30,13 +30,13 @@ export const AdminDashboardPage: React.FC = () => {
     setLoading(true);
     try {
       const [bks, cats, borrows, usrs, allCopies] = await Promise.all([
-        booksApi.getAll(),
+        booksApi.getPaged({ page: 1, pageSize: 1 }),
         categoriesApi.getAll(),
         borrowRecordsApi.getAll(),
         usersApi.getAll(),
         bookCopiesApi.getAll(),
       ]);
-      setBooks(bks);
+      setTotalBooks(bks.totalCount);
       setCategories(cats);
       setBorrowRecords(borrows);
       setUsers(usrs);
@@ -90,7 +90,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <BookOpen size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-value">{books.length}</span>
+                <span className="stat-value">{totalBooks}</span>
                 <span className="stat-label">Tổng đầu sách</span>
               </div>
               <ArrowUpRight size={18} className="stat-arrow" />

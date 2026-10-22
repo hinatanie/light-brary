@@ -10,31 +10,18 @@ namespace light_brary.Services
         BookRepository bookRepository,
         CategoryRepository categoryRepository)
     {
-        public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null)
-        {
-            var books = await bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
-            var responses = books.Select(BookResponse.FromEntity);
-            if (onlyAvailable == true)
-            {
-                responses = responses.Where(b => b.AvailableCopies > 0);
-            }
-            return responses.ToList();
-        }
-
         public async Task<BookResponse> GetByIdAsync(Guid id)
         {
-            var book = await bookRepository.GetWithDetailsAsync(id);
-            if (book is null)
-                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
+            var book = await bookRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
             return BookResponse.FromEntity(book);
         }
 
         public async Task<BookResponse> CreateAsync(SaveBookRequest request)
         {
-            var category = await categoryRepository.GetByIdAsync(request.CategoryId);
-            if (category is null)
-                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
+            var category = await categoryRepository.GetByIdAsync(request.CategoryId)
+                ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
             var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
@@ -60,13 +47,11 @@ namespace light_brary.Services
 
         public async Task<BookResponse> UpdateAsync(Guid id, SaveBookRequest request)
         {
-            var book = await bookRepository.GetWithDetailsAsync(id);
-            if (book is null)
-                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
+            var book = await bookRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
-            var category = await categoryRepository.GetByIdAsync(request.CategoryId);
-            if (category is null)
-                throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
+            var category = await categoryRepository.GetByIdAsync(request.CategoryId)
+                ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
             var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
@@ -88,9 +73,8 @@ namespace light_brary.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var book = await bookRepository.GetWithDetailsAsync(id);
-            if (book is null)
-                throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
+            var book = await bookRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
             if (book.BookCopies != null && book.BookCopies.Any())
                 throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao vật lý.");
@@ -98,10 +82,18 @@ namespace light_brary.Services
             await bookRepository.DeleteAsync(book);
         }
 
-        public async Task<PagedResponse<BookResponse>> GetPagedAsync(int pageNumber, string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null, string sortBy = "newest")
+        public async Task<PagedResponse<BookResponse>> GetPagedAsync(
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? keyword = null,
+            Guid? categoryId = null,
+            string? author = null,
+            bool? onlyAvailable = null,
+            string sortBy = "newest")
         {
-            var (books, totalCount) = await bookRepository.GetPage(
+            var (books, totalCount) = await bookRepository.GetPagedAsync(
                 pageNumber,
+                pageSize,
                 keyword: keyword,
                 categoryId: categoryId,
                 author: author,
@@ -114,6 +106,7 @@ namespace light_brary.Services
             {
                 Items = responses,
                 PageNumber = pageNumber,
+                PageSize = pageSize,
                 TotalCount = totalCount
             };
         }

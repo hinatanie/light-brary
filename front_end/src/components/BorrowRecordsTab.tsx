@@ -155,8 +155,13 @@ export const BorrowRecordsTab: React.FC<BorrowRecordsTabProps> = ({
 
     setSubmitting(true);
     try {
-      await borrowRecordsApi.returnBooks(selectedRecord.id, { items: itemsToReturn });
-      onNotify(`Đã xử lý trả ${itemsToReturn.length} cuốn sách thành công!`);
+      const result = await borrowRecordsApi.returnBooks(selectedRecord.id, { items: itemsToReturn });
+      const returnedCount = result.items.length;
+      if (returnedCount === 0) {
+        onNotify('Không tìm thấy chi tiết mượn nào để trả sách.', 'error');
+      } else {
+        onNotify(`Đã xử lý trả ${returnedCount} cuốn sách thành công!`);
+      }
       setIsReturnModalOpen(false);
       onRefresh();
     } catch (err: any) {

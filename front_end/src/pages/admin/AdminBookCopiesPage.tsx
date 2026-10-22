@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Book, BookCopy } from '../../types';
-import { booksApi, bookCopiesApi } from '../../api';
+import type { BookCopy } from '../../types';
+import { bookCopiesApi } from '../../api';
 import { BookCopiesTab } from '../../components/BookCopiesTab';
 import { useToast } from '../../contexts/ToastContext';
 import { RefreshCw } from 'lucide-react';
@@ -13,17 +13,12 @@ export const AdminBookCopiesPage: React.FC = () => {
 
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>([]);
   const [copies, setCopies] = useState<BookCopy[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [bks, allCopies] = await Promise.all([
-        booksApi.getAll(),
-        bookCopiesApi.getAll(),
-      ]);
-      setBooks(bks);
+      const allCopies = await bookCopiesApi.getAll();
       setCopies(allCopies);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải danh sách bản sao', 'error');
@@ -55,7 +50,6 @@ export const AdminBookCopiesPage: React.FC = () => {
   return (
     <BookCopiesTab
       copies={copies}
-      books={books}
       selectedBookId={selectedBookId}
       onClearSelectedBook={handleClearSelectedBook}
       onRefresh={loadData}

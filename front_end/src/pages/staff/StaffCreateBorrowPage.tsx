@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Book, BookCopy, User, Category } from '../../types';
-import { booksApi, categoriesApi, usersApi, bookCopiesApi, borrowRecordsApi } from '../../api';
+import type { Book, BookCopy, User } from '../../types';
+import { booksApi, usersApi, bookCopiesApi, borrowRecordsApi } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
+import { usePagedBooks } from '../../hooks/usePagedBooks';
+import { Pagination } from '../../components/Pagination';
 import {
   Search,
   BookOpen,
@@ -33,14 +35,11 @@ export const StaffCreateBorrowPage: React.FC = () => {
 
   // ─── Data states ───
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { items: books, categories, query, pageNumber, pageSize, totalPages, totalCount,
+    loading: booksLoading, error: booksError, setFilters, setPage, refresh } = usePagedBooks();
   const [users, setUsers] = useState<User[]>([]);
 
   // ─── Left column filter & search states ───
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [quickBarcodeInput, setQuickBarcodeInput] = useState('');
   const [scanningBarcode, setScanningBarcode] = useState(false);
 
@@ -74,13 +73,7 @@ export const StaffCreateBorrowPage: React.FC = () => {
   const loadInitialData = useCallback(async () => {
     setLoading(true);
     try {
-      const [fetchedBooks, fetchedCategories, fetchedUsers] = await Promise.all([
-        booksApi.getAll(),
-        categoriesApi.getAll().catch(() => [] as Category[]),
-        usersApi.getAll().catch(() => [] as User[]),
-      ]);
-      setBooks(fetchedBooks);
-      setCategories(fetchedCategories);
+      const fetchedUsers = await usersApi.getAll();
       setUsers(fetchedUsers);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải dữ liệu khởi tạo', 'error');
@@ -179,13 +172,9 @@ export const StaffCreateBorrowPage: React.FC = () => {
       let bookTitle = copy.bookTitle;
       let bookAuthor = copy.bookAuthor;
       if (!bookTitle) {
-        const foundBook = books.find((b) => String(b.id) === String(copy.bookId));
-        if (foundBook) {
-          bookTitle = foundBook.title;
-          bookAuthor = foundBook.author;
-        } else {
-          bookTitle = `Sách #${copy.bookId}`;
-        }
+        const foundBook = await booksApi.getById(copy.bookId);
+        bookTitle = foundBook.title;
+        bookAuthor = foundBook.author;
       }
 
       const newItem: SelectedCopyItem = {
@@ -213,25 +202,6 @@ export const StaffCreateBorrowPage: React.FC = () => {
     d.setDate(d.getDate() + days);
     setDueDate(d.toISOString().split('T')[0]);
   };
-
-  // ─── Filtered books list ───
-  const filteredBooks = useMemo(() => {
-    return books.filter((book) => {
-      const q = searchTerm.toLowerCase();
-      const matchSearch =
-        !searchTerm ||
-        book.title.toLowerCase().includes(q) ||
-        book.author.toLowerCase().includes(q) ||
-        (book.isbn && book.isbn.toLowerCase().includes(q));
-
-      const matchCategory =
-        selectedCategory === 'all' || String(book.categoryId) === selectedCategory;
-
-      const matchAvailable = !onlyAvailable || (book.availableCopies ?? 1) > 0;
-
-      return matchSearch && matchCategory && matchAvailable;
-    });
-  }, [books, searchTerm, selectedCategory, onlyAvailable]);
 
   // ─── Filtered users for autocomplete dropdown ───
   const filteredUsers = useMemo(() => {
@@ -302,6 +272,7 @@ export const StaffCreateBorrowPage: React.FC = () => {
 
       // Reload fresh data in background
       loadInitialData();
+      refresh();
       setCopiesCache({});
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi lập phiếu mượn', 'error');
@@ -389,15 +360,15 @@ export const StaffCreateBorrowPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Tìm tên sách, tác giả, ISBN..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={query.keyword ?? ''}
+                onChange={(e) => setFilters({ keyword: e.target.value })}
               />
             </div>
 
             <select
               className="filter-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              value={query.categoryId ?? 'all'}
+              onChange={(e) => setFilters({ categoryId: e.target.value === 'all' ? undefined : e.target.value })}
             >
               <option value="all">Tất cả thể loại ({categories.length})</option>
               {categories.map((c) => (
@@ -422,8 +393,8 @@ export const StaffCreateBorrowPage: React.FC = () => {
             >
               <input
                 type="checkbox"
-                checked={onlyAvailable}
-                onChange={(e) => setOnlyAvailable(e.target.checked)}
+                checked={query.onlyAvailable ?? false}
+                onChange={(e) => setFilters({ onlyAvailable: e.target.checked })}
                 style={{ width: '16px', height: '16px', accentColor: '#0284c7' }}
               />
               Chỉ sách còn trên kệ
@@ -432,13 +403,22 @@ export const StaffCreateBorrowPage: React.FC = () => {
 
           {/* Book Catalog Grid/List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {filteredBooks.length === 0 ? (
+            {booksLoading ? (
+              <div className="loading-banner" role="status">
+                <RefreshCw size={18} className="spin" /> Đang tải danh mục sách...
+              </div>
+            ) : booksError ? (
+              <div className="empty-state" role="alert">
+                <p>{booksError}</p>
+                <button className="btn btn-secondary" onClick={refresh}>Thử lại</button>
+              </div>
+            ) : books.length === 0 ? (
               <div className="empty-state" style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '40px 20px' }}>
                 <BookOpen size={48} color="#94a3b8" />
                 <p>Không tìm thấy đầu sách nào phù hợp với bộ lọc.</p>
               </div>
             ) : (
-              filteredBooks.map((book) => {
+              books.map((book) => {
                 const bIdStr = String(book.id);
                 const isExpanded = Boolean(expandedBookIds[bIdStr]);
                 const isLoadingCopies = Boolean(loadingCopiesFor[bIdStr]);
@@ -661,6 +641,8 @@ export const StaffCreateBorrowPage: React.FC = () => {
               })
             )}
           </div>
+          <Pagination page={pageNumber} pageSize={pageSize} totalPages={totalPages}
+            totalCount={totalCount} disabled={booksLoading || !!booksError} onPageChange={setPage} />
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════
