@@ -22,17 +22,16 @@ import { BookDetailsPage } from './pages/BookDetailsPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminBooksPage } from './pages/admin/AdminBooksPage';
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
-import { AdminBookCopiesPage } from './pages/admin/AdminBookCopiesPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 
 // Staff Pages
 import { StaffDashboardPage } from './pages/staff/StaffDashboardPage';
 import { StaffCreateBorrowPage } from './pages/staff/StaffCreateBorrowPage';
 import { StaffBooksPage } from './pages/staff/StaffBooksPage';
-import { StaffBookCopiesPage } from './pages/staff/StaffBookCopiesPage';
 
 // Shared Pages
 import { BorrowManagementPage } from './pages/shared/BorrowManagementPage';
+import { BookCopiesPage } from './pages/shared/BookCopiesPage';
 
 // Member Pages
 import { MemberDashboardPage } from './pages/member/MemberDashboardPage';
@@ -98,7 +97,7 @@ export function App() {
                 <Route path="books" element={<AdminBooksPage />} />
                 <Route path="books/:bookId" element={<BookDetailsPage portalPath="/admin" />} />
                 <Route path="categories" element={<AdminCategoriesPage />} />
-                <Route path="book-copies" element={<AdminBookCopiesPage />} />
+                <Route path="book-copies" element={<BookCopiesPage />} />
                 <Route path="borrows" element={<BorrowManagementPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="profile" element={<MemberProfilePage title="Hồ Sơ Cá Nhân" />} />
@@ -113,7 +112,7 @@ export function App() {
                 <Route path="create-borrow" element={<StaffCreateBorrowPage />} />
                 <Route path="books" element={<StaffBooksPage />} />
                 <Route path="books/:bookId" element={<BookDetailsPage portalPath="/staff" />} />
-                <Route path="book-copies" element={<StaffBookCopiesPage />} />
+                <Route path="book-copies" element={<BookCopiesPage readOnly />} />
               </Route>
             </Route>
 

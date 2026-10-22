@@ -6,7 +6,11 @@ import { BookCopiesTab } from '../../components/BookCopiesTab';
 import { useToast } from '../../contexts/ToastContext';
 import { RefreshCw } from 'lucide-react';
 
-export const StaffBookCopiesPage: React.FC = () => {
+interface BookCopiesPageProps {
+  readOnly?: boolean;
+}
+
+export const BookCopiesPage: React.FC<BookCopiesPageProps> = ({ readOnly }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const bookIdParam = searchParams.get('bookId');
   const selectedBookId = bookIdParam || null;
@@ -54,7 +58,7 @@ export const StaffBookCopiesPage: React.FC = () => {
       onClearSelectedBook={handleClearSelectedBook}
       onRefresh={loadData}
       onNotify={showToast}
-      readOnly={true}
+      readOnly={readOnly}
     />
   );
 };
