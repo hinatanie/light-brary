@@ -29,11 +29,12 @@ Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở B
 Cần Docker Engine/Docker Desktop đang chạy và Docker Compose v2 trở lên. Chạy từ thư mục gốc repository:
 
 ```bash
-cp .env.example .env
-docker compose up --build
+docker compose up --build -d
 ```
 
-Trên PowerShell dùng `Copy-Item .env.example .env`. Nếu đã có `.env`, giữ file hiện tại và bổ sung các biến còn thiếu theo `.env.example`. Thay hai placeholder `POSTGRES_PASSWORD` và `SEED_ADMIN_PASSWORD` trong `.env` bằng mật khẩu riêng trước khi sử dụng. Mật khẩu Admin phải có ít nhất 8 ký tự. File `.env` được Git và Docker build context bỏ qua; không đưa mật khẩu thực tế lên Git. Với mật khẩu PostgreSQL, nên dùng chuỗi chữ/số ngẫu nhiên (ví dụ sinh bằng `openssl rand -hex 24`) để tránh ký tự phân cách connection string.
+Không cần tạo `.env` khi dev: Compose dùng mật khẩu PostgreSQL mặc định `change-me` và mật khẩu Admin/dữ liệu mẫu `change-me-admin`. Đây là giá trị công khai chỉ dành cho development cục bộ, không dùng cho production.
+
+Khi cần đổi cổng hoặc mật khẩu, có thể tạo `.env` bằng `cp .env.example .env` (PowerShell: `Copy-Item .env.example .env`) rồi sửa các biến tương ứng. Nếu đã có `.env`, giữ file hiện tại; giá trị trong file hoặc environment variables sẽ ghi đè mặc định. Mật khẩu Admin phải có ít nhất 8 ký tự. File `.env` được Git và Docker build context bỏ qua; không đưa mật khẩu thực tế lên Git. Với mật khẩu PostgreSQL, nên dùng chuỗi chữ/số ngẫu nhiên (ví dụ sinh bằng `openssl rand -hex 24`) để tránh ký tự phân cách connection string.
 
 Compose khởi động ba service độc lập với những container PostgreSQL/Redis chạy thủ công trên máy:
 
@@ -50,7 +51,7 @@ Các cổng host chỉ bind vào `127.0.0.1`. Đổi `API_PORT`, `POSTGRES_PORT`
 - Swagger JSON: `http://localhost:5218/swagger/v1/swagger.json`
 - Health: `http://localhost:5218/health` trả `Healthy` khi API chạy; đây là liveness check, không kiểm tra PostgreSQL/Redis liên tục.
 
-Compose mặc định dùng `Development` để có Swagger và dữ liệu mẫu. Đây là cấu hình phát triển cục bộ. Ngoài Development, Swagger không được bật. Nếu chạy với `ASPNETCORE_ENVIRONMENT=Production`, đặt thêm `SEED_SAMPLE_DATA=false` để tắt dữ liệu mẫu.
+Compose mặc định dùng `Development` để có Swagger và dữ liệu mẫu. Đây là cấu hình phát triển cục bộ. Ngoài Development, Swagger không được bật. Nếu chạy với `ASPNETCORE_ENVIRONMENT=Production`, cấu hình mật khẩu riêng cho `POSTGRES_PASSWORD`, `SEED_ADMIN_PASSWORD` và đặt thêm `SEED_SAMPLE_DATA=false` để tắt dữ liệu mẫu.
 
 API đợi PostgreSQL và Redis healthy trước khi khởi động. Cơ chế `AppDbContext.Database.MigrateAsync()` hiện có vẫn tự áp dụng migration rồi seed Admin/dữ liệu mẫu; không cần SDK hoặc lệnh EF trong runtime container. PostgreSQL lưu dữ liệu trong named volume `postgres_data`; Redis chỉ là cache, không cần lưu bền.
 
@@ -63,7 +64,7 @@ Seed__AdminPassword=<SEED_ADMIN_PASSWORD>
 Seed__SampleData=<SEED_SAMPLE_DATA>
 ```
 
-ASP.NET Core không tự đọc `.env`; Docker Compose đọc file này và truyền các biến trên vào API. User Secrets của máy host không được copy vào image. Code xác thực hiện tại dùng ASP.NET Core Identity API endpoints, không đọc `Jwt:SecretKey`, nên Compose không cần JWT secret riêng. Dockerfile dùng SDK .NET 10 để restore/publish và ASP.NET Runtime 10 để chạy `light_brary.dll` bằng user không phải root; runtime chỉ nhận output publish và công cụ `curl` cho health check.
+ASP.NET Core không tự đọc `.env`; Docker Compose lấy giá trị mặc định hoặc giá trị ghi đè từ `.env`/environment variables rồi truyền các biến trên vào API. User Secrets của máy host không được copy vào image. Code xác thực hiện tại dùng ASP.NET Core Identity API endpoints, không đọc `Jwt:SecretKey`, nên Compose không cần JWT secret riêng. Dockerfile dùng SDK .NET 10 để restore/publish và ASP.NET Runtime 10 để chạy `light_brary.dll` bằng user không phải root; runtime chỉ nhận output publish và công cụ `curl` cho health check.
 
 Kiểm tra hoặc chạy nền:
 
@@ -97,11 +98,10 @@ File Compose cũ chưa mount named volume và dùng container cố định `ligh
 Backend vẫn chạy trực tiếp với .NET SDK 10; cần PostgreSQL 17 (hoặc bản 16 hiện đang dùng) và Redis 7 sẵn sàng trên máy. Nếu dùng database/container riêng hiện có, không cần bật cả bộ Compose. Khi chỉ muốn dùng dependencies từ Compose:
 
 ```bash
-cp .env.example .env
 docker compose up -d postgres redis
 ```
 
-Nếu đã có `.env`, bổ sung biến còn thiếu, không ghi đè file. Cấu hình này expose PostgreSQL tại `localhost:5434`, Redis tại `localhost:6381`. Khi dùng Redis local hiện tại ở `localhost:6380`, giữ nguyên `appsettings.Development.json`; chỉ override Redis khi dùng địa chỉ khác.
+Không cần `.env` nếu dùng cấu hình dev mặc định; PostgreSQL dùng mật khẩu `change-me`. Nếu đã có `.env`, giữ file hiện tại để tiếp tục dùng cấu hình riêng. Cấu hình này expose PostgreSQL tại `localhost:5434`, Redis tại `localhost:6381`. Khi dùng Redis local hiện tại ở `localhost:6380`, giữ nguyên `appsettings.Development.json`; chỉ override Redis khi dùng địa chỉ khác.
 
 Đặt secrets cho project API (thay placeholder bằng giá trị thực tế, khớp database của bạn):
 
