@@ -5,7 +5,7 @@ import { BorrowRecordsTab } from '../../components/BorrowRecordsTab';
 import { useToast } from '../../contexts/ToastContext';
 import { RefreshCw } from 'lucide-react';
 
-export const AdminBorrowsPage: React.FC = () => {
+export const BorrowManagementPage: React.FC = () => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);

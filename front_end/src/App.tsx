@@ -23,15 +23,16 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminBooksPage } from './pages/admin/AdminBooksPage';
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
 import { AdminBookCopiesPage } from './pages/admin/AdminBookCopiesPage';
-import { AdminBorrowsPage } from './pages/admin/AdminBorrowsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 
 // Staff Pages
 import { StaffDashboardPage } from './pages/staff/StaffDashboardPage';
-import { StaffBorrowsPage } from './pages/staff/StaffBorrowsPage';
 import { StaffCreateBorrowPage } from './pages/staff/StaffCreateBorrowPage';
 import { StaffBooksPage } from './pages/staff/StaffBooksPage';
 import { StaffBookCopiesPage } from './pages/staff/StaffBookCopiesPage';
+
+// Shared Pages
+import { BorrowManagementPage } from './pages/shared/BorrowManagementPage';
 
 // Member Pages
 import { MemberDashboardPage } from './pages/member/MemberDashboardPage';
@@ -98,7 +99,7 @@ export function App() {
                 <Route path="books/:bookId" element={<BookDetailsPage portalPath="/admin" />} />
                 <Route path="categories" element={<AdminCategoriesPage />} />
                 <Route path="book-copies" element={<AdminBookCopiesPage />} />
-                <Route path="borrows" element={<AdminBorrowsPage />} />
+                <Route path="borrows" element={<BorrowManagementPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="profile" element={<MemberProfilePage title="Hồ Sơ Cá Nhân" />} />
               </Route>
@@ -108,7 +109,7 @@ export function App() {
             <Route element={<ProtectedRoute allowedRoles={['Staff', 'Librarian', 'Admin']} />}>
               <Route path="/staff" element={<StaffLayout />}>
                 <Route index element={<StaffDashboardPage />} />
-                <Route path="borrows" element={<StaffBorrowsPage />} />
+                <Route path="borrows" element={<BorrowManagementPage />} />
                 <Route path="create-borrow" element={<StaffCreateBorrowPage />} />
                 <Route path="books" element={<StaffBooksPage />} />
                 <Route path="books/:bookId" element={<BookDetailsPage portalPath="/staff" />} />
