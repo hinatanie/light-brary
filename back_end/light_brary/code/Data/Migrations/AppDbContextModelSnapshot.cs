@@ -233,7 +233,7 @@ namespace light_brary.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BookCopyId")
+                    b.Property<Guid?>("BookCopyId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("BorrowRecordId")
@@ -456,7 +456,7 @@ namespace light_brary.Data.Migrations
                     b.HasOne("light_brary.Entities.Book", "Book")
                         .WithMany("BookCopies")
                         .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Book");
@@ -467,8 +467,7 @@ namespace light_brary.Data.Migrations
                     b.HasOne("light_brary.Entities.BookCopy", "BookCopy")
                         .WithMany("BorrowDetails")
                         .HasForeignKey("BookCopyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("light_brary.Entities.BorrowRecord", "BorrowRecord")
                         .WithMany("BorrowDetails")

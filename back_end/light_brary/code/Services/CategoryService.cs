@@ -8,9 +8,9 @@ namespace light_brary.Services
 {
     public class CategoryService(CategoryRepository categoryRepository)
     {
-        public async Task<IEnumerable<CategoryResponse>> GetAllAsync()
+        public async Task<IEnumerable<CategoryResponse>> GetAllAsync(string? name = null)
         {
-            var categories = await categoryRepository.GetAllAsync();
+            var categories = await categoryRepository.GetAllAsync(name);
             return categories.Select(CategoryResponse.FromEntity).ToList();
         }
 
@@ -24,10 +24,7 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> CreateAsync(SaveCategoryRequest request)
         {
-            var name = request.Name.Trim();
-            var existing = await categoryRepository.GetByNameAsync(name);
-            if (existing is not null)
-                throw AppException.Conflict($"Thể loại '{name}' đã tồn tại.");
+            var name = await CheckNameAsync(request.Name);
 
             var category = new Category
             {
@@ -45,10 +42,7 @@ namespace light_brary.Services
             var category = await categoryRepository.GetByIdAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
-            var name = request.Name.Trim();
-            var existing = await categoryRepository.GetByNameAsync(name);
-            if (existing is not null && existing.Id != id)
-                throw AppException.Conflict($"Thể loại '{name}' đã tồn tại.");
+            var name = await CheckNameAsync(request.Name, id);
 
             category.Name = name;
             category.Description = request.Description?.Trim();
@@ -63,10 +57,20 @@ namespace light_brary.Services
             var category = await categoryRepository.GetWithBooksAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
-            if (category.Books != null && category.Books.Any())
+            if (category.Books.Any())
                 throw AppException.Conflict("Không thể xóa thể loại đang chứa các đầu sách.");
 
             await categoryRepository.DeleteAsync(category);
+        }
+
+        private async Task<string> CheckNameAsync(string name, Guid? currentId = null)
+        {
+            name = name.Trim();
+            var existing = await categoryRepository.GetByNameAsync(name);
+            if (existing is not null && existing.Id != currentId)
+                throw AppException.Conflict($"Thể loại '{name}' đã tồn tại.");
+
+            return name;
         }
     }
 }

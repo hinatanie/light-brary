@@ -6,19 +6,21 @@ namespace light_brary.Repositories
 {
     public class CategoryRepository(AppDbContext context) : GenericRepository<Category>(context)
     {
-        public override async Task<IEnumerable<Category>> GetAllAsync()
+        public override Task<IEnumerable<Category>> GetAllAsync() => GetAllAsync(null);
+
+        public async Task<IEnumerable<Category>> GetAllAsync(string? name)
         {
             return await _context.Categories
                 .Include(c => c.Books)
+                .Where(c => name == null || c.Name.Contains(name))
                 .ToListAsync();
         }
 
         public override Task<Category?> GetByIdAsync(Guid id) => _context.Categories.FirstOrDefaultAsync(c => c.Id == id);
 
-        public async Task<Category?> GetByNameAsync(string name)
+        public Task<Category?> GetByNameAsync(string name)
         {
-            return await _context.Categories
-                .FirstOrDefaultAsync(c => c.Name == name);
+            return _context.Categories.FirstOrDefaultAsync(c => c.Name == name);
         }
 
         public async Task<Category?> GetWithBooksAsync(Guid id)

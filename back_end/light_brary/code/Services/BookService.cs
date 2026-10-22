@@ -3,6 +3,7 @@ using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using light_brary.Enums;
 
 namespace light_brary.Services
 {
@@ -76,8 +77,8 @@ namespace light_brary.Services
             var book = await bookRepository.GetWithDetailsAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
-            if (book.BookCopies != null && book.BookCopies.Any())
-                throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao vật lý.");
+            if (book.BookCopies.Any(bc => bc.Status == BookCopyStatus.Borrowed))
+                throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao đang được mượn.");
 
             await bookRepository.DeleteAsync(book);
         }

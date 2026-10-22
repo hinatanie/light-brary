@@ -19,9 +19,9 @@ namespace light_brary.Entities
 
         public BorrowRecord BorrowRecord {get; set;} = null!;
 
-        public Guid BookCopyId {get; set;}
+        public Guid? BookCopyId {get; set;}
 
-        [DeleteBehavior(DeleteBehavior.Restrict)]
-        public BookCopy BookCopy {get; set;} = null!;
+        [DeleteBehavior(DeleteBehavior.SetNull)]
+        public BookCopy? BookCopy {get; set;} = null!;
     }
 }

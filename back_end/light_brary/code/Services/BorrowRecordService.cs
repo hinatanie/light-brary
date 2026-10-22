@@ -98,9 +98,12 @@ namespace light_brary.Services
 
             foreach (var detail in details)
             {
+                var copy = detail.BookCopy
+                    ?? throw AppException.Conflict("Bản sao sách của chi tiết mượn đã bị xóa.");
+
                 detail.Status = BorrowDetailStatus.Returned;
                 detail.ReturnDate = now;
-                detail.BookCopy.Status = BookCopyStatus.Available;
+                copy.Status = BookCopyStatus.Available;
             }
 
             RecalculateRecordStatus(record);
@@ -120,9 +123,12 @@ namespace light_brary.Services
 
             EnsureBorrowing([detail]);
 
+            var copy = detail.BookCopy
+                ?? throw AppException.Conflict("Bản sao sách của chi tiết mượn đã bị xóa.");
+
             detail.Status = BorrowDetailStatus.Lost;
             detail.ReturnDate = null;
-            detail.BookCopy.Status = BookCopyStatus.Lost;
+            copy.Status = BookCopyStatus.Lost;
 
             RecalculateRecordStatus(detail.BorrowRecord);
 

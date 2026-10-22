@@ -5,7 +5,7 @@ namespace light_brary.DTOs.Responses
     public record BorrowDetailResponse
     {
         public Guid Id { get; set; }
-        public Guid BookCopyId { get; set; }
+        public Guid? BookCopyId { get; set; }
         public string Barcode { get; set; } = null!;
         public Guid BookId { get; set; }
         public string BookTitle { get; set; } = null!;
