@@ -75,3 +75,4 @@ Trên database mới ở Development, tài khoản mẫu gồm admin `0999999999
 
 - [Hướng dẫn Swagger](docs/THIẾT%20KẾ%20API.md): xem và thử API.
 - [Cơ sở dữ liệu](docs/database.md): các bảng và ràng buộc quan hệ.
+- [Luồng hoạt động](docs/LUONG-HOAT-DONG.md): cách xử lý request, thư viện và các nhóm API.
