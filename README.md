@@ -8,7 +8,19 @@ LightBrary là hệ thống quản lý thư viện, hỗ trợ tra cứu sách, 
 - **Frontend:** React 19, TypeScript và Vite.
 - **Công cụ khác:** Docker Compose, xUnit và GitHub Actions.
 
-## Chuẩn bị
+- **Tài khoản được nhà trường cấp sẵn**: Sinh viên đăng nhập bằng mã số sinh viên lưu tại `UserName`; số điện thoại là thông tin liên hệ. Không có đăng ký công khai; tài khoản được seed ban đầu (Admin, Thủ thư, 20 Sinh viên).
+- **Quản lý đầu sách & bản sao vật lý**: Quản lý thông tin sách (tiêu đề, tác giả, ISBN, ảnh bìa, thể loại) và bản sao từng cuốn trên kệ (mã barcode duy nhất, tình trạng sách).
+- **Bộ nhớ đệm phân tán Redis (Cache-Aside & Invalidation)**: Tối ưu đọc chi tiết đầu sách với Redis Distributed Cache (TTL 10 phút, phản hồi <1ms), tự động xóa cache liên tầng khi mượn, trả, báo mất sách, thêm/xóa bản sao hoặc sửa thể loại.
+- **Quy trình mượn - trả sách chuẩn hóa**: Lập phiếu mượn nhiều cuốn (`POST /api/borrow-records`), hoàn trả sách vào kệ theo từng phiếu (`POST /api/borrow-records/{id}/returns`), và xử lý báo mất sách (`POST /api/borrow-details/{id}/mark-lost`).
+- **Phân quyền 3 cấp độ (Role-Based Access Control & Policies)**:
+  - **Admin (Quản trị viên)**: Toàn quyền quản lý sách, thể loại, kho bản sao, độc giả và gán/gỡ vai trò người dùng (`RolesController`).
+  - **Staff (Thủ thư)**: Lập phiếu mượn, trả sách, báo mất sách, quản lý thể loại, tạo sách và bản sao.
+  - **Member (Bạn đọc)**: Tra cứu danh mục sách có phân trang/lọc, xem hồ sơ cá nhân và lịch sử mượn sách của chính mình.
+- **Bảo mật và Kiểm soát phiên với ASP.NET Core Identity**:
+  - Xác thực hiện đại bằng **ASP.NET Core Identity API Bearer Token** với Data Protection.
+  - Hủy phiên tức thì thông qua `ValidateUserMiddleware`: Kiểm tra `SecurityStamp` và `IsLockedOutAsync` trong DB ở mỗi request; khi người dùng đổi mật khẩu hoặc đăng xuất (`PUT /api/auth/logout`), token cũ bị vô hiệu hóa ngay lập tức.
+  - Chống tấn công dò mật khẩu (Brute-force): Tự động khóa tài khoản 15 phút sau 5 lần nhập sai liên tiếp (`LockoutEnabled = true`, `MaxFailedAccessAttempts = 5`).
+  - CSDL PostgreSQL 17 chuẩn hóa: Khóa chính và ngoại dạng `uuid` (Guid), ràng buộc toàn vẹn và Unique Index cho `PhoneNumber`, `NormalizedUserName`, `ISBN`, `Barcode`, `Category.Name`.
 
 - **Docker Compose:** Docker Engine hoặc Docker Desktop và Docker Compose v2. Cách này chạy API, PostgreSQL 17 và Redis 7 trong container, không cần .NET SDK trên máy.
 - **Chạy backend trực tiếp:** .NET SDK 10, PostgreSQL và Redis. Có thể dùng Compose chỉ để chạy PostgreSQL và Redis.
