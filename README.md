@@ -73,6 +73,5 @@ Trên database mới ở Development, tài khoản mẫu gồm admin `0999999999
 
 ## Tài liệu thêm
 
-- [Tổng hợp dự án](docs/TONG-HOP-DU-AN.md): chức năng, luồng xử lý, công nghệ và giới hạn hiện tại.
-- [Thiết kế API](docs/THIẾT%20KẾ%20API.md) và [database](docs/database.md).
-- [Hướng dẫn đóng góp](docs/CONTRIBUTING.md): cấu trúc, migration và lệnh kiểm thử.
+- [Hướng dẫn Swagger](docs/THIẾT%20KẾ%20API.md): xem và thử API.
+- [Cơ sở dữ liệu](docs/database.md): các bảng và ràng buộc quan hệ.
