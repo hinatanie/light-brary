@@ -1,6 +1,8 @@
 using light_brary.Services;
+using System.Security.Claims;
 using light_brary.DTOs.Requests;
-using light_brary.Exceptions;
+using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace light_brary.Controllers
@@ -10,25 +12,38 @@ namespace light_brary.Controllers
     public class AuthController(AuthService authService) : ControllerBase
     {
         [HttpPost("login")]
+        [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            // [ApiController] tự trả 400 nếu request vi phạm [Required]/[StringLength]
-            try
-            {
-                var response = await authService.LoginAsync(request);
-                return Ok(response);
-            }
-            catch (UnauthorizedException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+            await authService.LoginAsync(request);
+            return new EmptyResult();
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        [HttpPut("password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {
-            var response = await authService.RegisterAsync(request);
-            return StatusCode(StatusCodes.Status201Created, response);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await authService.ChangePasswordAsync(userId, request);
+            return Ok(new { message = "Đổi mật khẩu thành công." });
+        }
+
+        [HttpPut("phone-number")]
+        [Authorize]
+        public async Task<IActionResult> ChangePhoneNumber(ChangePhoneNumberRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await authService.ChangePhoneNumberAsync(userId, request);
+            return Ok(new { message = "Đổi số điện thoại thành công." });
+        }
+
+        [HttpPut("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await authService.LogoutAsync(userId);
+            return Ok(new { message = "Đăng xuất thành công." });
         }
     }
 }

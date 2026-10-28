@@ -6,11 +6,6 @@ namespace light_brary.Repositories
 {
     public class UserRepository(AppDbContext context) : GenericRepository<User>(context)
     {
-        public async Task<User?> GetByPhoneNumberAsync(string phoneNumber)
-        {
-            return await _context.Users.FirstOrDefaultAsync(user => user.PhoneNumber == phoneNumber);
-        }
-
         public async Task<bool> ExistsByPhoneNumberAsync(string phoneNumber)
         {
             return await _context.Users.AnyAsync(user => user.PhoneNumber == phoneNumber);
@@ -54,9 +49,5 @@ namespace light_brary.Repositories
                 .ToDictionary(group => group.Key, group => group.Select(role => role.Name).ToList());
         }
 
-        public async Task<bool> HasBorrowHistoryAsync(Guid userId)
-        {
-            return await _context.BorrowRecords.AnyAsync(record => record.UserId == userId);
-        }
     }
 }

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/back_end/">
     <Project Path="back_end/light_brary/light_brary.csproj" />
+    <Project Path="back_end/light_brary.Tests/light_brary.Tests.csproj" />
   </Folder>
 </Solution>

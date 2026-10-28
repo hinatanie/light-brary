@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { usersApi, authApi } from '../../api';
+import { authApi } from '../../api';
 import type { User, MeResponse } from '../../types';
 import {
   User as UserIcon,
@@ -20,7 +20,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 
-export const MemberProfilePage: React.FC = () => {
+export const MemberProfilePage: React.FC<{ title?: string }> = ({ title = 'Hồ Sơ Bạn Đọc Cá Nhân' }) => {
   const { user, updateUserSession } = useAuth();
   const { showToast } = useToast();
 
@@ -56,7 +56,7 @@ export const MemberProfilePage: React.FC = () => {
         email: me.email,
         phoneNumber: me.phoneNumber,
         address: me.address || '',
-        createdAt: new Date().toISOString(),
+        createdAt: me.createdAt,
         roles: me.roles,
       });
     } catch (err: any) {
@@ -79,22 +79,9 @@ export const MemberProfilePage: React.FC = () => {
       return;
     }
 
-    const cleanPhone = phoneNumber.trim();
-    if (!cleanPhone) {
-      showToast('Số điện thoại là bắt buộc!', 'error');
-      return;
-    }
-
-    if (!/^(0|\+84)[0-9]{9}$/.test(cleanPhone)) {
-      showToast('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số.', 'error');
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const updated = await usersApi.update(user.userId, {
-        fullName: fullName.trim(),
-        phoneNumber: cleanPhone,
+      const updated = await authApi.updateProfile({
         address: address.trim(),
       });
 
@@ -122,8 +109,8 @@ export const MemberProfilePage: React.FC = () => {
       showToast('Mật khẩu mới không được trùng với mật khẩu hiện tại!', 'error');
       return;
     }
-    if (newPwd.length < 6) {
-      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự!', 'error');
+    if (newPwd.length < 8) {
+      showToast('Mật khẩu mới phải có tối thiểu 8 ký tự!', 'error');
       return;
     }
 
@@ -137,7 +124,6 @@ export const MemberProfilePage: React.FC = () => {
       setCurrentPwd('');
       setNewPwd('');
       setConfirmPwd('');
-      updateUserSession({ mustChangePassword: false });
     } catch (err: any) {
       showToast(err.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.', 'error');
     } finally {
@@ -160,14 +146,14 @@ export const MemberProfilePage: React.FC = () => {
     <div className="tab-container">
       <div className="section-header">
         <div>
-          <h2>👤 Hồ Sơ Bạn Đọc Cá Nhân</h2>
+          <h2>👤 {title}</h2>
           <p className="section-desc">
             Xem và cập nhật thông tin liên lạc phục vụ công tác mượn trả và liên hệ thông báo
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '24px' }}>
         {/* Profile Info Card */}
         <div className="table-card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
@@ -176,8 +162,8 @@ export const MemberProfilePage: React.FC = () => {
                 width: '64px',
                 height: '64px',
                 borderRadius: '50%',
-                background: '#f59e0b',
-                color: '#0f172a',
+                background: 'var(--primary)',
+                color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -186,7 +172,7 @@ export const MemberProfilePage: React.FC = () => {
               <UserIcon size={32} />
             </div>
             <div>
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', color: '#f8fafc' }}>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', color: 'var(--text-main)' }}>
                 {profileData?.fullName || user?.fullName}
               </h3>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -217,21 +203,21 @@ export const MemberProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13px', borderTop: '1px solid #334155', paddingTop: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
             <div>
-              <span style={{ color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Mã tài khoản:</span>
+              <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Mã tài khoản:</span>
               <code>{profileData?.id || user?.userId}</code>
             </div>
             <div>
-              <span style={{ color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Email đăng ký:</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f8fafc' }}>
+              <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Email đăng ký:</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
                 <Mail size={14} color="#64748b" /> {profileData?.email || user?.email}
               </span>
             </div>
             {profileData?.createdAt && (
               <div>
-                <span style={{ color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Ngày tạo tài khoản:</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f8fafc' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Ngày tạo tài khoản:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
                   <Calendar size={14} color="#64748b" />{' '}
                   {new Date(profileData.createdAt).toLocaleDateString('vi-VN')}
                 </span>
@@ -242,40 +228,38 @@ export const MemberProfilePage: React.FC = () => {
 
         {/* Edit Form Card */}
         <div className="table-card" style={{ padding: '24px' }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#f8fafc' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: 'var(--text-main)' }}>
             ✏️ Cập Nhật Thông Tin Cá Nhân
           </h3>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-                <UserIcon size={14} /> Họ và tên *
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
+                <UserIcon size={14} /> Họ và tên (theo hồ sơ nhà trường)
               </label>
               <input
                 type="text"
-                required
-                maxLength={50}
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                readOnly
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
               />
             </div>
 
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-                <Phone size={14} /> Số điện thoại (dùng để đăng nhập)
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
+                <Phone size={14} /> Số điện thoại liên hệ
               </label>
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                readOnly
                 placeholder="0912345678"
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
               />
             </div>
 
             <div className="form-group" style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
                 <MapPin size={14} /> Địa chỉ liên hệ *
               </label>
               <input
@@ -285,7 +269,7 @@ export const MemberProfilePage: React.FC = () => {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Số nhà, đường, quận/huyện..."
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
               />
             </div>
 
@@ -310,13 +294,13 @@ export const MemberProfilePage: React.FC = () => {
 
         {/* Change Password Card */}
         <div className="table-card" style={{ padding: '24px' }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <KeyRound size={18} color="#f59e0b" /> Đổi Mật Khẩu
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <KeyRound size={18} color="var(--primary)" /> Đổi Mật Khẩu
           </h3>
 
           <form onSubmit={handlePasswordChange}>
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
                 <Lock size={14} /> Mật khẩu hiện tại *
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -326,7 +310,7 @@ export const MemberProfilePage: React.FC = () => {
                   value={currentPwd}
                   onChange={(e) => setCurrentPwd(e.target.value)}
                   placeholder="Nhập mật khẩu đang sử dụng"
-                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
                 />
                 <button
                   type="button"
@@ -340,8 +324,8 @@ export const MemberProfilePage: React.FC = () => {
             </div>
 
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-                <Lock size={14} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
+                <Lock size={14} /> Mật khẩu mới * (Tối thiểu 8 ký tự)
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
@@ -350,7 +334,7 @@ export const MemberProfilePage: React.FC = () => {
                   value={newPwd}
                   onChange={(e) => setNewPwd(e.target.value)}
                   placeholder="Nhập mật khẩu mới an toàn"
-                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
                 />
                 <button
                   type="button"
@@ -364,7 +348,7 @@ export const MemberProfilePage: React.FC = () => {
             </div>
 
             <div className="form-group" style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
                 <Lock size={14} /> Xác nhận mật khẩu mới *
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -374,7 +358,7 @@ export const MemberProfilePage: React.FC = () => {
                   value={confirmPwd}
                   onChange={(e) => setConfirmPwd(e.target.value)}
                   placeholder="Nhập lại mật khẩu mới"
-                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+                  style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
                 />
                 <button
                   type="button"

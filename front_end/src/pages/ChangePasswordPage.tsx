@@ -5,7 +5,7 @@ import { authApi } from '../api';
 import { KeyRound, Lock, AlertCircle, CheckCircle2, RefreshCw, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export const ChangePasswordPage: React.FC = () => {
-  const { user, updateUserSession } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -38,8 +38,8 @@ export const ChangePasswordPage: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Mật khẩu mới phải có tối thiểu 6 ký tự!');
+    if (newPassword.length < 8) {
+      setError('Mật khẩu mới phải có tối thiểu 8 ký tự!');
       return;
     }
 
@@ -52,7 +52,6 @@ export const ChangePasswordPage: React.FC = () => {
       });
 
       setSuccess(true);
-      updateUserSession({ mustChangePassword: false });
 
       setTimeout(() => {
         navigate(getDashboardPath(), { replace: true });
@@ -65,53 +64,45 @@ export const ChangePasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="table-card" style={{ maxWidth: '480px', margin: '40px auto', padding: '32px 28px', borderRadius: '16px', background: '#1e293b', border: '1px solid #334155' }}>
-      {!user?.mustChangePassword && (
-        <div style={{ marginBottom: '16px' }}>
-          <Link
-            to={getDashboardPath()}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '13px',
-              color: '#94a3b8',
-              textDecoration: 'none',
-              transition: 'color 0.15s',
-            }}
-          >
-            <ArrowLeft size={16} /> Quay lại trang chính
-          </Link>
-        </div>
-      )}
+    <div className="table-card" style={{ maxWidth: '480px', margin: '40px auto', padding: '32px 28px', borderRadius: '16px', background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <Link
+          to={getDashboardPath()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            transition: 'color 0.15s',
+          }}
+        >
+          <ArrowLeft size={16} /> Quay lại trang chính
+        </Link>
+      </div>
 
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', marginBottom: '12px' }}>
+        <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'var(--primary-soft)', color: 'var(--primary)', marginBottom: '12px' }}>
           <KeyRound size={28} />
         </div>
-        <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#f8fafc', margin: '0 0 8px 0' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 8px 0' }}>
           Đổi Mật Khẩu
         </h2>
-        {user?.mustChangePassword ? (
-          <p style={{ fontSize: '13px', color: '#f59e0b', margin: 0, fontWeight: 500 }}>
-            Đây là lần đăng nhập đầu tiên hoặc tài khoản cần cập nhật mật khẩu mới trước khi tiếp tục sử dụng hệ thống.
-          </p>
-        ) : (
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
-            Cập nhật mật khẩu định kỳ để bảo vệ an toàn cho tài khoản của bạn.
-          </p>
-        )}
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+          Cập nhật mật khẩu định kỳ để bảo vệ an toàn cho tài khoản của bạn.
+        </p>
       </div>
 
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: '20px', fontSize: '13px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#b91c1c', marginBottom: '20px', fontSize: '13px' }}>
           <AlertCircle size={16} style={{ flexShrink: 0 }} />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#6ee7b7', marginBottom: '20px', fontSize: '13px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#047857', marginBottom: '20px', fontSize: '13px' }}>
           <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
           <span>Đổi mật khẩu thành công! Đang chuyển hướng...</span>
         </div>
@@ -119,7 +110,7 @@ export const ChangePasswordPage: React.FC = () => {
 
       <form onSubmit={handleSubmit}>
         <div className="form-group" style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
             <Lock size={14} /> Mật khẩu hiện tại *
           </label>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -129,7 +120,7 @@ export const ChangePasswordPage: React.FC = () => {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu đang sử dụng"
-              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
             />
             <button
               type="button"
@@ -143,8 +134,8 @@ export const ChangePasswordPage: React.FC = () => {
         </div>
 
         <div className="form-group" style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-            <Lock size={14} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
+            <Lock size={14} /> Mật khẩu mới * (Tối thiểu 8 ký tự)
           </label>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input
@@ -153,7 +144,7 @@ export const ChangePasswordPage: React.FC = () => {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Nhập mật khẩu mới an toàn"
-              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
             />
             <button
               type="button"
@@ -167,7 +158,7 @@ export const ChangePasswordPage: React.FC = () => {
         </div>
 
         <div className="form-group" style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '6px' }}>
             <Lock size={14} /> Xác nhận mật khẩu mới *
           </label>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -177,7 +168,7 @@ export const ChangePasswordPage: React.FC = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu mới"
-              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc', fontSize: '14px' }}
+              style={{ width: '100%', padding: '10px 40px 10px 14px', borderRadius: '8px', background: 'var(--surface-muted)', border: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '14px' }}
             />
             <button
               type="button"

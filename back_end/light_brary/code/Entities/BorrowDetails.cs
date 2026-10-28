@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 using light_brary.Enums;
@@ -23,11 +18,9 @@ namespace light_brary.Entities
 
         public BorrowRecord BorrowRecord {get; set;} = null!;
 
-        public Guid BookCopyId {get; set;}
+        public Guid? BookCopyId {get; set;}
 
-        [DeleteBehavior(DeleteBehavior.Restrict)]
-        public BookCopy BookCopy {get; set;} = null!;
-
-        public FineDetail? FineDetail { get; set; }
+        [DeleteBehavior(DeleteBehavior.SetNull)]
+        public BookCopy? BookCopy {get; set;} = null!;
     }
 }

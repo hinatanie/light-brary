@@ -1,50 +1,54 @@
 using light_brary.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
 using light_brary.Enums;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace light_brary.Services
 {
     public class BookService(
         BookRepository bookRepository,
-        CategoryRepository categoryRepository)
+        CategoryRepository categoryRepository,
+        IDistributedCache cache)
     {
-        public async Task<IEnumerable<BookResponse>> GetAllAsync(string? keyword = null, Guid? categoryId = null, string? author = null, bool? onlyAvailable = null)
-        {
-            var books = await bookRepository.GetAllWithDetailsAsync(keyword, categoryId, author);
-            var responses = books.Select(MapToResponse);
-            if (onlyAvailable == true)
-            {
-                responses = responses.Where(b => b.AvailableCopies > 0);
-            }
-            return responses.ToList();
-        }
-
         public async Task<BookResponse> GetByIdAsync(Guid id)
         {
-            var book = await bookRepository.GetWithDetailsAsync(id);
-            if (book is null)
-                throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
+            var cacheKey = $"books:{id}";
+            var cachedBook = await cache.GetStringAsync(cacheKey);
 
-            return MapToResponse(book);
+            if (cachedBook is not null &&
+                JsonSerializer.Deserialize<BookResponse>(cachedBook) is { } cachedResponse)
+            {
+                return cachedResponse;
+            }
+
+            var book = await bookRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
+            var response = BookResponse.FromEntity(book);
+
+            await cache.SetStringAsync(
+                cacheKey,
+                JsonSerializer.Serialize(response),
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                });
+
+            return response;
         }
 
         public async Task<BookResponse> CreateAsync(SaveBookRequest request)
         {
-            var category = await categoryRepository.GetByIdAsync(request.CategoryId);
-            if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {request.CategoryId}");
+            var category = await categoryRepository.GetByIdAsync(request.CategoryId)
+                ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
             var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
             if (existingIsbn is not null)
-                throw new ConflictException($"Mã ISBN '{isbn}' đã tồn tại.");
+                throw AppException.Conflict($"Mã ISBN '{isbn}' đã tồn tại.");
 
             var book = new Book
             {
@@ -60,23 +64,21 @@ namespace light_brary.Services
             await bookRepository.AddAsync(book);
 
             book.Category = category;
-            return MapToResponse(book);
+            return BookResponse.FromEntity(book);
         }
 
         public async Task<BookResponse> UpdateAsync(Guid id, SaveBookRequest request)
         {
-            var book = await bookRepository.GetWithDetailsAsync(id);
-            if (book is null)
-                throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
+            var book = await bookRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
-            var category = await categoryRepository.GetByIdAsync(request.CategoryId);
-            if (category is null)
-                throw new NotFoundException($"Không tìm thấy thể loại với ID: {request.CategoryId}");
+            var category = await categoryRepository.GetByIdAsync(request.CategoryId)
+                ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {request.CategoryId}");
 
             var isbn = request.ISBN.Trim();
             var existingIsbn = await bookRepository.GetByIsbnAsync(isbn);
             if (existingIsbn is not null && existingIsbn.Id != id)
-                throw new ConflictException($"Mã ISBN '{isbn}' đã tồn tại.");
+                throw AppException.Conflict($"Mã ISBN '{isbn}' đã tồn tại.");
 
             book.Title = request.Title.Trim();
             book.Author = request.Author.Trim();
@@ -88,42 +90,50 @@ namespace light_brary.Services
 
             await bookRepository.UpdateAsync(book);
 
-            return MapToResponse(book);
+            await cache.RemoveAsync($"books:{id}");
+
+            return BookResponse.FromEntity(book);
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            var book = await bookRepository.GetWithDetailsAsync(id);
-            if (book is null)
-                throw new NotFoundException($"Không tìm thấy đầu sách với ID: {id}");
+            var book = await bookRepository.GetWithDetailsAsync(id)
+                ?? throw AppException.NotFound($"Không tìm thấy đầu sách với ID: {id}");
 
-            if (book.BookCopies != null && book.BookCopies.Any())
-                throw new ConflictException("Không thể xóa đầu sách đang có bản sao vật lý.");
+            if (book.BookCopies.Any(bc => bc.Status == BookCopyStatus.Borrowed))
+                throw AppException.Conflict("Không thể xóa đầu sách đang có bản sao đang được mượn.");
 
             await bookRepository.DeleteAsync(book);
+
+            await cache.RemoveAsync($"books:{id}");
         }
 
-        private static BookResponse MapToResponse(Book book)
+        public async Task<PagedResponse<BookResponse>> GetPagedAsync(
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? keyword = null,
+            Guid? categoryId = null,
+            string? author = null,
+            bool? onlyAvailable = null,
+            string sortBy = "newest")
         {
-            return new BookResponse
+            var (books, totalCount) = await bookRepository.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                keyword: keyword,
+                categoryId: categoryId,
+                author: author,
+                onlyAvailable: onlyAvailable,
+                sortBy: sortBy);
+
+            var responses = books.Select(BookResponse.FromEntity).ToList();
+
+            return new PagedResponse<BookResponse>
             {
-                Id = book.Id,
-                Title = book.Title,
-                Author = book.Author,
-                ISBN = book.ISBN,
-                ImageUrl = book.ImageUrl,
-                PublishYear = book.PublishYear,
-                CategoryId = book.CategoryId,
-                CategoryName = book.Category?.Name ?? string.Empty,
-                Category = book.Category != null ? new Category
-                {
-                    Id = book.Category.Id,
-                    Name = book.Category.Name,
-                    Description = book.Category.Description
-                } : null!,
-                TotalCopies = book.BookCopies?.Count ?? 0,
-                AvailableCopies = book.BookCopies?.Count(c => c.Status == BookCopyStatus.Available) ?? 0,
-                CreatedAt = book.CreatedAt
+                Items = responses,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
             };
         }
     }

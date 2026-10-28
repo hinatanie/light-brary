@@ -1,5 +1,4 @@
 using light_brary.Services;
-using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,34 +15,6 @@ namespace light_brary.Controllers
         {
             var roles = await roleService.GetAllAsync();
             return Ok(roles);
-        }
-
-        [HttpGet("roles/{id:guid}")]
-        public async Task<ActionResult<RoleResponse>> GetById(Guid id)
-        {
-            var role = await roleService.GetByIdAsync(id);
-            return Ok(role);
-        }
-
-        [HttpPost("roles")]
-        public async Task<ActionResult<RoleResponse>> Create(SaveRoleRequest request)
-        {
-            var created = await roleService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-
-        [HttpPut("roles/{id:guid}")]
-        public async Task<ActionResult<RoleResponse>> Update(Guid id, SaveRoleRequest request)
-        {
-            var updated = await roleService.UpdateAsync(id, request);
-            return Ok(updated);
-        }
-
-        [HttpDelete("roles/{id:guid}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            await roleService.DeleteAsync(id);
-            return NoContent();
         }
 
         [HttpGet("users/{userId:guid}/roles")]

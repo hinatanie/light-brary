@@ -3,6 +3,7 @@ using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace light_brary.Controllers
 {
@@ -10,17 +11,6 @@ namespace light_brary.Controllers
     [Route("api/books")]
     public class BooksController(BookService bookService) : ControllerBase
     {
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll(
-            [FromQuery] string? keyword = null,
-            [FromQuery] Guid? categoryId = null,
-            [FromQuery] string? author = null,
-            [FromQuery] bool? onlyAvailable = null)
-        {
-            var books = await bookService.GetAllAsync(keyword, categoryId, author, onlyAvailable);
-            return Ok(books);
-        }
-
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<BookResponse>> GetById(Guid id)
         {
@@ -50,6 +40,20 @@ namespace light_brary.Controllers
         {
             await bookService.DeleteAsync(id);
             return NoContent();
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<PagedResponse<BookResponse>>> GetPaged(
+            [FromQuery, Range(1, int.MaxValue)] int page = 1,
+            [FromQuery, Range(1, 100)] int pageSize = 10,
+            [FromQuery] string? keyword = null,
+            [FromQuery] Guid? categoryId = null,
+            [FromQuery] string? author = null,
+            [FromQuery] bool? onlyAvailable = null,
+            [FromQuery, RegularExpression("^(newest|title|available|year)$")] string sortBy = "newest")
+        {
+            var pagedBooks = await bookService.GetPagedAsync(page, pageSize, keyword, categoryId, author, onlyAvailable, sortBy);
+            return Ok(pagedBooks);
         }
     }
 }

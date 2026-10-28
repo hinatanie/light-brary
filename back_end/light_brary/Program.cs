@@ -1,19 +1,16 @@
-using System.Text;
 using light_brary.Services;
-using light_brary.Services.Authentication;
 using light_brary.Data;
 using light_brary.Repositories;
 using light_brary.Middleware;
 using light_brary.Constants;
 using light_brary.Entities;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 
 /* Cấu hình CORS cho Frontend */
 builder.Services.AddCors(options =>
@@ -35,31 +32,18 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-/* Cấu hình JWT Authentication */
-var jwtSection = builder.Configuration.GetSection("Jwt");
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSection["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtSection["Audience"],
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero,
-        };
-    });
+/* Cấu hình Redis */
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis")
+        ?? throw new InvalidOperationException("Chưa cấu hình ConnectionStrings:Redis.");
+    options.InstanceName = "LightBrary:";
+});
 
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", p => p.RequireRole(RoleNames.ADMIN));
     options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN));
-    options.AddPolicy("UserOrAbove", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN, RoleNames.USER));
 });
 
 /* Đăng ký các Serivce */
@@ -74,11 +58,13 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<BookCopyRepository>();
 builder.Services.AddScoped<BookRepository>();
 builder.Services.AddScoped<BorrowRecordRepository>();
+builder.Services.AddScoped<BorrowDetailRepository>();
 builder.Services.AddScoped<CategoryRepository>();
+builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<UserRepository>();
 
 // Đăng ký Identity
-builder.Services.AddIdentityCore<User>(options =>
+builder.Services.AddIdentityApiEndpoints<User>(options =>
     {
         options.Password.RequiredLength = 8;
         options.Password.RequireDigit = false;
@@ -87,13 +73,10 @@ builder.Services.AddIdentityCore<User>(options =>
         options.Password.RequireNonAlphanumeric = false;
     })
     .AddRoles<IdentityRole<Guid>>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
+    .AddEntityFrameworkStores<AppDbContext>();
 
 /* Đăng ký các Authentication */
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<JwtTokenService>();
 
 var app = builder.Build();
 
@@ -108,11 +91,13 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
+app.UseMiddleware<ValidateUserMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health").AllowAnonymous();
 
-/* Tự động áp dụng Migration (tạo bảng nếu chưa có) & Khởi tạo tài khoản Admin ban đầu */
+/* Tự động áp dụng Migration và khởi tạo dữ liệu */
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -121,7 +106,13 @@ using (var scope = app.Services.CreateScope())
 
     var userManager = services.GetRequiredService<UserManager<User>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    await using var transaction = await context.Database.BeginTransactionAsync();
     await DataSeeder.SeedAsync(userManager, roleManager, builder.Configuration);
+    if (builder.Configuration.GetValue("Seed:SampleData", app.Environment.IsDevelopment()))
+    {
+        await LibraryDataSeeder.SeedAsync(context, userManager, builder.Configuration);
+    }
+    await transaction.CommitAsync();
 }
 
 app.Run();

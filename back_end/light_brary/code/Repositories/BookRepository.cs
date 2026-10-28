@@ -1,9 +1,8 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using light_brary.Entities;
 using light_brary.Data;
+
+using light_brary.Enums;
 
 namespace light_brary.Repositories
 {
@@ -15,13 +14,6 @@ namespace light_brary.Repositories
                 .FirstOrDefaultAsync(b => b.ISBN == isbn);
         }
 
-        public async Task<IEnumerable<Book>> GetByCategoryIdAsync(Guid categoryId)
-        {
-            return await _context.Books
-                .Where(b => b.CategoryId == categoryId)
-                .ToListAsync();
-        }
-
         public async Task<Book?> GetWithDetailsAsync(Guid id)
         {
             return await _context.Books
@@ -30,9 +22,17 @@ namespace light_brary.Repositories
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 
-        public async Task<IEnumerable<Book>> GetAllWithDetailsAsync(string? keyword = null, Guid? categoryId = null, string? author = null)
+        public async Task<(IEnumerable<Book> Books, int TotalCount)> GetPagedAsync(
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? keyword = null,
+            Guid? categoryId = null,
+            string? author = null,
+            bool? onlyAvailable = null,
+            string sortBy = "newest")
         {
             var query = _context.Books
+                .AsNoTracking()
                 .Include(b => b.Category)
                 .Include(b => b.BookCopies)
                 .AsQueryable();
@@ -40,7 +40,7 @@ namespace light_brary.Repositories
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var kw = keyword.Trim().ToLower();
-                query = query.Where(b => b.Title.ToLower().Contains(kw) || b.ISBN.ToLower().Contains(kw));
+                query = query.Where(b => b.Title.ToLower().Contains(kw) || b.ISBN.ToLower().Contains(kw) || b.Author.ToLower().Contains(kw));
             }
 
             if (categoryId.HasValue && categoryId.Value != Guid.Empty)
@@ -54,10 +54,31 @@ namespace light_brary.Repositories
                 query = query.Where(b => b.Author.ToLower().Contains(auth));
             }
 
-            return await query
-                .OrderByDescending(b => b.CreatedAt)
+            if (onlyAvailable.HasValue && onlyAvailable.Value)
+            {
+                query = query.Where(b => b.BookCopies.Any(c => c.Status == BookCopyStatus.Available));
+            }
+
+            var totalCount = await query.CountAsync();
+            var offset = ((long)pageNumber - 1) * pageSize;
+            if (offset >= totalCount)
+                return ([], totalCount);
+
+            var orderedQuery = sortBy switch
+            {
+                "title" => query.OrderBy(b => b.Title),
+                "available" => query.OrderByDescending(b => b.BookCopies.Count(c => c.Status == BookCopyStatus.Available)),
+                "year" => query.OrderByDescending(b => b.PublishYear ?? 0),
+                _ => query.OrderByDescending(b => b.CreatedAt)
+            };
+
+            var books = await orderedQuery
                 .ThenByDescending(b => b.Id)
+                .Skip((int)offset)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (books, totalCount);
         }
     }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Book, Category, BookCopy, BorrowRecord, User } from '../../types';
+import type { Category, BookCopy, BorrowRecord, User } from '../../types';
 import { categoriesApi, booksApi, bookCopiesApi, borrowRecordsApi, usersApi } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -20,7 +20,7 @@ export const AdminDashboardPage: React.FC = () => {
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>([]);
+  const [totalBooks, setTotalBooks] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [copies, setCopies] = useState<BookCopy[]>([]);
   const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);
@@ -29,22 +29,18 @@ export const AdminDashboardPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bks, cats, borrows, usrs] = await Promise.all([
-        booksApi.getAll(),
+      const [bks, cats, borrows, usrs, allCopies] = await Promise.all([
+        booksApi.getPaged({ page: 1, pageSize: 1 }),
         categoriesApi.getAll(),
         borrowRecordsApi.getAll(),
         usersApi.getAll(),
+        bookCopiesApi.getAll(),
       ]);
-      setBooks(bks);
+      setTotalBooks(bks.totalCount);
       setCategories(cats);
       setBorrowRecords(borrows);
       setUsers(usrs);
-
-      // Load copies
-      const copiesArrays = await Promise.all(
-        bks.map((b) => bookCopiesApi.getByBookId(b.id).catch(() => [] as BookCopy[]))
-      );
-      setCopies(copiesArrays.flat());
+      setCopies(allCopies);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi tải dữ liệu tổng quan', 'error');
     } finally {
@@ -94,7 +90,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <BookOpen size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-value">{books.length}</span>
+                <span className="stat-value">{totalBooks}</span>
                 <span className="stat-label">Tổng đầu sách</span>
               </div>
               <ArrowUpRight size={18} className="stat-arrow" />
@@ -149,7 +145,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <AlertCircle size={24} />
               </div>
               <div className="stat-info">
-                <span className="stat-value" style={{ color: overdueBorrows > 0 ? '#ef4444' : '#f8fafc' }}>
+                <span className="stat-value" style={{ color: overdueBorrows > 0 ? '#ef4444' : 'var(--text-main)' }}>
                   {overdueBorrows}
                 </span>
                 <span className="stat-label">Phiếu quá hạn</span>
@@ -160,9 +156,9 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* Quick Recent Activity */}
           <div className="table-card" style={{ marginTop: '24px' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={18} color="#f59e0b" /> Phiếu Mượn Gần Đây Nhất
+                <Clock size={18} color="var(--primary)" /> Phiếu Mượn Gần Đây Nhất
               </h3>
               <button
                 className="btn-action btn-copy"
@@ -204,7 +200,7 @@ export const AdminDashboardPage: React.FC = () => {
                   ))}
                   {borrowRecords.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                         Chưa có phiếu mượn nào trong hệ thống.
                       </td>
                     </tr>

@@ -3,8 +3,6 @@ using light_brary.Services;
 using System.Security.Claims;
 using light_brary.DTOs.Requests;
 using light_brary.DTOs.Responses;
-using light_brary.Exceptions;
-using light_brary.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,15 +11,6 @@ namespace light_brary.Controllers
     [ApiController]
     public class BorrowRecordsController(BorrowRecordService borrowRecordService) : ControllerBase
     {
-        [HttpPost("api/me/borrow")]
-        [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<BorrowRecordResponse>> MemberBorrow(MemberBorrowRequest request)
-        {
-            var userId = GetCurrentUserId();
-            var created = await borrowRecordService.BorrowForMemberAsync(userId, request);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-
         [HttpPost("api/borrow-records")]
         [Authorize(Policy = "LibrarianOrAdmin")]
         public async Task<ActionResult<BorrowRecordResponse>> Create(CreateBorrowRecordRequest request)
@@ -46,20 +35,20 @@ namespace light_brary.Controllers
         public async Task<ActionResult<BorrowRecordResponse>> GetById(Guid id)
         {
             var record = await borrowRecordService.GetByIdAsync(id);
-            var userId = GetCurrentUserId();
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var isStaffOrAdmin = User.IsInRole(RoleNames.ADMIN) || User.IsInRole(RoleNames.LIBRARIAN);
             if (!isStaffOrAdmin && record.User.Id != userId)
             {
                 return Forbid();
             }
             return Ok(record);
-        }
+        } 
 
-        [HttpPost("api/returns")]
+        [HttpPost("api/borrow-records/{borrowRecordId:guid}/returns")]
         [Authorize(Policy = "LibrarianOrAdmin")]
-        public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks(ReturnBooksRequest request)
+        public async Task<ActionResult<ReturnBooksResponse>> ReturnMultipleBooks(Guid borrowRecordId, ReturnBooksRequest request)
         {
-            var result = await borrowRecordService.ReturnMultipleBooksAsync(request);
+            var result = await borrowRecordService.ReturnMultipleBooksAsync(borrowRecordId, request);
             return Ok(result);
         }
 
@@ -69,17 +58,6 @@ namespace light_brary.Controllers
         {
             var result = await borrowRecordService.MarkLostBookAsync(id);
             return Ok(result);
-        }
-
-        private Guid GetCurrentUserId()
-        {
-            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                      ?? User.FindFirstValue(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub);
-
-            if (string.IsNullOrEmpty(raw) || !Guid.TryParse(raw, out var userId))
-                throw new UnauthorizedException("Không xác định được danh tính người dùng.");
-
-            return userId;
         }
     }
 }

@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Book, Category, BookCopy } from '../../types';
-import { booksApi, categoriesApi, bookCopiesApi } from '../../api';
+import type { Book, BookCopy, BookSort } from '../../types';
+import { bookCopiesApi } from '../../api';
+import { usePagedBooks } from '../../hooks/usePagedBooks';
+import { Pagination } from '../../components/Pagination';
 import { useToast } from '../../contexts/ToastContext';
 import {
   Search,
@@ -19,41 +21,17 @@ export const MemberCatalogPage: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  // Search & Filter state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [onlyAvailable, setOnlyAvailable] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<'title' | 'available' | 'year'>('available');
+  const { items: books, categories, query, pageNumber, pageSize, totalCount, totalPages,
+    loading, error, setFilters, setPage, refresh } = usePagedBooks('available');
+  const searchTerm = query.keyword ?? '';
+  const selectedCategory = query.categoryId ?? 'all';
+  const onlyAvailable = query.onlyAvailable ?? false;
+  const sortBy = query.sortBy;
 
   // Copy Modal state
   const [viewingCopiesBook, setViewingCopiesBook] = useState<Book | null>(null);
   const [bookCopies, setBookCopies] = useState<BookCopy[]>([]);
   const [loadingCopies, setLoadingCopies] = useState(false);
-
-  // Load catalog & categories
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [booksRes, catsRes] = await Promise.all([
-        booksApi.getAll({ onlyAvailable: onlyAvailable || undefined }),
-        categoriesApi.getAll(),
-      ]);
-      setBooks(booksRes);
-      setCategories(catsRes);
-    } catch (err: any) {
-      showToast(err.message || 'Lỗi khi tải danh mục sách', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [onlyAvailable, showToast]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   // Open Copies Modal
   const handleOpenCopiesModal = async (book: Book) => {
@@ -70,35 +48,8 @@ export const MemberCatalogPage: React.FC = () => {
     }
   };
 
-  // Filtered & Sorted books
-  const filteredBooks = useMemo(() => {
-    return books
-      .filter((book) => {
-        const matchesSearch =
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (book.isbn && book.isbn.toLowerCase().includes(searchTerm.toLowerCase()));
-
-        const matchesCat =
-          selectedCategory === 'all' || String(book.categoryId) === String(selectedCategory);
-
-        const matchesAvail = !onlyAvailable || (book.availableCopies ?? 0) > 0;
-
-        return matchesSearch && matchesCat && matchesAvail;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'available') {
-          return (b.availableCopies ?? 0) - (a.availableCopies ?? 0);
-        }
-        if (sortBy === 'year') {
-          return (b.publishYear ?? 0) - (a.publishYear ?? 0);
-        }
-        return a.title.localeCompare(b.title);
-      });
-  }, [books, searchTerm, selectedCategory, onlyAvailable, sortBy]);
-
   // Statistics
-  const totalBooksCount = books.length;
+  const totalBooksCount = totalCount;
   const inStockBooksCount = books.filter((b) => (b.availableCopies ?? 0) > 0).length;
   const totalAvailableCopies = books.reduce((acc, b) => acc + (b.availableCopies ?? 0), 0);
 
@@ -115,7 +66,7 @@ export const MemberCatalogPage: React.FC = () => {
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             className="btn btn-secondary"
-            onClick={loadData}
+            onClick={refresh}
             disabled={loading}
           >
             <RefreshCw size={16} className={loading ? 'spin' : ''} /> Làm mới
@@ -136,7 +87,7 @@ export const MemberCatalogPage: React.FC = () => {
             <BookOpen size={24} />
           </div>
           <div className="stat-info">
-            <span className="stat-label">Tổng đầu sách</span>
+            <span className="stat-label">Tổng đầu sách phù hợp</span>
             <span className="stat-value">{totalBooksCount}</span>
           </div>
         </div>
@@ -146,7 +97,7 @@ export const MemberCatalogPage: React.FC = () => {
             <CheckCircle2 size={24} />
           </div>
           <div className="stat-info">
-            <span className="stat-label">Sách còn trên kệ</span>
+            <span className="stat-label">Sách còn trên kệ (trang này)</span>
             <span className="stat-value">{inStockBooksCount}</span>
           </div>
         </div>
@@ -156,7 +107,7 @@ export const MemberCatalogPage: React.FC = () => {
             <Sparkles size={24} />
           </div>
           <div className="stat-info">
-            <span className="stat-label">Bản sao sẵn sàng mượn</span>
+            <span className="stat-label">Bản sao sẵn sàng mượn (trang này)</span>
             <span className="stat-value">{totalAvailableCopies}</span>
           </div>
         </div>
@@ -184,12 +135,12 @@ export const MemberCatalogPage: React.FC = () => {
             type="text"
             placeholder="Tìm theo tên sách, tác giả hoặc ISBN..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setFilters({ keyword: e.target.value })}
           />
           {searchTerm && (
             <button
               className="btn-icon"
-              onClick={() => setSearchTerm('')}
+              onClick={() => setFilters({ keyword: '' })}
               style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)' }}
             >
               <X size={16} />
@@ -202,7 +153,7 @@ export const MemberCatalogPage: React.FC = () => {
           <select
             className="filter-select"
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => setFilters({ categoryId: e.target.value === 'all' ? undefined : e.target.value })}
             style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
           >
             <option value="all">📂 Tất cả thể loại</option>
@@ -219,7 +170,7 @@ export const MemberCatalogPage: React.FC = () => {
           <select
             className="filter-select"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setFilters({ sortBy: e.target.value as BookSort })}
             style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
           >
             <option value="available">⚡ Sẵn có nhiều nhất</option>
@@ -248,7 +199,7 @@ export const MemberCatalogPage: React.FC = () => {
           <input
             type="checkbox"
             checked={onlyAvailable}
-            onChange={(e) => setOnlyAvailable(e.target.checked)}
+            onChange={(e) => setFilters({ onlyAvailable: e.target.checked })}
             style={{ accentColor: '#10b981', cursor: 'pointer' }}
           />
           <span>Chỉ hiện sách còn bản sao</span>
@@ -261,16 +212,19 @@ export const MemberCatalogPage: React.FC = () => {
           <RefreshCw size={18} className="spin" />
           <span>Đang tải danh mục sách và số lượng tồn kho...</span>
         </div>
-      ) : filteredBooks.length === 0 ? (
+      ) : error ? (
+        <div className="empty-state" role="alert">
+          <p>{error}</p>
+          <button className="btn btn-secondary" onClick={refresh}>Thử lại</button>
+        </div>
+      ) : books.length === 0 ? (
         <div className="empty-state">
           <BookOpen size={48} className="empty-icon" />
           <p>Không tìm thấy sách nào phù hợp với bộ lọc hiện tại</p>
           <button
             className="btn btn-secondary"
             onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('all');
-              setOnlyAvailable(false);
+              setFilters({ keyword: '', categoryId: undefined, onlyAvailable: false });
             }}
           >
             Xóa bộ lọc tìm kiếm
@@ -285,7 +239,7 @@ export const MemberCatalogPage: React.FC = () => {
             gap: '20px',
           }}
         >
-          {filteredBooks.map((book) => {
+          {books.map((book) => {
             const total = book.totalCopies ?? 0;
             const available = book.availableCopies ?? 0;
             const isAvailable = available > 0;
@@ -452,6 +406,9 @@ export const MemberCatalogPage: React.FC = () => {
       )}
 
       {/* ── MODAL 1: VIEW SHELF COPIES ────────────────────────────────────────── */}
+      <Pagination page={pageNumber} pageSize={pageSize} totalPages={totalPages}
+        totalCount={totalCount} disabled={loading || !!error} onPageChange={setPage} />
+
       {viewingCopiesBook && (
         <div className="modal-backdrop" onClick={() => setViewingCopiesBook(null)}>
           <div
@@ -522,7 +479,7 @@ export const MemberCatalogPage: React.FC = () => {
                                   Liên hệ Quầy Thủ Thư
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                                   Chưa thể mượn
                                 </span>
                               )}

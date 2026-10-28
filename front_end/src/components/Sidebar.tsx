@@ -19,7 +19,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   return (
-    <nav className="app-sidebar">
+    <nav className="app-sidebar" aria-label="Điều hướng thư viện">
       {role === 'admin' && (
         <>
           <div className="sidebar-group-title">QUẢN TRỊ VIÊN</div>
@@ -69,6 +69,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
           >
             <Users size={18} />
             <span>Người dùng & Quyền</span>
+          </NavLink>
+          <NavLink
+            to="/admin/profile"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <User size={18} />
+            <span>Thông tin cá nhân</span>
           </NavLink>
         </>
       )}
@@ -153,6 +160,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
           </NavLink>
         </>
       )}
+      <div className="sidebar-school">
+        <img src="/images/sgu-logo.webp" alt="Logo Đại học Sài Gòn" width="138" height="138" />
+        <strong>THƯ VIỆN ĐẠI HỌC SÀI GÒN</strong>
+        <span>Cổng thông tin bạn đọc</span>
+        <span className="sidebar-version">LightBrary · SGU</span>
+      </div>
     </nav>
   );
 };

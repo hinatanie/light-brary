@@ -1,171 +1,78 @@
-# LightBrary — Hệ Thống Quản Lý Thư Viện Trực Tuyến
+# LightBrary
 
-Hệ thống quản lý thư viện sử dụng **ASP.NET Core (.NET 10)** ở Backend và **React 19 + TypeScript + Vite** ở Frontend. Backend được tổ chức theo các lớp Controllers, Services, Repositories và Entities trong thư mục `back_end/light_brary/code/` của một project; DTO được tách thành Requests và Responses. `Program.cs`, cấu hình và `Properties/` nằm ở thư mục project. Xem cấu trúc và quy tắc tại [CONTRIBUTING.md](docs/CONTRIBUTING.md).
+LightBrary là hệ thống quản lý thư viện, hỗ trợ tra cứu sách, quản lý bản sao, người dùng và nghiệp vụ mượn trả. Backend ASP.NET Core là trọng tâm dự án; frontend React được giữ để demo.
 
----
+## Công nghệ
 
-## 🚀 Tính Năng Chính
+- **Backend:** ASP.NET Core 10, ASP.NET Core Identity, Entity Framework Core, PostgreSQL, Redis và Swagger.
+- **Frontend:** React 19, TypeScript và Vite.
+- **Công cụ khác:** Docker Compose, xUnit và GitHub Actions.
 
-- **Quản lý đầu sách & bản sao vật lý**: Quản lý thông tin sách (tiêu đề, tác giả, ISBN, ảnh bìa, thể loại) và bản sao từng cuốn (mã barcode, tình trạng kệ).
-- **Quy trình mượn - trả sách an toàn**: Lập phiếu mượn nhiều cuốn, gia hạn, trả sách tính phí phạt và báo mất sách (`Lost`).
-- **Chống Race Condition tuyệt đối**: Cơ chế khóa dòng `SELECT ... FOR UPDATE` trong transaction kết hợp với Partial Unique Constraint `UX_BorrowDetails_ActiveCopy` ở mức CSDL ngăn chặn 100% tình trạng 2 người cùng mượn 1 cuốn sách đồng thời.
-- **Phân quyền 3 cấp độ (Role-Based Access Control)**:
-  - **Admin (Quản trị viên)**: Toàn quyền quản lý sách, thể loại, kho bản sao, độc giả và cấu hình phân quyền người dùng.
-  - **Staff (Thủ thư)**: Xử lý quy trình mượn trả, hoàn trả sách vào kệ, báo mất sách, xem thống kê kho.
-  - **Member (Bạn đọc)**: Tra cứu danh mục sách, theo dõi phiếu mượn cá nhân, tình trạng quá hạn và thông tin hồ sơ.
-- **Bảo mật chuẩn Enterprise**:
-  - Tự động xoay vòng Refresh Token (Rotation & Revocation) qua HttpOnly Cookie.
-  - Ngăn chặn tấn công Brute-force: Tự động khóa tài khoản 15 phút sau 5 lần nhập sai mật khẩu (HTTP 423 Locked).
-  - Chính sách mật khẩu nghiêm ngặt (tối thiểu 10 ký tự, có chữ hoa, thường, số, chống mật khẩu yếu).
-  - Cơ chế bắt buộc đổi mật khẩu lần đầu (`MustChangePassword`).
-  - Khởi tạo tài khoản quản trị ban đầu an toàn (AdminBootstrap) từ biến môi trường/cấu hình, không bao giờ log mật khẩu thô.
-  - CSDL PostgreSQL chuẩn hóa: ID dạng `uuid` (Guid), unique index cho `PhoneNumber`, `Email`, `ISBN` và `citext` cho email/thể loại/role.
+## Chuẩn bị
 
----
+- **Docker Compose:** Docker Engine hoặc Docker Desktop và Docker Compose v2. Cách này chạy API, PostgreSQL 17 và Redis 7 trong container, không cần .NET SDK trên máy.
+- **Chạy backend trực tiếp:** .NET SDK 10, PostgreSQL và Redis. Có thể dùng Compose chỉ để chạy PostgreSQL và Redis.
+- **Chạy frontend:** Node.js `^20.19.0` hoặc `>=22.12.0` và npm.
 
-## ⚙️ Cấu hình môi trường
+Các lệnh dưới đây chạy từ thư mục gốc repository, trừ khi có ghi khác.
 
-Dự án dùng **hai nơi** để chứa cấu hình cục bộ. Cả hai đều **không được đưa lên Git**:
+## Cách 1: Chạy backend bằng Docker Compose
 
-| Nơi lưu      | Dùng cho                                    | Ai đọc         |
-| ------------ | ------------------------------------------- | -------------- |
-| `.env`       | Thông tin khởi tạo PostgreSQL               | Docker Compose |
-| User Secrets | Bí mật của ứng dụng (ví dụ `Jwt:SecretKey`) | ASP.NET Core   |
-
-### 1. Tạo file `.env`
-
-```powershell
-Copy-Item .env.example .env      # macOS/Linux: cp .env.example .env
-```
-
-Mở `.env` và chỉnh nếu cần:
-
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=Asdf1234!
-POSTGRES_DB=lightbrary_db
-POSTGRES_PORT=5432
-```
-
-Khởi động và kiểm tra database:
-
-```powershell
-docker compose up -d
-docker compose ps                # cột STATUS phải là "healthy"
-```
-
-> ⚠️ ASP.NET Core **không đọc** file `.env`. Nếu bạn đổi user, mật khẩu, tên database hoặc cổng, hãy sửa cả chuỗi kết nối `ConnectionStrings:DefaultConnection` trong `user-secrets` cho khớp.
->
-> Các biến `POSTGRES_*` chỉ có tác dụng ở lần khởi tạo đầu tiên. Muốn áp dụng giá trị mới, chạy `docker compose down -v` (**xóa toàn bộ dữ liệu**) rồi `docker compose up -d`.
-
-### 2. Tạo User Secrets
-
-Chạy các lệnh từ thư mục gốc của solution. `--project` trỏ tới project API (project chứa `Program.cs`).
-
-**Bước 1: khởi tạo (chỉ làm nếu `.csproj` của project API chưa có `<UserSecretsId>`)**
-
-```powershell
-dotnet user-secrets init --project back_end/light_brary
-```
-
-Nếu `.csproj` đã có dòng `<UserSecretsId>`, bỏ qua bước này. Dòng đó được commit và không phải bí mật.
-
-**Bước 2: sinh một khóa ngẫu nhiên (tối thiểu 32 ký tự) và lưu lại**
-
-```powershell
-$bytes = New-Object byte[] 48
-[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-$key = [Convert]::ToBase64String($bytes)
-
-dotnet user-secrets set "Jwt:SecretKey" $key --project back_end/light_brary
-```
-
-### 3. Kiểm tra
-
-```powershell
-dotnet user-secrets list --project back_end/light_brary
-```
-
-Kết quả mong đợi có dòng:
-
-```
-Jwt:SecretKey = <chuỗi ngẫu nhiên>
-```
-
-> `list` in giá trị ra dạng văn bản thường, hãy cẩn thận khi chia sẻ màn hình hoặc chụp ảnh gửi người khác.
-
-Các lệnh hữu ích khác:
-
-```powershell
-dotnet user-secrets remove "Jwt:SecretKey" --project back_end/light_brary   # xóa một khóa
-dotnet user-secrets clear --project back_end/light_brary                    # xóa tất cả
-```
-
----
-
-## 🛠 Yêu Cầu Hệ Thống
-
-- **.NET SDK**: 10.0 trở lên
-- **Node.js**: 18.0 trở lên
-- **PostgreSQL**: 16 hoặc 17 (hoặc Docker Compose)
-
----
-
-## ⚡ Hướng Dẫn Khởi Chạy
-
-### 1. Khởi động Cơ sở dữ liệu PostgreSQL
-
-Sử dụng Docker Compose đi kèm:
+Mở terminal tại thư mục gốc của repository `light-brary` (thư mục chứa file `compose.yml`), rồi chạy:
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
 
-Cơ sở dữ liệu mặc định sẽ lắng nghe tại `localhost:5432` với database `lightbrary_db`.
+Compose khởi động API tại `http://localhost:5218`, PostgreSQL tại `localhost:5434` và Redis tại `localhost:6381`. API tự áp dụng migration và tạo dữ liệu mẫu trong môi trường Development. Swagger: `http://localhost:5218/swagger`.
 
-### 2. Khởi chạy Backend (.NET 10 Web API)
+Mặc định development dùng mật khẩu PostgreSQL `change-me` và mật khẩu tài khoản mẫu `change-me-admin`. Để đổi mật khẩu hoặc cổng, sao chép `.env.example` thành `.env` rồi chỉnh sửa; không dùng mật khẩu mặc định cho production.
 
 ```bash
+cp .env.example .env
+docker compose ps
+docker compose down
+```
+
+`docker compose down` giữ lại dữ liệu PostgreSQL. Thay đổi thông tin PostgreSQL trong `.env` không tự cập nhật tài khoản của database đã được khởi tạo.
+
+## Cách 2: Chạy backend trực tiếp
+
+Mở terminal tại thư mục gốc của repository `light-brary` (thư mục chứa `Library.slnx`). Chuẩn bị PostgreSQL và Redis trên máy; nếu dùng Docker cho hai dịch vụ này, chạy:
+
+```bash
+docker compose up -d postgres redis
+```
+
+Cấu hình bên dưới tương ứng với cổng và tài khoản mặc định của Compose. Thay mật khẩu PostgreSQL bằng giá trị đang dùng và chọn mật khẩu admin từ 8 ký tự; nếu dùng database hoặc Redis khác, chỉnh địa chỉ và thông tin kết nối cho phù hợp.
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5434;Database=lightbrary_db;Username=postgres;Password=<mật-khẩu-PostgreSQL>" --project back_end/light_brary
+dotnet user-secrets set "ConnectionStrings:Redis" "localhost:6381" --project back_end/light_brary
+dotnet user-secrets set "Seed:AdminPassword" "<mật-khẩu-admin>" --project back_end/light_brary
+
+dotnet restore Library.slnx
 dotnet run --project back_end/light_brary
 ```
 
-- API sẽ tự động áp dụng migration và bootstrap tài khoản Admin nếu CSDL chưa có dữ liệu.
-- Swagger UI: `http://localhost:5048/swagger`
-- OpenAPI Schema: `http://localhost:5048/openapi/v1.json`
+Cũng có thể cấu hình bằng biến môi trường `ConnectionStrings__DefaultConnection`, `ConnectionStrings__Redis` và `Seed__AdminPassword`. Backend tự áp dụng migration và seed khi khởi động; Swagger ở `http://localhost:5218/swagger` trong Development.
 
-### 3. Khởi chạy Frontend (React + Vite)
+## Chạy frontend
 
-Mở một terminal mới:
+Sau khi chạy backend theo một trong hai cách trên, mở terminal khác tại thư mục gốc `light-brary`, rồi chuyển vào `front_end` và chạy:
 
 ```bash
 cd front_end
-npm install
+npm ci
 npm run dev
 ```
 
-Giao diện người dùng sẽ chạy tại: `http://localhost:3000` (hoặc `http://localhost:5173`).
+Mở `http://localhost:3000`. Vite chuyển các yêu cầu `/api` đến backend tại `http://localhost:5218`; nếu đổi cổng API, sửa proxy trong `front_end/vite.config.ts`.
 
----
+Trên database mới ở Development, tài khoản mẫu gồm admin `0999999999`, thủ thư `thuthu` và sinh viên từ `3124560001` đến `3124560020`. Mật khẩu là mật khẩu admin được cấu hình ở trên, trừ khi có cấu hình riêng cho dữ liệu mẫu.
 
-## 🔑 Tài Khoản Quản Trị Khởi Tạo (Môi Trường Phát Triển)
+## Tài liệu thêm
 
-Khi hệ thống khởi chạy lần đầu tiên trên môi trường Development:
-
-- **Số điện thoại đăng nhập**: `0916114536`
-- **Email**: `admin@lightbrary.vn`
-- **Mật khẩu khởi tạo**: `ThuVienSach2026!`
-- **Lưu ý**: Hệ thống đã bật cờ `MustChangePassword`. Sau khi đăng nhập, hệ thống sẽ tự động yêu cầu bạn đổi sang mật khẩu mới trước khi tiếp tục.
-
-> Trong môi trường Production, thông tin Admin ban đầu và JWT Secret được nạp thông qua Environment Variables hoặc Secret Manager (`AdminBootstrap__Password`, `Jwt__SecretKey`), tuyệt đối không dùng giá trị mặc định.
-
----
-
-## 🧪 Kiểm Thử Tự Động (Automated Tests)
-
-Solution hiện chứa một project backend, chưa có project Unit Tests hoặc Integration Tests. Kiểm tra compile từ thư mục gốc:
-
-```bash
-dotnet build Library.slnx
-```
-
-Các endpoint cần được kiểm tra trên môi trường development với PostgreSQL đã cấu hình.
+- [Hướng dẫn Swagger](docs/THIẾT%20KẾ%20API.md): xem và thử API.
+- [Cơ sở dữ liệu](docs/database.md): các bảng và ràng buộc quan hệ.
+- [Luồng hoạt động](docs/LUONG-HOAT-DONG.md): cách xử lý request, thư viện và các nhóm API.

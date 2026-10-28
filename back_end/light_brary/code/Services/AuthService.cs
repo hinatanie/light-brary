@@ -1,55 +1,61 @@
-using light_brary.Services.Authentication;
 using light_brary.DTOs.Requests;
-using light_brary.DTOs.Responses;
 using light_brary.Exceptions;
 using light_brary.Entities;
+using light_brary.Repositories;
 using Microsoft.AspNetCore.Identity;
 
 namespace light_brary.Services
 {
     public class AuthService(
-        UserManager<User> userManager,
         SignInManager<User> signInManager,
         UserService userService,
-        JwtTokenService jwtTokenService)
+        UserManager<User> userManager,
+        UserRepository userRepository)
     {
-        public async Task<AuthResponse> LoginAsync(LoginRequest request)
+        public async Task LoginAsync(LoginRequest request)
         {
-            var user = await userManager.FindByNameAsync(request.PhoneNumber.Trim());
-            if (user is null)
-                throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
+            signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
+            var result = await signInManager.PasswordSignInAsync(
+                request.UserName.Trim(),
+                request.Password,
+                isPersistent: false,
+                lockoutOnFailure: true);
 
-            var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+            if (result.IsLockedOut)
+                throw AppException.Unauthorized("Tài khoản của bạn đã bị khóa, liên hệ quản thư để được hỗ trợ.");
+
             if (!result.Succeeded)
-                throw new UnauthorizedException("Số điện thoại hoặc mật khẩu không chính xác.");
-
-            var response = await userService.GetByIdAsync(user.Id);
-            return CreateAuthResponse(user, response);
+                throw AppException.Unauthorized("Tên đăng nhập hoặc mật khẩu không chính xác.");
         }
 
-        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+        public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
-            var response = await userService.CreateAsync(new CreateUserRequest
-            {
-                FullName = request.FullName,
-                PhoneNumber = request.PhoneNumber,
-                Address = request.Address,
-                Password = request.Password
-            });
-            var user = await userManager.FindByIdAsync(response.Id.ToString())
-                ?? throw new NotFoundException("Không tìm thấy tài khoản vừa tạo.");
-            return CreateAuthResponse(user, response);
+            var user = await userService.GetRequiredUserAsync(userId);
+
+            if (request.NewPassword == request.CurrentPassword)
+                throw AppException.BadRequest("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+
+            (await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword)).ThrowIfFailed();
         }
 
-        private AuthResponse CreateAuthResponse(User user, UserResponse response)
+        public async Task ChangePhoneNumberAsync(Guid userId, ChangePhoneNumberRequest request)
         {
-            return new AuthResponse
-            {
-                AccessToken = jwtTokenService.GenerateToken(user, response.Roles),
-                TokenType = "Bearer",
-                ExpiresIn = jwtTokenService.ExpiresInSeconds,
-                User = response
-            };
+            var user = await userService.GetRequiredUserAsync(userId);
+
+            if (request.NewPhoneNumber == user.PhoneNumber)
+                throw AppException.BadRequest("Số điện thoại mới không được trùng với số điện thoại hiện tại.");
+
+            if (await userRepository.ExistsByPhoneNumberAsync(request.NewPhoneNumber))
+                throw AppException.Conflict("Số điện thoại này đã được sử dụng.");
+
+            (await userManager.SetPhoneNumberAsync(user, request.NewPhoneNumber)).ThrowIfFailed();
         }
+
+        public async Task LogoutAsync(Guid userId)
+        {
+            var user = await userService.GetRequiredUserAsync(userId);
+            (await userManager.UpdateSecurityStampAsync(user)).ThrowIfFailed();
+        }
+
     }
 }

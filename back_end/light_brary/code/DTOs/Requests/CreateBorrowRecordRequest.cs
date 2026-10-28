@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace light_brary.DTOs.Requests
 {
-    public class CreateBorrowRecordRequest
+    public record CreateBorrowRecordRequest
     {
         [Required(ErrorMessage = "Người mượn không được để trống.")]
         public Guid UserId { get; set; }

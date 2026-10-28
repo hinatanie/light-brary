@@ -31,10 +31,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
     return <Navigate to={loginRedirect} state={{ from: location }} replace />;
   }
 
-  if (user.mustChangePassword && location.pathname !== '/change-password') {
-    return <Navigate to="/change-password" replace />;
-  }
-
   if (allowedRoles && allowedRoles.length > 0) {
     const userRoles = user.roles && user.roles.length > 0 ? user.roles : ['Member'];
     const hasRequiredRole = userRoles.some((role) =>

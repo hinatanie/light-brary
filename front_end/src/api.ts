@@ -7,7 +7,8 @@ import type {
   BorrowRecord,
   AuthResponse,
   MeResponse,
-  UpdateUserRequest,
+  PagedResponse,
+  BookPageQuery,
 } from './types';
 
 const API_BASE = '/api';
@@ -15,13 +16,11 @@ const API_BASE = '/api';
 export class ApiError extends Error {
   status: number;
   code?: string;
-  lockoutEndUtc?: string;
 
-  constructor(message: string, status: number, code?: string, lockoutEndUtc?: string) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
     this.code = code;
-    this.lockoutEndUtc = lockoutEndUtc;
     this.name = 'ApiError';
   }
 }
@@ -34,7 +33,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
+  if (token && !headers['Authorization']) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -62,93 +61,49 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       data?.title ||
       (typeof data === 'string' && data) ||
       `Yêu cầu thất bại (${response.status})`;
-    throw new ApiError(errorMsg, response.status, data?.code, data?.lockoutEndUtc);
+    throw new ApiError(errorMsg, response.status, data?.code);
   }
 
   return data as T;
 }
 
+async function loadAuthResponse(raw: any): Promise<AuthResponse> {
+  const user = await request<User>('/me', {
+    headers: { Authorization: `Bearer ${raw.accessToken}` },
+  });
+
+  return {
+    ...raw,
+    token: raw.accessToken,
+    userId: String(user.id),
+    fullName: user.fullName,
+    phoneNumber: user.phoneNumber,
+    email: user.email || '',
+    roles: user.roles,
+    user,
+  };
+}
+
 // ─── 1. Auth API ─────────────────────────────────────────────────────────────
 export const authApi = {
-  login: async (data: { phoneNumber: string; password: string }): Promise<AuthResponse> => {
+  login: async (data: { userName: string; password: string }): Promise<AuthResponse> => {
     const raw = await request<any>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    const token = raw.accessToken || raw.token;
-    const user = raw.user || raw;
-    const roles = Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : ['Member'];
-
-    return {
-      ...raw,
-      token,
-      accessToken: token,
-      userId: String(user.id ?? user.userId ?? ''),
-      fullName: user.fullName || '',
-      phoneNumber: user.phoneNumber || '',
-      email: user.email || '',
-      roles,
-      mustChangePassword: Boolean(user.mustChangePassword),
-      user: {
-        id: user.id ?? user.userId ?? '',
-        fullName: user.fullName || '',
-        phoneNumber: user.phoneNumber || '',
-        address: user.address || null,
-        roles,
-        createdAt: user.createdAt || new Date().toISOString(),
-      },
-    };
+    return loadAuthResponse(raw);
   },
 
-  register: async (data: {
-    fullName: string;
-    email?: string;
-    password: string;
-    phoneNumber: string;
-    address?: string;
-  }): Promise<AuthResponse> => {
-    const raw = await request<any>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        fullName: data.fullName,
-        phoneNumber: data.phoneNumber,
-        password: data.password,
-        address: data.address,
-      }),
-    });
-    const token = raw.accessToken || raw.token;
-    const user = raw.user || raw;
-    const roles = Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : ['Member'];
-
-    return {
-      ...raw,
-      token,
-      accessToken: token,
-      userId: String(user.id ?? user.userId ?? ''),
-      fullName: user.fullName || '',
-      phoneNumber: user.phoneNumber || '',
-      email: user.email || '',
-      roles,
-      mustChangePassword: Boolean(user.mustChangePassword),
-      user: {
-        id: user.id ?? user.userId ?? '',
-        fullName: user.fullName || '',
-        phoneNumber: user.phoneNumber || '',
-        address: user.address || null,
-        roles,
-        createdAt: user.createdAt || new Date().toISOString(),
-      },
-    };
-  },
-
-  logout: () => {
-    localStorage.removeItem('lightbrary_token');
-    localStorage.removeItem('lightbrary_user');
-    return Promise.resolve();
-  },
+  logout: () => request<{ message: string }>('/auth/logout', { method: 'PUT' }),
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
-    request<{ message: string }>('/me/password', {
+    request<{ message: string }>('/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  updateProfile: (data: { address: string }) =>
+    request<User>('/me', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
@@ -163,16 +118,16 @@ export const authApi = {
       phoneNumber: raw.phoneNumber || '',
       email: raw.email || '',
       address: raw.address || null,
+      createdAt: raw.createdAt,
       roles,
-      mustChangePassword: Boolean(raw.mustChangePassword),
     };
   },
 };
 
 // ─── 2. Categories API ───────────────────────────────────────────────────────
 export const categoriesApi = {
-  getAll: async (): Promise<Category[]> => {
-    const list = await request<Category[]>('/categories');
+  getAll: async (signal?: AbortSignal): Promise<Category[]> => {
+    const list = await request<Category[]>('/categories', { signal });
     return list.map((c) => ({
       ...c,
       bookCount: c.bookCount ?? 0,
@@ -197,32 +152,12 @@ export const categoriesApi = {
 
 // ─── 3. Books API ────────────────────────────────────────────────────────────
 export const booksApi = {
-  getAll: (
-    filterOrKeyword?:
-      | string
-      | { keyword?: string; categoryId?: number | string; author?: string; onlyAvailable?: boolean },
-    categoryId?: number,
-    author?: string,
-    onlyAvailable?: boolean
-  ) => {
+  getPaged: (query: BookPageQuery, signal?: AbortSignal) => {
     const params = new URLSearchParams();
-    if (typeof filterOrKeyword === 'object' && filterOrKeyword !== null) {
-      if (filterOrKeyword.keyword) params.append('keyword', filterOrKeyword.keyword);
-      if (filterOrKeyword.categoryId) params.append('categoryId', filterOrKeyword.categoryId.toString());
-      if (filterOrKeyword.author) params.append('author', filterOrKeyword.author);
-      if (filterOrKeyword.onlyAvailable !== undefined && filterOrKeyword.onlyAvailable !== null) {
-        params.append('onlyAvailable', filterOrKeyword.onlyAvailable.toString());
-      }
-    } else {
-      if (filterOrKeyword) params.append('keyword', filterOrKeyword);
-      if (categoryId) params.append('categoryId', categoryId.toString());
-      if (author) params.append('author', author);
-      if (onlyAvailable !== undefined && onlyAvailable !== null) {
-        params.append('onlyAvailable', onlyAvailable.toString());
-      }
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
     }
-    const qs = params.toString();
-    return request<Book[]>(qs ? `/books?${qs}` : '/books');
+    return request<PagedResponse<Book>>(`/books?${params}`, { signal });
   },
   getById: (id: string | number) => request<Book>(`/books/${id}`),
   create: (data: {
@@ -274,6 +209,7 @@ export const booksApi = {
 
 // ─── 4. Book Copies API ──────────────────────────────────────────────────────
 export const bookCopiesApi = {
+  getAll: () => request<BookCopy[]>('/book-copies/all'),
   getByBookId: (bookId: string | number) => request<BookCopy[]>(`/books/${bookId}/copies`),
   getById: (id: string | number) => request<BookCopy>(`/book-copies/${id}`),
   getByBarcode: (barcode: string) => request<BookCopy>(`/book-copies/by-barcode/${barcode}`),
@@ -329,43 +265,6 @@ export const usersApi = {
     return request<User[]>(qs ? `/users?${qs}` : '/users');
   },
   getById: (id: string | number) => request<User>(`/users/${id}`),
-  create: async (data: {
-    fullName: string;
-    phoneNumber: string;
-    password: string;
-    address?: string;
-    roles?: string[];
-  }): Promise<User> => {
-    const user = await request<User>('/users', {
-      method: 'POST',
-      body: JSON.stringify({
-        fullName: data.fullName.trim(),
-        phoneNumber: data.phoneNumber.trim(),
-        password: data.password,
-        address: data.address?.trim() || null,
-      }),
-    });
-
-    if (data.roles && data.roles.length > 0) {
-      try {
-        await usersApi.updateRoles(user.id, data.roles);
-      } catch (err) {
-        console.warn('Failed to assign initial roles:', err);
-      }
-    }
-
-    return user;
-  },
-  update: (id: string | number, data: UpdateUserRequest) =>
-    request<User>(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }).catch(() =>
-      request<User>('/me', {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
-    ),
   delete: (id: string | number) =>
     request<void>(`/users/${id}`, {
       method: 'DELETE',
@@ -401,11 +300,6 @@ export const usersApi = {
   },
   getUserBorrowRecords: (userId: string | number) =>
     request<BorrowRecord[]>(`/users/${userId}/borrow-records`),
-  updatePassword: (id: string | number, newPassword: string) =>
-    request<{ message: string }>(`/users/${id}/password`, {
-      method: 'PUT',
-      body: JSON.stringify({ newPassword }),
-    }),
 };
 
 // ─── 6. Roles API ────────────────────────────────────────────────────────────
@@ -451,26 +345,11 @@ export const borrowRecordsApi = {
         note: data.note,
       }),
     }),
-  borrowBookForMember: (data: {
-    bookId: string | number;
-    bookCopyId?: string | number;
-    dueDate?: string;
-    note?: string;
-  }) =>
-    request<BorrowRecord>('/me/borrow', {
-      method: 'POST',
-      body: JSON.stringify({
-        bookId: data.bookId,
-        bookCopyId: data.bookCopyId || undefined,
-        dueDate: data.dueDate,
-        note: data.note,
-      }),
-    }),
   returnBooks: (
-    _borrowRecordId: string | number,
+    borrowRecordId: string | number,
     data: { items: { borrowDetailId: string | number }[] }
   ) =>
-    request<any>('/returns', {
+    request<any>(`/borrow-records/${borrowRecordId}/returns`, {
       method: 'POST',
       body: JSON.stringify({
         borrowDetailIds: data.items.map((i) => i.borrowDetailId),

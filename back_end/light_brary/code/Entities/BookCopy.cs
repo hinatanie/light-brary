@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 using light_brary.Enums;
@@ -27,7 +22,6 @@ namespace light_brary.Entities
 
         public Guid BookId {get; set;}
  
-        [DeleteBehavior(DeleteBehavior.Restrict)]
         public Book Book {get; set;} = null!;
 
         public ICollection<BorrowDetail> BorrowDetails {get; set;} = new List<BorrowDetail>();

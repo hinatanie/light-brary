@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using light_brary.Entities;
 using light_brary.Data;
@@ -9,6 +6,14 @@ namespace light_brary.Repositories
 {
     public class BookCopyRepository(AppDbContext context) : GenericRepository<BookCopy>(context)
     {
+        public async Task<IEnumerable<BookCopy>> GetAllWithBookAsync()
+        {
+            return await _context.BookCopies
+                .Include(bc => bc.Book)
+                .OrderBy(bc => bc.Book.Title)
+                .ToListAsync();
+        }
+
         public async Task<BookCopy?> GetByBarcodeAsync(string barcode)
         {
             return await _context.BookCopies
@@ -36,6 +41,13 @@ namespace light_brary.Repositories
         {
             return await _context.BorrowDetails
                 .AnyAsync(bd => bd.BookCopyId == id);
+        }
+
+        public async Task<IEnumerable<BookCopy>> GetBookCopysByListIdAsync(IEnumerable<Guid> bookCopyIds)
+        {
+            return await _context.BookCopies
+                .Where(bc => bookCopyIds.Contains(bc.Id))
+                .ToListAsync();
         }
     }
 }

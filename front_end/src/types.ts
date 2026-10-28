@@ -19,6 +19,26 @@ export interface Book {
   availableCopies?: number;
 }
 
+export interface PagedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export type BookSort = 'newest' | 'title' | 'available' | 'year';
+
+export interface BookPageQuery {
+  page: number;
+  pageSize?: number;
+  keyword?: string;
+  categoryId?: string | number;
+  author?: string;
+  onlyAvailable?: boolean;
+  sortBy?: BookSort;
+}
+
 export type BookCopyStatus = 'Available' | 'Borrowed' | 'Lost';
 
 export interface BookCopy {
@@ -39,7 +59,6 @@ export interface User {
   address?: string | null;
   createdAt?: string;
   roles: string[];
-  mustChangePassword?: boolean;
 }
 
 export interface Role {
@@ -89,7 +108,6 @@ export interface AuthResponse {
   phoneNumber: string;
   expiresAt?: string;
   roles: string[];
-  mustChangePassword?: boolean;
   user?: User;
 }
 
@@ -100,12 +118,6 @@ export interface MeResponse {
   email?: string;
   phoneNumber: string;
   address?: string | null;
+  createdAt?: string;
   roles: string[];
-  mustChangePassword?: boolean;
-}
-
-export interface UpdateUserRequest {
-  fullName: string;
-  phoneNumber: string;
-  address?: string | null;
 }

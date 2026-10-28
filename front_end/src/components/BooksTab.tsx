@@ -1,88 +1,38 @@
 import React, { useState } from 'react';
-import type { Book, Category } from '../types';
+import { Link } from 'react-router-dom';
+import type { Book } from '../types';
 import { booksApi } from '../api';
-import { Plus, Search, Edit2, Trash2, BookOpen, Layers, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, Layers, RefreshCw } from 'lucide-react';
+import { BookFormModal } from './BookFormModal';
+import { usePagedBooks } from '../hooks/usePagedBooks';
+import { Pagination } from './Pagination';
 
 interface BooksTabProps {
-  books: Book[];
-  categories: Category[];
-  onRefresh: () => void;
   onNotify: (text: string, type?: 'success' | 'error') => void;
   onViewCopies: (bookId: string) => void;
+  onViewBook: (bookId: string) => void;
   readOnly?: boolean;
 }
 
 export const BooksTab: React.FC<BooksTabProps> = ({
-  books,
-  categories,
-  onRefresh,
   onNotify,
   onViewCopies,
+  onViewBook,
   readOnly = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const { items: books, categories, query, pageNumber, pageSize, totalPages, totalCount,
+    loading, error, setFilters, setPage, refresh } = usePagedBooks();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  // Form states
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [isbn, setIsbn] = useState('');
-  const [publishYear, setPublishYear] = useState<number | ''>('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [categoryId, setCategoryId] = useState<string>(String(categories[0]?.id || ''));
-  const [submitting, setSubmitting] = useState(false);
-
   const openCreateModal = () => {
     setEditingBook(null);
-    setTitle('');
-    setAuthor('');
-    setIsbn('');
-    setPublishYear(new Date().getFullYear());
-    setImageUrl('');
-    setCategoryId(String(categories[0]?.id || ''));
     setIsModalOpen(true);
   };
 
   const openEditModal = (book: Book) => {
     setEditingBook(book);
-    setTitle(book.title);
-    setAuthor(book.author);
-    setIsbn(book.isbn || '');
-    setPublishYear(book.publishYear || '');
-    setImageUrl(book.imageUrl || '');
-    setCategoryId(String(book.categoryId));
     setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const payload = {
-        title: title.trim(),
-        author: author.trim(),
-        isbn: isbn.trim() || undefined,
-        publishYear: publishYear ? Number(publishYear) : undefined,
-        imageUrl: imageUrl.trim() || undefined,
-        categoryId: categoryId,
-      };
-
-      if (editingBook) {
-        await booksApi.update(editingBook.id, payload);
-        onNotify(`Đã cập nhật sách "${title}" thành công!`);
-      } else {
-        await booksApi.create(payload);
-        onNotify(`Đã thêm mới đầu sách "${title}" thành công!`);
-      }
-      setIsModalOpen(false);
-      onRefresh();
-    } catch (err: any) {
-      onNotify(err.message || 'Lỗi khi lưu thông tin sách', 'error');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const handleDelete = async (book: Book) => {
@@ -90,21 +40,11 @@ export const BooksTab: React.FC<BooksTabProps> = ({
     try {
       await booksApi.delete(book.id);
       onNotify(`Đã xóa đầu sách "${book.title}"`);
-      onRefresh();
+      refresh();
     } catch (err: any) {
       onNotify(err.message || 'Lỗi khi xóa sách', 'error');
     }
   };
-
-  const filteredBooks = books.filter((b) => {
-    const matchesSearch =
-      b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (b.isbn && b.isbn.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory =
-      categoryFilter === 'all' || b.categoryId === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
 
   return (
     <div className="tab-container">
@@ -128,17 +68,17 @@ export const BooksTab: React.FC<BooksTabProps> = ({
           <input
             type="text"
             placeholder="Tìm theo tên sách, tác giả, ISBN..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={query.keyword ?? ''}
+            onChange={(e) => setFilters({ keyword: e.target.value })}
           />
         </div>
 
         <select
           className="filter-select"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          value={query.categoryId ?? 'all'}
+          onChange={(e) => setFilters({ categoryId: e.target.value === 'all' ? undefined : e.target.value })}
         >
-          <option value="all">Tất cả thể loại ({books.length})</option>
+          <option value="all">Tất cả thể loại</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -148,7 +88,16 @@ export const BooksTab: React.FC<BooksTabProps> = ({
       </div>
 
       <div className="table-card">
-        {filteredBooks.length === 0 ? (
+        {loading ? (
+          <div className="loading-banner" role="status">
+            <RefreshCw size={18} className="spin" /> Đang tải danh mục đầu sách...
+          </div>
+        ) : error ? (
+          <div className="empty-state" role="alert">
+            <p>{error}</p>
+            <button className="btn btn-secondary" onClick={refresh}>Thử lại</button>
+          </div>
+        ) : books.length === 0 ? (
           <div className="empty-state">
             <BookOpen size={48} color="#94a3b8" />
             <p>Không tìm thấy đầu sách nào phù hợp.</p>
@@ -158,6 +107,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
             <table className="custom-table">
               <thead>
                 <tr>
+                  <th>STT</th>
                   <th>ID</th>
                   <th>Bìa sách</th>
                   <th>Tiêu đề sách</th>
@@ -169,8 +119,9 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {filteredBooks.map((b) => (
-                  <tr key={b.id}>
+                {books.map((b, index) => (
+                  <tr key={b.id} className="book-row" onClick={() => onViewBook(String(b.id))}>
+                    <td>{(pageNumber - 1) * pageSize + index + 1}</td>
                     <td>#{b.id}</td>
                     <td>
                       {b.imageUrl ? (
@@ -182,8 +133,8 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                             height: '54px',
                             objectFit: 'cover',
                             borderRadius: '6px',
-                            border: '1px solid #334155',
-                            backgroundColor: '#0f172a',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: 'var(--surface-muted)',
                             display: 'block',
                           }}
                           onError={(e) => {
@@ -201,7 +152,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#94a3b8',
+                            color: 'var(--text-muted)',
                           }}
                           title="Chưa có ảnh bìa"
                         >
@@ -210,7 +161,9 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                       )}
                     </td>
                     <td>
-                      <strong>{b.title}</strong>
+                      <Link className="book-title-link" to={String(b.id)} onClick={(e) => e.stopPropagation()}>
+                        <strong>{b.title}</strong>
+                      </Link>
                     </td>
                     <td>{b.author}</td>
                     <td>
@@ -218,7 +171,7 @@ export const BooksTab: React.FC<BooksTabProps> = ({
                     </td>
                     <td><code>{b.isbn || '—'}</code></td>
                     <td>{b.publishYear || '—'}</td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div className="action-buttons">
                         <button
                           className="btn-action btn-copy"
@@ -255,118 +208,17 @@ export const BooksTab: React.FC<BooksTabProps> = ({
         )}
       </div>
 
-      {/* Modal Thêm / Sửa Sách */}
+      <Pagination page={pageNumber} pageSize={pageSize} totalPages={totalPages}
+        totalCount={totalCount} disabled={loading || !!error} onPageChange={setPage} />
+
       {isModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingBook ? '✏️ Cập Nhật Đầu Sách' : '📖 Thêm Đầu Sách Mới'}</h3>
-              <button className="btn-icon" onClick={() => setIsModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="form-content">
-              <div className="form-group">
-                <label>Tên sách *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Thiết Kế Clean Architecture với C#"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Tác giả *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Robert C. Martin"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Mã ISBN</label>
-                  <input
-                    type="text"
-                    placeholder="978-0134494166"
-                    value={isbn}
-                    onChange={(e) => setIsbn(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Năm xuất bản</label>
-                  <input
-                    type="number"
-                    min={1000}
-                    max={2100}
-                    placeholder="2026"
-                    value={publishYear}
-                    onChange={(e) => setPublishYear(e.target.value ? Number(e.target.value) : '')}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Thể loại *</label>
-                <select
-                  required
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ImageIcon size={14} /> Đường dẫn ảnh bìa sách (Image URL)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/anh-bia-sach.jpg"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                />
-                {imageUrl && (
-                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>Xem trước:</span>
-                    <img
-                      src={imageUrl}
-                      alt="Ảnh bìa xem trước"
-                      style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #334155' }}
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Đang lưu...' : editingBook ? 'Cập Nhật' : 'Tạo Sách Mới'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <BookFormModal
+          book={editingBook}
+          categories={categories}
+          onClose={() => setIsModalOpen(false)}
+          onSaved={refresh}
+          onNotify={onNotify}
+        />
       )}
     </div>
   );

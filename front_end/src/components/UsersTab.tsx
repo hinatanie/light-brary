@@ -14,11 +14,6 @@ import {
   UserCheck,
   Check,
   RefreshCw,
-  UserPlus,
-  Eye,
-  EyeOff,
-  Lock,
-  User as UserIcon
 } from 'lucide-react';
 
 interface UsersTabProps {
@@ -39,136 +34,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
   const [roleUser, setRoleUser] = useState<User | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [submittingRoles, setSubmittingRoles] = useState(false);
-
-  // Create User Modal State
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [createFullName, setCreateFullName] = useState('');
-  const [createPhoneNumber, setCreatePhoneNumber] = useState('');
-  const [createPassword, setCreatePassword] = useState('');
-  const [createAddress, setCreateAddress] = useState('');
-  const [createRoles, setCreateRoles] = useState<string[]>(['Member']);
-  const [showPassword, setShowPassword] = useState(false);
-  const [submittingCreate, setSubmittingCreate] = useState(false);
-
-  // Password Reset Modal State
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordUser, setPasswordUser] = useState<User | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [submittingPassword, setSubmittingPassword] = useState(false);
-
-  const openPasswordModal = (user: User) => {
-    setPasswordUser(user);
-    setNewPassword('');
-    setShowNewPassword(false);
-    setIsPasswordModalOpen(true);
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passwordUser) return;
-    const pwd = newPassword.trim();
-    if (pwd.length < 6) {
-      onNotify('Mật khẩu mới phải có ít nhất 6 ký tự!', 'error');
-      return;
-    }
-    setSubmittingPassword(true);
-    try {
-      await usersApi.updatePassword(passwordUser.id, pwd);
-      onNotify(`Đã đổi mật khẩu thành công cho ${passwordUser.fullName}!`, 'success');
-      setIsPasswordModalOpen(false);
-    } catch (err: any) {
-      onNotify(err.message || 'Cập nhật mật khẩu thất bại.', 'error');
-    } finally {
-      setSubmittingPassword(false);
-    }
-  };
-
-  const resetCreateForm = () => {
-    setCreateFullName('');
-    setCreatePhoneNumber('');
-    setCreatePassword('');
-    setCreateAddress('');
-    setCreateRoles(['Member']);
-    setShowPassword(false);
-  };
-
-  const openCreateModal = () => {
-    resetCreateForm();
-    setIsCreateModalOpen(true);
-  };
-
-  const toggleCreateRole = (role: string) => {
-    setCreateRoles((prev) => {
-      if (prev.includes(role)) {
-        if (prev.length === 1) {
-          onNotify('Người dùng phải có ít nhất 1 vai trò!', 'error');
-          return prev;
-        }
-        return prev.filter((r) => r !== role);
-      } else {
-        return [...prev, role];
-      }
-    });
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const fullName = createFullName.trim();
-    const phoneNumber = createPhoneNumber.trim();
-    const password = createPassword.trim();
-    const address = createAddress.trim();
-
-    if (!fullName) {
-      onNotify('Vui lòng nhập họ và tên người dùng!', 'error');
-      return;
-    }
-
-    if (!address) {
-      onNotify('Vui lòng nhập địa chỉ!', 'error');
-      return;
-    }
-
-    if (!phoneNumber) {
-      onNotify('Vui lòng nhập số điện thoại!', 'error');
-      return;
-    }
-
-    if (!/^\d{10}$/.test(phoneNumber)) {
-      onNotify('Số điện thoại phải gồm đúng 10 chữ số!', 'error');
-      return;
-    }
-
-    if (password.length < 8) {
-      onNotify('Mật khẩu khởi tạo phải có ít nhất 8 ký tự!', 'error');
-      return;
-    }
-
-    if (createRoles.length === 0) {
-      onNotify('Vui lòng chọn ít nhất 1 vai trò cho người dùng!', 'error');
-      return;
-    }
-
-    setSubmittingCreate(true);
-    try {
-      const newUser = await usersApi.create({
-        fullName,
-        phoneNumber,
-        password,
-        address,
-        roles: createRoles,
-      });
-
-      onNotify(`Tạo tài khoản cho "${newUser.fullName}" (${phoneNumber}) thành công!`);
-      setIsCreateModalOpen(false);
-      resetCreateForm();
-      if (onRefresh) onRefresh();
-    } catch (err: any) {
-      onNotify(err.message || 'Lỗi khi tạo người dùng mới', 'error');
-    } finally {
-      setSubmittingCreate(false);
-    }
-  };
 
   const viewUserHistory = async (user: User) => {
     setSelectedUser(user);
@@ -248,7 +113,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
       return (
         <span
           className="badge"
-          style={{ background: '#334155', color: '#94a3b8', fontSize: '11px', padding: '2px 8px' }}
+          style={{ background: 'var(--surface-muted)', color: 'var(--text-muted)', fontSize: '11px', padding: '2px 8px' }}
         >
           Chưa gán
         </span>
@@ -337,9 +202,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
             Danh sách tài khoản độc giả, nhân viên, quản trị viên và cấu hình phân quyền hệ thống
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          <UserPlus size={18} /> Thêm Người Dùng
-        </button>
       </div>
 
       <div className="filter-bar">
@@ -412,19 +274,11 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                       <div className="action-buttons">
                         <button
                           className="btn-action"
-                          style={{ color: '#f59e0b' }}
+                          style={{ color: 'var(--primary)' }}
                           title="Phân quyền tài khoản"
                           onClick={() => openRoleModal(u)}
                         >
                           <Shield size={15} /> Quyền
-                        </button>
-                        <button
-                          className="btn-action"
-                          style={{ color: '#38bdf8' }}
-                          title="Đặt lại mật khẩu cho tài khoản"
-                          onClick={() => openPasswordModal(u)}
-                        >
-                          <Lock size={15} /> Mật khẩu
                         </button>
                         <button
                           className="btn-action btn-copy"
@@ -443,286 +297,13 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
         )}
       </div>
 
-      {/* Modal Thêm Người Dùng Mới */}
-      {isCreateModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsCreateModalOpen(false)}>
-          <div className="modal-box modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <UserPlus size={20} color="#f59e0b" />
-                <h3>Thêm Người Dùng Mới</h3>
-              </div>
-              <button className="btn-icon" onClick={() => setIsCreateModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="form-content">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>
-                    <UserIcon size={15} /> Họ và tên *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={50}
-                    placeholder="Ví dụ: Nguyễn Văn An"
-                    value={createFullName}
-                    onChange={(e) => setCreateFullName(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <Phone size={15} /> Số điện thoại (tài khoản đăng nhập) *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    maxLength={10}
-                    placeholder="Ví dụ: 0912345678 (10 số)"
-                    value={createPhoneNumber}
-                    onChange={(e) => setCreatePhoneNumber(e.target.value.replace(/\D/g, ''))}
-                  />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Tối đa 10 chữ số, dùng làm tài khoản đăng nhập hệ thống.
-                  </span>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>
-                    <Lock size={15} /> Mật khẩu khởi tạo *
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      minLength={8}
-                      placeholder="Tối thiểu 8 ký tự"
-                      value={createPassword}
-                      onChange={(e) => setCreatePassword(e.target.value)}
-                      style={{ width: '100%', paddingRight: '40px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '10px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#64748b',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '4px',
-                      }}
-                      title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Mật khẩu ban đầu để người dùng đăng nhập hệ thống (tối thiểu 8 ký tự).
-                  </span>
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <MapPin size={15} /> Địa chỉ liên hệ *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={255}
-                    placeholder="Ví dụ: 123 Lê Lợi, Phường Bến Nghé, Quận 1"
-                    required
-                    value={createAddress}
-                    onChange={(e) => setCreateAddress(e.target.value)}
-                  />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Địa chỉ cư trú hoặc nơi làm việc của người dùng.
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                  Phân quyền vai trò ban đầu *:
-                </label>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                  {/* Role Member */}
-                  <div
-                    onClick={() => toggleCreateRole('Member')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      background: createRoles.includes('Member') ? 'rgba(16, 185, 129, 0.08)' : '#f8fafc',
-                      border: createRoles.includes('Member') ? '1.5px solid #10b981' : '1px solid #cbd5e1',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '18px',
-                        height: '18px',
-                        marginTop: '2px',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: createRoles.includes('Member') ? '#10b981' : '#fff',
-                        border: '1.5px solid #10b981',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {createRoles.includes('Member') && <Check size={12} />}
-                    </div>
-                    <div>
-                      <strong style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}>
-                        <UserCheck size={14} /> Member (Độc giả)
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '2px' }}>
-                        Mượn sách, tra cứu và xem lịch sử cá nhân
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Role Staff */}
-                  <div
-                    onClick={() => toggleCreateRole('Staff')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      background: createRoles.includes('Staff') ? 'rgba(59, 130, 246, 0.08)' : '#f8fafc',
-                      border: createRoles.includes('Staff') ? '1.5px solid #3b82f6' : '1px solid #cbd5e1',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '18px',
-                        height: '18px',
-                        marginTop: '2px',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: createRoles.includes('Staff') ? '#3b82f6' : '#fff',
-                        border: '1.5px solid #3b82f6',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {createRoles.includes('Staff') && <Check size={12} />}
-                    </div>
-                    <div>
-                      <strong style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}>
-                        <Briefcase size={14} /> Staff (Thủ thư)
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '2px' }}>
-                        Xử lý mượn/trả và quản lý kho sách
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Role Admin */}
-                  <div
-                    onClick={() => toggleCreateRole('Admin')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      background: createRoles.includes('Admin') ? 'rgba(239, 68, 68, 0.08)' : '#f8fafc',
-                      border: createRoles.includes('Admin') ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '18px',
-                        height: '18px',
-                        marginTop: '2px',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: createRoles.includes('Admin') ? '#ef4444' : '#fff',
-                        border: '1.5px solid #ef4444',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {createRoles.includes('Admin') && <Check size={12} />}
-                    </div>
-                    <div>
-                      <strong style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px' }}>
-                        <Shield size={14} /> Admin (Quản trị)
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '2px' }}>
-                        Toàn quyền cấu hình & quản trị hệ thống
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="modal-actions" style={{ marginTop: '16px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsCreateModalOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={submittingCreate}
-                >
-                  {submittingCreate ? (
-                    <>
-                      <RefreshCw size={16} className="spin" /> Đang tạo...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus size={16} /> Tạo Người Dùng
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Modal Phân Quyền Vai Trò */}
       {isRoleModalOpen && roleUser && (
         <div className="modal-backdrop" onClick={() => setIsRoleModalOpen(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={20} color="#f59e0b" />
+                <Shield size={20} color="var(--primary)" />
                 <h3>Phân Quyền: {roleUser.fullName}</h3>
               </div>
               <button className="btn-icon" onClick={() => setIsRoleModalOpen(false)}>
@@ -813,7 +394,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                     </div>
                     <div>
                       <strong style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Briefcase size={14} /> Staff (Nhân viên / Thủ thư)
+                        <Briefcase size={14} /> Librarian (Thủ thư)
                       </strong>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
                         Xử lý tạo phiếu mượn, xác nhận trả sách và tra cứu kho sách
@@ -853,7 +434,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
                     </div>
                     <div>
                       <strong style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <UserCheck size={14} /> Member (Độc giả / Khách hàng)
+                        <UserCheck size={14} /> User (Bạn đọc / Sinh viên)
                       </strong>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
                         Xem sách đang mượn, lịch sử mượn sách và quản lý hồ sơ cá nhân
@@ -967,100 +548,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({ users, onNotify, onRefresh }
         </div>
       )}
 
-      {/* Modal Đặt lại Mật khẩu Người dùng */}
-      {isPasswordModalOpen && passwordUser && (
-        <div className="modal-backdrop" onClick={() => setIsPasswordModalOpen(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Lock size={20} color="#f59e0b" />
-                <h3>Đặt Lại Mật Khẩu</h3>
-              </div>
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={() => setIsPasswordModalOpen(false)}
-                disabled={submittingPassword}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdatePassword} className="form-content">
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                Tài khoản: <strong>{passwordUser.fullName}</strong> ({passwordUser.phoneNumber || 'Không có SĐT'})
-              </p>
-
-              <div className="form-group">
-                <label>
-                  <Lock size={15} /> Mật khẩu mới * (Tối thiểu 6 ký tự)
-                </label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu mới"
-                    style={{ width: '100%', paddingRight: '40px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#64748b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '4px',
-                    }}
-                    title={showNewPassword ? 'Ẩn' : 'Hiện'}
-                  >
-                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b' }}>
-                💡 Quản trị viên có thể trực tiếp đặt lại mật khẩu cho tài khoản này mà không cần biết mật khẩu cũ.
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsPasswordModalOpen(false)}
-                  disabled={submittingPassword}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={submittingPassword}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  {submittingPassword ? (
-                    <>
-                      <RefreshCw size={15} className="spin" /> Đang cập nhật...
-                    </>
-                  ) : (
-                    <>
-                      <Check size={15} /> Cập nhật mật khẩu
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

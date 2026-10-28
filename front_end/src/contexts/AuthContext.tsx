@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { AuthResponse, MeResponse } from '../types';
-import { authApi } from '../api';
+import { ApiError, authApi } from '../api';
 
 export interface UserSession {
   userId: string;
@@ -8,7 +8,6 @@ export interface UserSession {
   email?: string;
   phoneNumber?: string | null;
   roles: string[];
-  mustChangePassword?: boolean;
 }
 
 interface AuthContextType {
@@ -17,7 +16,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   login: (data: AuthResponse) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasRole: (role: string) => boolean;
   refreshUser: () => Promise<void>;
   updateUserSession: (updated: Partial<UserSession>) => void;
@@ -38,13 +37,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: parsed.email,
         phoneNumber: parsed.phoneNumber || null,
         roles: Array.isArray(parsed.roles) && parsed.roles.length > 0 ? parsed.roles : ['Member'],
-        mustChangePassword: Boolean(parsed.mustChangePassword),
       };
     } catch {
       return null;
     }
   });
   const [loading, setLoading] = useState<boolean>(true);
+
+  const clearSession = useCallback(() => {
+    localStorage.removeItem('lightbrary_token');
+    localStorage.removeItem('lightbrary_user');
+    setToken(null);
+    setUser(null);
+  }, []);
 
   const refreshUser = useCallback(async () => {
     const curToken = localStorage.getItem('lightbrary_token');
@@ -63,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: me.email,
         phoneNumber: me.phoneNumber,
         roles,
-        mustChangePassword: Boolean(me.mustChangePassword),
       };
       setUser(updatedUser);
       localStorage.setItem('lightbrary_user', JSON.stringify(updatedUser));
@@ -71,12 +75,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Failed to fetch user session from /auth/me:', err);
       // If token expired or invalid, log out
       if ((err as any)?.status === 401) {
-        logout();
+        clearSession();
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearSession]);
 
   useEffect(() => {
     refreshUser();
@@ -91,18 +95,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: data.email,
       phoneNumber: data.phoneNumber,
       roles,
-      mustChangePassword: Boolean(data.mustChangePassword),
     };
     localStorage.setItem('lightbrary_user', JSON.stringify(session));
     setToken(data.token);
     setUser(session);
   };
 
-  const logout = () => {
-    localStorage.removeItem('lightbrary_token');
-    localStorage.removeItem('lightbrary_user');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    if (localStorage.getItem('lightbrary_token')) {
+      try {
+        await authApi.logout();
+      } catch (err) {
+        // An expired or revoked token already has no access to protected APIs.
+        if (!(err instanceof ApiError) || err.status !== 401) throw err;
+      }
+    }
+    clearSession();
   };
 
   const hasRole = (role: string): boolean => {

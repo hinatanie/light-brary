@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, User as UserIcon, LogOut, LogIn, Shield, Briefcase, UserCheck, KeyRound } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
+import { User as UserIcon, LogOut, LogIn, Shield, Briefcase, UserCheck, KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -10,10 +11,20 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     const roles = (user?.roles || []).map((r) => r.toLowerCase());
-    logout();
+    try {
+      await logout();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Đăng xuất thất bại. Vui lòng thử lại.', 'error');
+      setLoggingOut(false);
+      return;
+    }
     if (roles.includes('admin')) {
       navigate('/login/admin');
     } else if (roles.includes('staff') || roles.includes('librarian')) {
@@ -21,27 +32,28 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
     } else {
       navigate('/login');
     }
+    setLoggingOut(false);
   };
 
   const getRoleBadge = () => {
     if (!user || !user.roles || user.roles.length === 0) return null;
     if (user.roles.includes('Admin')) {
       return (
-        <span className="badge badge-admin" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dc2626', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-          <Shield size={12} /> Admin
+        <span className="header-role">
+          <Shield size={12} /> Quản trị viên
         </span>
       );
     }
-    if (user.roles.includes('Staff')) {
+    if (user.roles.includes('Staff') || user.roles.includes('Librarian')) {
       return (
-        <span className="badge badge-staff" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#2563eb', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-          <Briefcase size={12} /> Nhân Viên
+        <span className="header-role">
+          <Briefcase size={12} /> Thủ thư
         </span>
       );
     }
     return (
-      <span className="badge badge-member" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#059669', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-        <UserCheck size={12} /> Bạn Đọc
+      <span className="header-role">
+        <UserCheck size={12} /> Bạn đọc
       </span>
     );
   };
@@ -49,20 +61,18 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
   const getHomeLink = () => {
     if (!user || !user.roles) return '/login';
     if (user.roles.includes('Admin')) return '/admin';
-    if (user.roles.includes('Staff')) return '/staff';
+    if (user.roles.includes('Staff') || user.roles.includes('Librarian')) return '/staff';
     return '/member';
   };
 
   return (
     <header className="app-header">
       <Link to={getHomeLink()} style={{ textDecoration: 'none' }} className="header-brand">
-        <div className="brand-logo">
-          <BookOpen size={28} color="#f59e0b" />
-        </div>
+        <img className="brand-logo" src="/images/sgu-logo.webp" alt="Logo Trường Đại học Sài Gòn" width="42" height="42" />
         <div>
-          <h1 className="brand-title">LightBrary</h1>
+          <h1 className="brand-title">TRƯỜNG ĐẠI HỌC SÀI GÒN</h1>
           <p className="brand-subtitle">
-            {portalTitle ? portalTitle : 'Hệ Thống Quản Lý Thư Viện Hiện Đại'}
+            {portalTitle || 'Cổng thông tin thư viện'}
           </p>
         </div>
       </Link>
@@ -78,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
                 <span className="user-name">{user.fullName}</span>
                 {getRoleBadge()}
               </div>
-              <span className="user-email">{user.email}</span>
+              <span className="user-email">{user.email || 'Cổng thông tin thư viện'}</span>
             </div>
             <Link
               to="/change-password"
@@ -88,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ portalTitle }) => {
             >
               <KeyRound size={16} />
             </Link>
-            <button className="btn-logout" onClick={handleLogout} title="Đăng xuất">
+            <button className="btn-logout" onClick={handleLogout} disabled={loggingOut} title={loggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'} aria-label="Đăng xuất">
               <LogOut size={16} />
             </button>
           </div>
