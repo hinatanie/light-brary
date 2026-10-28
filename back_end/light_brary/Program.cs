@@ -46,7 +46,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("LibrarianOrAdmin", p => p.RequireRole(RoleNames.ADMIN, RoleNames.LIBRARIAN));
 });
 
-/* Đăng ký các Serivce */
+// dependency ịnection
+
 builder.Services.AddScoped<BookCopyService>();
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<BorrowRecordService>();
@@ -54,7 +55,8 @@ builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<UserService>();
 
-/* Đăng ký các Repository */
+builder.Services.AddScoped<AuthService>();
+
 builder.Services.AddScoped<BookCopyRepository>();
 builder.Services.AddScoped<BookRepository>();
 builder.Services.AddScoped<BorrowRecordRepository>();
@@ -75,16 +77,15 @@ builder.Services.AddIdentityApiEndpoints<User>(options =>
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AppDbContext>();
 
-/* Đăng ký các Authentication */
-builder.Services.AddScoped<AuthService>();
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(); // https://localhost:<port>/swagger
+    app.UseSwaggerUI();
 }
+
+// middleware o day ne
 
 app.UseExceptionHandlingMiddleware();
 app.UseHttpsRedirection();
