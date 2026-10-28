@@ -36,26 +36,27 @@ docker compose down
 
 `docker compose down` giữ lại dữ liệu PostgreSQL. Thay đổi thông tin PostgreSQL trong `.env` không tự cập nhật tài khoản của database đã được khởi tạo.
 
-## Cách 2: Chạy backend trực tiếp
+## Cách 2: Chạy backend trực tiếp (dev)
 
-Mở terminal tại thư mục gốc của repository `light-brary` (thư mục chứa `Library.slnx`). Chuẩn bị PostgreSQL và Redis trên máy; nếu dùng Docker cho hai dịch vụ này, chạy:
+Mở terminal tại thư mục gốc.dùng Docker cho hai dịch vụ này, chạy:
 
 ```bash
 docker compose up -d postgres redis
 ```
 
-Cấu hình bên dưới tương ứng với cổng và tài khoản mặc định của Compose. Thay mật khẩu PostgreSQL bằng giá trị đang dùng và chọn mật khẩu admin từ 8 ký tự; nếu dùng database hoặc Redis khác, chỉnh địa chỉ và thông tin kết nối cho phù hợp.
+dùng dotnet user-secrets : chạy tại light_brary
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5434;Database=lightbrary_db;Username=postgres;Password=<mật-khẩu-PostgreSQL>" --project back_end/light_brary
-dotnet user-secrets set "ConnectionStrings:Redis" "localhost:6381" --project back_end/light_brary
-dotnet user-secrets set "Seed:AdminPassword" "<mật-khẩu-admin>" --project back_end/light_brary
-
-dotnet restore Library.slnx
-dotnet run --project back_end/light_brary
+dotnet user-secrets set "Seed:AdminPassword" "<mật-khẩu-admin>"
 ```
 
-Cũng có thể cấu hình bằng biến môi trường `ConnectionStrings__DefaultConnection`, `ConnectionStrings__Redis` và `Seed__AdminPassword`. Backend tự áp dụng migration và seed khi khởi động; Swagger ở `http://localhost:5218/swagger` trong Development.
+đã set xong biến thì chạy :
+
+```bash
+dotnet run
+```
+
+Backend tự áp dụng migration và seed khi khởi động; Swagger ở `http://localhost:5218/swagger` trong Development.
 
 ## Chạy frontend
 
