@@ -8,4 +8,11 @@ Swagger hiển thị các endpoint, tham số và mô hình request/response c�
 
 Swagger chỉ được bật trong Development. Schema OpenAPI dạng JSON có tại `http://localhost:5218/swagger/v1/swagger.json`.
 
-Các endpoint yêu cầu đăng nhập cần gửi `Authorization: Bearer <accessToken>` và quyền phù hợp. Cấu hình Swagger hiện tại chưa có nút nhập bearer token; có thể đăng nhập qua `POST /api/auth/login` rồi dùng HTTP client như Postman hoặc `curl` để gọi endpoint được bảo vệ.
+Để thử các endpoint yêu cầu đăng nhập (có biểu tượng khóa):
+
+1. Gọi `POST /api/auth/login` với tên đăng nhập và mật khẩu, rồi sao chép `accessToken` trong response.
+2. Bấm **Authorize** ở đầu trang Swagger hoặc biểu tượng khóa tại endpoint.
+3. Dán `accessToken` vào ô **Value**, không thêm tiền tố `Bearer`, rồi bấm **Authorize** và **Close**.
+4. Chọn **Try it out** và **Execute** tại endpoint cần thử. Swagger tự gửi header `Authorization: Bearer <accessToken>`.
+
+Tài khoản vẫn cần quyền phù hợp với endpoint. Khi token hết hạn, đăng nhập lại và nhập token mới vào **Authorize**.
