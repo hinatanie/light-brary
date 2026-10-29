@@ -88,7 +88,12 @@ if (app.Environment.IsDevelopment())
 // middleware o day ne
 
 app.UseExceptionHandlingMiddleware();
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
