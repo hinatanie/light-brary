@@ -4,7 +4,6 @@ using light_brary.Repositories;
 using light_brary.Middleware;
 using light_brary.Constants;
 using light_brary.Entities;
-using light_brary.Swagger;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -36,7 +35,10 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         Description = "Dán accessToken từ POST /api/auth/login, không thêm tiền tố Bearer."
     });
-    options.OperationFilter<AuthorizeOperationFilter>();
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
 });
 
 /* Cấu hình Database */
