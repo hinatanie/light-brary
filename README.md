@@ -58,6 +58,8 @@ dotnet run
 
 Backend tự áp dụng migration và seed khi khởi động; Swagger ở `http://localhost:5218/swagger` trong Development.
 
+Trong Development, log console hiển thị mỗi bản ghi trên một dòng kèm giờ; log request có method, URL, status và thời gian xử lý. Các câu SQL chạy thành công được ẩn, cảnh báo và lỗi SQL vẫn hiển thị. Để xem lại SQL khi debug, đổi `Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command` từ `Warning` sang `Information` trong `back_end/light_brary/appsettings.Development.json`.
+
 ## Chạy frontend
 
 Sau khi chạy backend theo một trong hai cách trên, mở terminal khác tại thư mục gốc `light-brary`, rồi chuyển vào `front_end` và chạy:
