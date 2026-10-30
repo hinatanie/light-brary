@@ -12,7 +12,6 @@ namespace light_brary.Controllers
     public class AuthController(AuthService authService) : ControllerBase
     {
         [HttpPost("login")]
-        [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Login(LoginRequest request)
         {
             await authService.LoginAsync(request);

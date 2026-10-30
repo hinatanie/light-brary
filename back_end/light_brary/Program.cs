@@ -6,6 +6,7 @@ using light_brary.Constants;
 using light_brary.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,19 @@ builder.Services.AddCors(options =>
 
 /* Cấu hình Swagger */
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        Description = "Dán accessToken từ POST /api/auth/login, không thêm tiền tố Bearer."
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 /* Cấu hình Database */
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -88,7 +101,12 @@ if (app.Environment.IsDevelopment())
 // middleware o day ne
 
 app.UseExceptionHandlingMiddleware();
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

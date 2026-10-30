@@ -111,5 +111,23 @@ namespace light_brary.Services
                 ?? throw AppException.NotFound($"Không tìm thấy người dùng với ID: {id}");
         }
 
+        public async Task LockUser(Guid userId)
+        {
+            var user = await GetRequiredUserAsync(userId);
+            if(await userManager.IsInRoleAsync(user, RoleNames.ADMIN))
+                throw AppException.BadRequest("Không thể khóa tài khoản Admin.");
+            user.LockoutEnabled = true;
+            user.LockoutEnd = DateTimeOffset.MaxValue;
+            (await userManager.UpdateAsync(user)).ThrowIfFailed();
+        }
+
+        public async Task UnLockUser(Guid userId)
+        {
+            var user = await GetRequiredUserAsync(userId);
+            user.LockoutEnabled = false;
+            user.LockoutEnd = null;
+            (await userManager.UpdateAsync(user)).ThrowIfFailed();
+        }
+
     }
 }
