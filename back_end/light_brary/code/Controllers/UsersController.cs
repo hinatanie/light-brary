@@ -52,6 +52,20 @@ namespace light_brary.Controllers
             return NoContent();
         }
 
+        [HttpPut("api/users/{id:guid}")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
+        public async Task<IActionResult> LockUser([FromRoute] Guid id){
+            await userService.LockUser(id);
+            return Ok(new {message = "da khoa thanh cong "});
+        }
+
+        [HttpPut("api/users/{id:guid}/unlock")]
+        [Authorize(Policy = "LibrarianOrAdmin")]
+        public async Task<IActionResult> UnLockUser([FromRoute] Guid id){
+            await userService.UnLockUser(id);
+            return Ok(new {message = "da mo khoa thanh cong "});
+        }
+
 
         // Thủ thư và Admin: tra cứu và hỗ trợ người dùng .....................................................................................................
 
