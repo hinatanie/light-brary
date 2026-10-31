@@ -86,6 +86,13 @@ public class BookCacheTests : IAsyncLifetime
         Assert.Equal(2, response.TotalCopies);
         Assert.Equal(1, response.AvailableCopies);
         Assert.Equal(book.Category.Name, response.CategoryName);
+        Assert.NotNull(response.Category);
+        Assert.Equal(book.Category.Id, response.Category.Id);
+        Assert.Equal(book.Category.Name, response.Category.Name);
+        Assert.Equal(book.Category.Description, response.Category.Description);
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(response));
+        Assert.False(json.RootElement.GetProperty("Category").TryGetProperty("Books", out _));
+        Assert.False(json.RootElement.GetProperty("Category").TryGetProperty("BookCount", out _));
         Assert.Equal(JsonSerializer.Serialize(response), await Cache.GetStringAsync($"books:{book.Id}"));
 
         // SQLite mất dữ liệu khi đóng kết nối; cache hit phải không truy vấn DB.
@@ -216,6 +223,7 @@ public class BookCacheTests : IAsyncLifetime
             Assert.Null(await Cache.GetStringAsync($"books:{book.Id}"));
             var response = await ReadAsync(book.Id);
             Assert.Equal("Thể loại mới", response.CategoryName);
+            Assert.NotNull(response.Category);
             Assert.Equal("Mô tả mới", response.Category.Description);
         }
         Assert.NotNull(await Cache.GetStringAsync($"books:{unrelated.Id}"));
