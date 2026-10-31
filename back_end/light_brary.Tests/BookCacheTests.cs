@@ -90,9 +90,10 @@ public class BookCacheTests : IAsyncLifetime
         Assert.Equal(book.Category.Id, response.Category.Id);
         Assert.Equal(book.Category.Name, response.Category.Name);
         Assert.Equal(book.Category.Description, response.Category.Description);
+        Assert.Null(response.Category.BookCount);
         using var json = JsonDocument.Parse(JsonSerializer.Serialize(response));
         Assert.False(json.RootElement.GetProperty("Category").TryGetProperty("Books", out _));
-        Assert.False(json.RootElement.GetProperty("Category").TryGetProperty("BookCount", out _));
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("Category").GetProperty("BookCount").ValueKind);
         Assert.Equal(JsonSerializer.Serialize(response), await Cache.GetStringAsync($"books:{book.Id}"));
 
         // SQLite mất dữ liệu khi đóng kết nối; cache hit phải không truy vấn DB.

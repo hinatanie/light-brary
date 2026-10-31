@@ -13,7 +13,7 @@ namespace light_brary.DTOs.Responses
         public int? PublishYear { get; set; }
         public Guid CategoryId { get; set; }
         public string CategoryName { get; set; } = null!;
-        public CategorySummaryResponse? Category { get; set; }
+        public CategoryResponse? Category { get; set; }
         public int TotalCopies { get; set; }
         public int AvailableCopies { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -30,7 +30,7 @@ namespace light_brary.DTOs.Responses
                 PublishYear = book.PublishYear,
                 CategoryId = book.CategoryId,
                 CategoryName = book.Category?.Name ?? string.Empty,
-                Category = book.Category != null ? new CategorySummaryResponse
+                Category = book.Category != null ? new CategoryResponse
                 {
                     Id = book.Category.Id,
                     Name = book.Category.Name,
