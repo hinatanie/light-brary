@@ -16,8 +16,6 @@ namespace light_brary.Repositories
                 .ToListAsync();
         }
 
-        public override Task<Category?> GetByIdAsync(Guid id) => _context.Categories.FirstOrDefaultAsync(c => c.Id == id);
-
         public Task<Category?> GetByNameAsync(string name)
         {
             return _context.Categories.FirstOrDefaultAsync(c => c.Name == name);
