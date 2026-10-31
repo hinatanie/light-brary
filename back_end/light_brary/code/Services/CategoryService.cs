@@ -59,13 +59,7 @@ namespace light_brary.Services
                 async (bookId, cancellationToken) =>
                     await cache.RemoveAsync($"books:{bookId}", cancellationToken));
 
-            return new CategoryResponse
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description,
-                BookCount = bookIds.Count
-            };
+            return CategoryResponse.FromEntity(category, bookIds.Count);
         }
 
         public async Task DeleteAsync(Guid id)

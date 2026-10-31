@@ -9,12 +9,12 @@ namespace light_brary.DTOs.Responses
         public string? Description { get; set; }
         public int? BookCount { get; set; }
 
-        internal static CategoryResponse FromEntity(Category category) => new()
+        internal static CategoryResponse FromEntity(Category category, int? bookCount = null) => new()
         {
             Id = category.Id,
             Name = category.Name,
             Description = category.Description,
-            BookCount = category.Books.Count
+            BookCount = bookCount ?? category.Books.Count
         };
     }
 }
