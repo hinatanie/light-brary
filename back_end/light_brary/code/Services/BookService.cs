@@ -126,11 +126,9 @@ namespace light_brary.Services
                 onlyAvailable: onlyAvailable,
                 sortBy: sortBy);
 
-            var responses = books.Select(BookResponse.FromEntity).ToList();
-
             return new PagedResponse<BookResponse>
             {
-                Items = responses,
+                Items = books.ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalCount = totalCount

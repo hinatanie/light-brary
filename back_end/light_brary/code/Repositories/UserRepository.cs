@@ -13,7 +13,7 @@ namespace light_brary.Repositories
 
         public async Task<IEnumerable<User>> GetAllFilteredAsync(string? keyword = null, string? role = null)
         {
-            var query = _context.Users.AsQueryable();
+            var query = _context.Users.AsNoTracking().AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {

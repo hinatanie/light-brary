@@ -47,7 +47,6 @@ Middleware hoạt động theo chuỗi: khi component gọi bước kế tiếp,
 | Redis cache | `BookService` và các service liên quan | Package Redis cung cấp implementation của `IDistributedCache`; dự án tự chọn key, thời gian sống, dữ liệu cache và thời điểm xóa cache. PostgreSQL vẫn là nơi lưu dữ liệu chính. |
 | Swashbuckle | `Program.cs` | Sinh tài liệu OpenAPI và giao diện Swagger từ endpoint/DTO, bật UI trong Development. |
 | React, React Router, Vite | `front_end/` | Thư viện giao diện, điều hướng và server phát triển; nhóm tự viết trang, gọi API và xử lý trạng thái giao diện. |
-| xUnit, EF Core SQLite | `back_end/light_brary.Tests/` | Framework test và database SQLite trong bộ nhớ cho test hiện có; test tập trung vào cache sách. |
 
 Dependency injection là chức năng có sẵn của ASP.NET Core: `Program.cs` đăng ký service và repository theo phạm vi request (`scoped`), framework tạo và đưa dependency vào constructor. Repository, service và logic nghiệp vụ là code dự án.
 

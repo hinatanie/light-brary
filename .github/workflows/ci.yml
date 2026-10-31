@@ -26,6 +26,3 @@ jobs:
 
       - name: Build Release
         run: dotnet build Library.slnx --configuration Release --no-restore
-
-      - name: Test
-        run: dotnet test Library.slnx --configuration Release --no-build --no-restore

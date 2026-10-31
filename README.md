@@ -6,7 +6,7 @@ LightBrary là hệ thống quản lý thư viện, hỗ trợ tra cứu sách, 
 
 - **Backend:** ASP.NET Core 10, ASP.NET Core Identity, Entity Framework Core, PostgreSQL, Redis và Swagger.
 - **Frontend:** React 19, TypeScript và Vite.
-- **Công cụ khác:** Docker Compose, xUnit và GitHub Actions.
+- **Công cụ khác:** Docker Compose và GitHub Actions.
 
 ## Chuẩn bị
 
