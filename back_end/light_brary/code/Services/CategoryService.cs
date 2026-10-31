@@ -9,20 +9,18 @@ namespace light_brary.Services
 {
     public class CategoryService(
         CategoryRepository categoryRepository,
+        BookRepository bookRepository,
         IDistributedCache cache)
     {
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync(string? name = null)
         {
-            var categories = await categoryRepository.GetAllAsync(name);
-            return categories.Select(CategoryResponse.FromEntity).ToList();
+            return await categoryRepository.GetAllWithBookCountsAsync(name);
         }
 
         public async Task<CategoryResponse> GetByIdAsync(Guid id)
         {
-            var category = await categoryRepository.GetWithBooksAsync(id)
+            return await categoryRepository.GetByIdWithBookCountAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
-
-            return CategoryResponse.FromEntity(category);
         }
 
         public async Task<CategoryResponse> CreateAsync(SaveCategoryRequest request)
@@ -42,7 +40,7 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
         {
-            var category = await categoryRepository.GetWithBooksAsync(id)
+            var category = await categoryRepository.GetByIdAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
             var name = await CheckNameAsync(request.Name, id);
@@ -52,20 +50,22 @@ namespace light_brary.Services
 
             await categoryRepository.UpdateAsync(category);
 
-            foreach (var book in category.Books)
-            {
-                await cache.RemoveAsync($"books:{book.Id}");
-            }
+            var bookIds = await bookRepository.GetIdsByCategoryAsync(id);
+            await Parallel.ForEachAsync(
+                bookIds,
+                new ParallelOptions { MaxDegreeOfParallelism = 8 },
+                async (bookId, cancellationToken) =>
+                    await cache.RemoveAsync($"books:{bookId}", cancellationToken));
 
-            return CategoryResponse.FromEntity(category);
+            return CategoryResponse.FromEntity(category, bookIds.Count);
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            var category = await categoryRepository.GetWithBooksAsync(id)
+            var category = await categoryRepository.GetByIdAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
-            if (category.Books.Any())
+            if (await bookRepository.HasBooksInCategoryAsync(id))
                 throw AppException.Conflict("Không thể xóa thể loại đang chứa các đầu sách.");
 
             await categoryRepository.DeleteAsync(category);

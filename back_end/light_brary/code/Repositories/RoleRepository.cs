@@ -10,6 +10,7 @@ namespace light_brary.Repositories
         {
             var names = roleNames.ToArray();
             return await context.Roles
+                .AsNoTracking()
                 .Where(role => names.Contains(role.Name!))
                 .ToListAsync();
         }

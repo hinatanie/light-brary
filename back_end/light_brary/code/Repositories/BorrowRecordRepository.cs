@@ -10,6 +10,7 @@ namespace light_brary.Repositories
         public async Task<IEnumerable<BorrowRecord>> GetByUserIdAsync(Guid userId)
         {
             return await _context.BorrowRecords
+                .AsNoTracking()
                 .Include(br => br.BorrowDetails)
                 .ThenInclude(bd => bd.BookCopy)
                 .ThenInclude(bc => bc!.Book)
@@ -30,6 +31,7 @@ namespace light_brary.Repositories
         public async Task<IEnumerable<BorrowRecord>> GetAllWithDetailsAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
             var query = _context.BorrowRecords
+                .AsNoTracking()
                 .Include(br => br.User)
                 .Include(br => br.BorrowDetails)
                     .ThenInclude(bd => bd.BookCopy)
@@ -46,25 +48,23 @@ namespace light_brary.Repositories
                 query = query.Where(br => br.Status == parsedStatus);
             }
 
-            var list = await query
-                .OrderByDescending(br => br.BorrowDate)
-                .ThenByDescending(br => br.Id)
-                .ToListAsync();
-
             if (overdue.HasValue)
             {
                 var now = DateTime.UtcNow;
                 if (overdue.Value)
                 {
-                    list = list.Where(br => br.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && now > br.DueDate).ToList();
+                    query = query.Where(br => br.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && now > br.DueDate);
                 }
                 else
                 {
-                    list = list.Where(br => !(br.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && now > br.DueDate)).ToList();
+                    query = query.Where(br => !(br.BorrowDetails.Any(d => d.Status == BorrowDetailStatus.Borrowing) && now > br.DueDate));
                 }
             }
 
-            return list;
+            return await query
+                .OrderByDescending(br => br.BorrowDate)
+                .ThenByDescending(br => br.Id)
+                .ToListAsync();
         }
     }
 }

@@ -9,6 +9,7 @@ namespace light_brary.Repositories
         public async Task<IEnumerable<BookCopy>> GetAllWithBookAsync()
         {
             return await _context.BookCopies
+                .AsNoTracking()
                 .Include(bc => bc.Book)
                 .OrderBy(bc => bc.Book.Title)
                 .ToListAsync();
@@ -17,6 +18,7 @@ namespace light_brary.Repositories
         public async Task<BookCopy?> GetByBarcodeAsync(string barcode)
         {
             return await _context.BookCopies
+                .AsNoTracking()
                 .Include(bc => bc.Book)
                 .FirstOrDefaultAsync(bc => bc.Barcode == barcode);
         }
@@ -24,6 +26,7 @@ namespace light_brary.Repositories
         public async Task<IEnumerable<BookCopy>> GetByBookIdAsync(Guid bookId)
         {
             return await _context.BookCopies
+                .AsNoTracking()
                 .Include(bc => bc.Book)
                 .Where(bc => bc.BookId == bookId)
                 .OrderBy(bc => bc.Id)
