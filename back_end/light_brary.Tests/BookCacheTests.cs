@@ -230,6 +230,42 @@ public class BookCacheTests : IAsyncLifetime
         Assert.NotNull(await Cache.GetStringAsync($"books:{unrelated.Id}"));
     }
 
+    [Fact]
+    public async Task DeleteCategory_WithBooks_ReturnsConflictWithoutLoadingBooks()
+    {
+        var book = await SeedBookAsync();
+        Context.ChangeTracker.Clear();
+
+        var error = await Assert.ThrowsAsync<AppException>(() =>
+            scope.ServiceProvider.GetRequiredService<CategoryService>().DeleteAsync(book.CategoryId));
+
+        Assert.Equal(HttpStatusCode.Conflict, error.StatusCode);
+        Assert.Empty(Context.ChangeTracker.Entries<Book>());
+        Assert.True(await Context.Categories.AnyAsync(category => category.Id == book.CategoryId));
+    }
+
+    [Fact]
+    public async Task DeleteCategory_WithoutBooks_DeletesCategory()
+    {
+        var category = new Category { Name = "Thể loại trống" };
+        Context.Categories.Add(category);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        await scope.ServiceProvider.GetRequiredService<CategoryService>().DeleteAsync(category.Id);
+
+        Assert.False(await Context.Categories.AnyAsync(item => item.Id == category.Id));
+    }
+
+    [Fact]
+    public async Task DeleteCategory_MissingCategory_ReturnsNotFound()
+    {
+        var error = await Assert.ThrowsAsync<AppException>(() =>
+            scope.ServiceProvider.GetRequiredService<CategoryService>().DeleteAsync(Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.NotFound, error.StatusCode);
+    }
+
     private async Task<Book> SeedBookAsync(Guid? categoryId = null)
     {
         var category = categoryId is { } id

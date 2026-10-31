@@ -9,6 +9,7 @@ namespace light_brary.Services
 {
     public class CategoryService(
         CategoryRepository categoryRepository,
+        BookRepository bookRepository,
         IDistributedCache cache)
     {
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync(string? name = null)
@@ -62,10 +63,10 @@ namespace light_brary.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var category = await categoryRepository.GetWithBooksAsync(id)
+            var category = await categoryRepository.GetByIdAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
-            if (category.Books.Any())
+            if (await bookRepository.HasBooksInCategoryAsync(id))
                 throw AppException.Conflict("Không thể xóa thể loại đang chứa các đầu sách.");
 
             await categoryRepository.DeleteAsync(category);

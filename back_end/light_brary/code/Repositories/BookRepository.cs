@@ -8,6 +8,11 @@ namespace light_brary.Repositories
 {
     public class BookRepository(AppDbContext context) : GenericRepository<Book>(context)
     {
+        public Task<bool> HasBooksInCategoryAsync(Guid categoryId)
+        {
+            return _context.Books.AnyAsync(book => book.CategoryId == categoryId);
+        }
+
         public async Task<Book?> GetByIsbnAsync(string isbn)
         {
             return await _context.Books
