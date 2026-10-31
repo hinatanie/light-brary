@@ -231,6 +231,46 @@ public class BookCacheTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetBorrowRecords_FiltersOverdueBeforeLoadingRecords()
+    {
+        var user = new User { UserName = "reader", FullName = "Người đọc", Address = "Địa chỉ", PhoneNumber = "0123456789" };
+        var overdue = new BorrowRecord
+        {
+            User = user,
+            DueDate = DateTime.UtcNow.AddDays(-1),
+            BorrowDetails = [new BorrowDetail { Status = BorrowDetailStatus.Borrowing }]
+        };
+        var notDue = new BorrowRecord
+        {
+            User = user,
+            DueDate = DateTime.UtcNow.AddDays(1),
+            BorrowDetails = [new BorrowDetail { Status = BorrowDetailStatus.Borrowing }]
+        };
+        var returned = new BorrowRecord
+        {
+            User = user,
+            DueDate = DateTime.UtcNow.AddDays(-1),
+            BorrowDetails = [new BorrowDetail { Status = BorrowDetailStatus.Returned }]
+        };
+        Context.BorrowRecords.AddRange(overdue, notDue, returned);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+        var repository = scope.ServiceProvider.GetRequiredService<BorrowRecordRepository>();
+
+        var overdueRecords = await repository.GetAllWithDetailsAsync(overdue: true);
+        Assert.Equal(overdue.Id, Assert.Single(overdueRecords).Id);
+        Assert.Single(Context.ChangeTracker.Entries<BorrowRecord>());
+
+        Context.ChangeTracker.Clear();
+        var otherRecords = await repository.GetAllWithDetailsAsync(overdue: false);
+        Assert.Equal(new[] { notDue.Id, returned.Id }.Order(), otherRecords.Select(record => record.Id).Order());
+        Assert.Equal(2, Context.ChangeTracker.Entries<BorrowRecord>().Count());
+
+        Context.ChangeTracker.Clear();
+        Assert.Equal(3, (await repository.GetAllWithDetailsAsync()).Count());
+    }
+
+    [Fact]
     public async Task GetPagedBooks_ReturnsCopyCountsAndFiltersWithoutLoadingCopies()
     {
         var book = await SeedBookAsync();
