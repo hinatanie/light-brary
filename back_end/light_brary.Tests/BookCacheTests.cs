@@ -53,6 +53,7 @@ public class BookCacheTests : IAsyncLifetime
         services.AddScoped<BookRepository>();
         services.AddScoped<BookCopyRepository>();
         services.AddScoped<CategoryRepository>();
+        services.AddScoped<RoleRepository>();
         services.AddScoped<BorrowRecordRepository>();
         services.AddScoped<BorrowDetailRepository>();
         services.AddScoped<UserRepository>();
@@ -259,15 +260,38 @@ public class BookCacheTests : IAsyncLifetime
 
         var overdueRecords = await repository.GetAllWithDetailsAsync(overdue: true);
         Assert.Equal(overdue.Id, Assert.Single(overdueRecords).Id);
-        Assert.Single(Context.ChangeTracker.Entries<BorrowRecord>());
+        Assert.Empty(Context.ChangeTracker.Entries<BorrowRecord>());
 
         Context.ChangeTracker.Clear();
         var otherRecords = await repository.GetAllWithDetailsAsync(overdue: false);
         Assert.Equal(new[] { notDue.Id, returned.Id }.Order(), otherRecords.Select(record => record.Id).Order());
-        Assert.Equal(2, Context.ChangeTracker.Entries<BorrowRecord>().Count());
+        Assert.Empty(Context.ChangeTracker.Entries<BorrowRecord>());
 
         Context.ChangeTracker.Clear();
         Assert.Equal(3, (await repository.GetAllWithDetailsAsync()).Count());
+        Assert.Equal(3, (await repository.GetByUserIdAsync(user.Id)).Count());
+        Assert.Empty(Context.ChangeTracker.Entries());
+    }
+
+    [Fact]
+    public async Task ReadOnlyLists_ReturnDataWithoutTrackingEntities()
+    {
+        var book = await SeedBookAsync();
+        var barcode = book.BookCopies.Single().Barcode;
+        var user = new User { UserName = "reader", FullName = "Người đọc", Address = "Địa chỉ", PhoneNumber = "0123456789" };
+        var role = new Microsoft.AspNetCore.Identity.IdentityRole<Guid> { Name = "USER", NormalizedName = "USER" };
+        Context.Users.Add(user);
+        Context.Roles.Add(role);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        var copies = scope.ServiceProvider.GetRequiredService<BookCopyRepository>();
+        Assert.Equal(book.Id, Assert.Single(await copies.GetAllWithBookAsync()).Book.Id);
+        Assert.Equal(barcode, Assert.Single(await copies.GetByBookIdAsync(book.Id)).Barcode);
+        Assert.Equal(book.Id, (await copies.GetByBarcodeAsync(barcode))!.Book.Id);
+        Assert.Equal(user.Id, Assert.Single(await scope.ServiceProvider.GetRequiredService<UserRepository>().GetAllFilteredAsync()).Id);
+        Assert.Equal(role.Id, Assert.Single(await scope.ServiceProvider.GetRequiredService<RoleRepository>().GetByNamesAsync(["USER"])).Id);
+        Assert.Empty(Context.ChangeTracker.Entries());
     }
 
     [Fact]

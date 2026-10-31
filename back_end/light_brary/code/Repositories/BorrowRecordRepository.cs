@@ -10,6 +10,7 @@ namespace light_brary.Repositories
         public async Task<IEnumerable<BorrowRecord>> GetByUserIdAsync(Guid userId)
         {
             return await _context.BorrowRecords
+                .AsNoTracking()
                 .Include(br => br.BorrowDetails)
                 .ThenInclude(bd => bd.BookCopy)
                 .ThenInclude(bc => bc!.Book)
@@ -30,6 +31,7 @@ namespace light_brary.Repositories
         public async Task<IEnumerable<BorrowRecord>> GetAllWithDetailsAsync(Guid? userId = null, string? status = null, bool? overdue = null)
         {
             var query = _context.BorrowRecords
+                .AsNoTracking()
                 .Include(br => br.User)
                 .Include(br => br.BorrowDetails)
                     .ThenInclude(bd => bd.BookCopy)
