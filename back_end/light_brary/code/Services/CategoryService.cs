@@ -19,10 +19,8 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> GetByIdAsync(Guid id)
         {
-            var category = await categoryRepository.GetWithBooksAsync(id)
+            return await categoryRepository.GetByIdWithBookCountAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
-
-            return CategoryResponse.FromEntity(category);
         }
 
         public async Task<CategoryResponse> CreateAsync(SaveCategoryRequest request)
