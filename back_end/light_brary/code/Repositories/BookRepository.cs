@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using light_brary.Entities;
 using light_brary.Data;
+using light_brary.DTOs.Responses;
 
 using light_brary.Enums;
 
@@ -27,7 +28,7 @@ namespace light_brary.Repositories
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 
-        public async Task<(IEnumerable<Book> Books, int TotalCount)> GetPagedAsync(
+        public async Task<(IEnumerable<BookResponse> Books, int TotalCount)> GetPagedAsync(
             int pageNumber = 1,
             int pageSize = 10,
             string? keyword = null,
@@ -38,8 +39,6 @@ namespace light_brary.Repositories
         {
             var query = _context.Books
                 .AsNoTracking()
-                .Include(b => b.Category)
-                .Include(b => b.BookCopies)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -81,6 +80,26 @@ namespace light_brary.Repositories
                 .ThenByDescending(b => b.Id)
                 .Skip((int)offset)
                 .Take(pageSize)
+                .Select(book => new BookResponse
+                {
+                    Id = book.Id,
+                    Title = book.Title,
+                    Author = book.Author,
+                    ISBN = book.ISBN,
+                    ImageUrl = book.ImageUrl,
+                    PublishYear = book.PublishYear,
+                    CategoryId = book.CategoryId,
+                    CategoryName = book.Category != null ? book.Category.Name : string.Empty,
+                    Category = book.Category != null ? new CategoryResponse
+                    {
+                        Id = book.Category.Id,
+                        Name = book.Category.Name,
+                        Description = book.Category.Description
+                    } : null,
+                    TotalCopies = book.BookCopies.Count,
+                    AvailableCopies = book.BookCopies.Count(copy => copy.Status == BookCopyStatus.Available),
+                    CreatedAt = book.CreatedAt
+                })
                 .ToListAsync();
 
             return (books, totalCount);

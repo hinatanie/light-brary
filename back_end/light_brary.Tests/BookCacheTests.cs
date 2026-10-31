@@ -231,6 +231,38 @@ public class BookCacheTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetPagedBooks_ReturnsCopyCountsAndFiltersWithoutLoadingCopies()
+    {
+        var book = await SeedBookAsync();
+        var other = await SeedBookAsync();
+        other.BookCopies.Single().Status = BookCopyStatus.Borrowed;
+        Context.BookCopies.Add(new BookCopy
+        {
+            BookId = book.Id,
+            Barcode = Guid.NewGuid().ToString(),
+            Status = BookCopyStatus.Borrowed
+        });
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        var page = await Books.GetPagedAsync(onlyAvailable: true, sortBy: "available");
+
+        Assert.Equal(1, page.TotalCount);
+        var result = Assert.Single(page.Items);
+        Assert.Equal(book.Id, result.Id);
+        Assert.Equal(2, result.TotalCopies);
+        Assert.Equal(1, result.AvailableCopies);
+        Assert.NotNull(result.Category);
+        Assert.Equal(book.CategoryId, result.Category.Id);
+        Assert.Null(result.Category.BookCount);
+        Assert.Empty(Context.ChangeTracker.Entries<BookCopy>());
+
+        var all = await Books.GetPagedAsync(pageSize: 1, sortBy: "available");
+        Assert.Equal(2, all.TotalCount);
+        Assert.Equal(book.Id, Assert.Single(all.Items).Id);
+    }
+
+    [Fact]
     public async Task GetCategories_ReturnsBookCountsWithoutLoadingBooks()
     {
         var book = await SeedBookAsync();
