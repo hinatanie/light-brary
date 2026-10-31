@@ -231,6 +231,26 @@ public class BookCacheTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetCategories_ReturnsBookCountsWithoutLoadingBooks()
+    {
+        var book = await SeedBookAsync();
+        await SeedBookAsync(book.CategoryId);
+        var emptyCategory = new Category { Name = "Thể loại trống" };
+        Context.Categories.Add(emptyCategory);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        var categories = scope.ServiceProvider.GetRequiredService<CategoryService>();
+        var all = (await categories.GetAllAsync()).ToList();
+        Assert.Equal(2, Assert.Single(all, c => c.Id == book.CategoryId).BookCount);
+        Assert.Equal(0, Assert.Single(all, c => c.Id == emptyCategory.Id).BookCount);
+        Assert.Empty(Context.ChangeTracker.Entries<Book>());
+
+        var filtered = await categories.GetAllAsync(emptyCategory.Name);
+        Assert.Equal(emptyCategory.Id, Assert.Single(filtered).Id);
+    }
+
+    [Fact]
     public async Task DeleteCategory_WithBooks_ReturnsConflictWithoutLoadingBooks()
     {
         var book = await SeedBookAsync();

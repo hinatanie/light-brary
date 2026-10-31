@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using light_brary.Entities;
 using light_brary.Data;
+using light_brary.DTOs.Responses;
 
 namespace light_brary.Repositories
 {
@@ -13,6 +14,20 @@ namespace light_brary.Repositories
             return await _context.Categories
                 .Include(c => c.Books)
                 .Where(c => name == null || c.Name.Contains(name))
+                .ToListAsync();
+        }
+
+        public async Task<List<CategoryResponse>> GetAllWithBookCountsAsync(string? name)
+        {
+            return await _context.Categories
+                .Where(c => name == null || c.Name.Contains(name))
+                .Select(c => new CategoryResponse
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    BookCount = c.Books.Count
+                })
                 .ToListAsync();
         }
 

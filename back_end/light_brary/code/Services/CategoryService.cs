@@ -14,8 +14,7 @@ namespace light_brary.Services
     {
         public async Task<IEnumerable<CategoryResponse>> GetAllAsync(string? name = null)
         {
-            var categories = await categoryRepository.GetAllAsync(name);
-            return categories.Select(CategoryResponse.FromEntity).ToList();
+            return await categoryRepository.GetAllWithBookCountsAsync(name);
         }
 
         public async Task<CategoryResponse> GetByIdAsync(Guid id)
