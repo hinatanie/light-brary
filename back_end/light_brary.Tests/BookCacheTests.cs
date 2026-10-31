@@ -213,13 +213,17 @@ public class BookCacheTests : IAsyncLifetime
         await ReadAsync(first.Id);
         await ReadAsync(second.Id);
         await ReadAsync(unrelated.Id);
+        Context.ChangeTracker.Clear();
 
-        await scope.ServiceProvider.GetRequiredService<CategoryService>()
+        var category = await scope.ServiceProvider.GetRequiredService<CategoryService>()
             .UpdateAsync(first.CategoryId, new SaveCategoryRequest
             {
                 Name = "Thể loại mới",
                 Description = "Mô tả mới"
             });
+        Assert.Equal(2, category.BookCount);
+        Assert.Equal("Thể loại mới", category.Name);
+        Assert.Empty(Context.ChangeTracker.Entries<Book>());
         foreach (var book in new[] { first, second })
         {
             Assert.Null(await Cache.GetStringAsync($"books:{book.Id}"));
@@ -229,6 +233,22 @@ public class BookCacheTests : IAsyncLifetime
             Assert.Equal("Mô tả mới", response.Category.Description);
         }
         Assert.NotNull(await Cache.GetStringAsync($"books:{unrelated.Id}"));
+    }
+
+    [Fact]
+    public async Task UpdateCategory_WithoutBooks_ReturnsZeroBookCount()
+    {
+        var category = new Category { Name = "Thể loại trống" };
+        Context.Categories.Add(category);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        var response = await scope.ServiceProvider.GetRequiredService<CategoryService>()
+            .UpdateAsync(category.Id, new SaveCategoryRequest { Name = "Tên mới" });
+
+        Assert.Equal(0, response.BookCount);
+        Assert.Equal("Tên mới", response.Name);
+        Assert.Empty(Context.ChangeTracker.Entries<Book>());
     }
 
     [Fact]

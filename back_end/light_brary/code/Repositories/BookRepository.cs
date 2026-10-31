@@ -14,6 +14,14 @@ namespace light_brary.Repositories
             return _context.Books.AnyAsync(book => book.CategoryId == categoryId);
         }
 
+        public Task<List<Guid>> GetIdsByCategoryAsync(Guid categoryId)
+        {
+            return _context.Books
+                .Where(book => book.CategoryId == categoryId)
+                .Select(book => book.Id)
+                .ToListAsync();
+        }
+
         public async Task<Book?> GetByIsbnAsync(string isbn)
         {
             return await _context.Books

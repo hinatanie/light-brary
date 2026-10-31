@@ -42,7 +42,7 @@ namespace light_brary.Services
 
         public async Task<CategoryResponse> UpdateAsync(Guid id, SaveCategoryRequest request)
         {
-            var category = await categoryRepository.GetWithBooksAsync(id)
+            var category = await categoryRepository.GetByIdAsync(id)
                 ?? throw AppException.NotFound($"Không tìm thấy thể loại với ID: {id}");
 
             var name = await CheckNameAsync(request.Name, id);
@@ -52,12 +52,20 @@ namespace light_brary.Services
 
             await categoryRepository.UpdateAsync(category);
 
-            foreach (var book in category.Books)
-            {
-                await cache.RemoveAsync($"books:{book.Id}");
-            }
+            var bookIds = await bookRepository.GetIdsByCategoryAsync(id);
+            await Parallel.ForEachAsync(
+                bookIds,
+                new ParallelOptions { MaxDegreeOfParallelism = 8 },
+                async (bookId, cancellationToken) =>
+                    await cache.RemoveAsync($"books:{bookId}", cancellationToken));
 
-            return CategoryResponse.FromEntity(category);
+            return new CategoryResponse
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Description = category.Description,
+                BookCount = bookIds.Count
+            };
         }
 
         public async Task DeleteAsync(Guid id)
